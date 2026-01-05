@@ -1,0 +1,3806 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+/* ================= Body ================= */
+@keyframes shake {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+  20%, 40%, 60%, 80% { transform: rotate(10deg); }
+}
+body {
+  font-family: 'Roboto', serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* กึ่งกลางแนวตั้ง */
+  align-items: center;     /* กึ่งกลางแนวนอน */
+  min-height: 100vh;
+  margin: 10px;
+  margin-top: 40px;
+  padding: 0;
+  position: relative;      /* สำหรับ pseudo-element */
+  overflow-x: hidden;
+  z-index: 1;              /* ให้เนื้อหาอยู่เหนือ pseudo-element */
+}
+
+/* Gradient floating background */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;              /* อยู่ด้านหลังเนื้อหา */
+  animation: floatBg 30s linear infinite;
+}
+
+/* Linear gradient พื้นหลังหลัก */
+body::before {
+  background: linear-gradient(to bottom, #ebd09e 0%, #251f03 100%);
+}
+
+/* Radial gradient effect */
+body::after {
+  background: radial-gradient(circle at 30% 40%, #ebd09e, #251f03);
+}
+
+
+
+
+/* ================= Top Container ================= */
+.Top_Container {
+  display: flex;
+  flex-direction: row;     /* จัดแนวนอน */
+  justify-content: center; /* กึ่งกลางแนวนอน */
+  gap: 20px;               /* ระยะห่างระหว่างกล่อง */
+  min-width: 400px;  /* ป้องกัน container ย่อ */
+  max-width: 300px;
+  margin-bottom: 10px;
+}
+
+/* ================= กล่อง Client และ Electrical ================= */
+.ClientName_Container {
+  width: 180px;   /* ขนาดกรอบเดิม */
+  height: 85px;   /* ขนาดกรอบเดิม */
+  font-size: 18px;
+  font-weight: 700;  /* หนา */
+  text-align: center;
+  box-sizing: border-box;
+  color: #000000;
+
+  /* Gradient background */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  /* ขอบโค้ง + ความหนาและสีใหม่ */
+  border-radius: 10px;      /* ขอบโค้งเดิม */
+  border: 6px solid #74640a; /* ความหนาและสีใหม่ */
+
+  /* เงาและ shadow */
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+
+  /* ข้อความเงา */
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 15px; 
+  /* shift entire client box further left */
+  margin-left: -8px;
+
+  /* Animation / Transition */
+  position: relative;
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+
+.ElectricalBill_Container {
+  width: 180px;   /* ขนาดกรอบเดิม */
+  height: 85px;   /* ขนาดกรอบเดิม */
+  font-size: 12px;
+  font-weight: 700;  /* หนาขึ้น */
+  text-align: center;
+  box-sizing: border-box;
+  color: #000000;
+
+  /* Gradient background แทน PNG */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  /* ขอบโค้งเดิม แต่เพิ่มความหนาและสีใหม่ */
+  border-radius: 10px;      /* ขอบโค้งเดิม */
+  border: 6px solid #74640a; /* ความหนาและสีใหม่ */
+
+  /* เงาและ shadow */
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+
+  /* ข้อความเงา */
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  margin-left: 2px;
+
+  /* Animation / Transition */
+  position: relative;
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+
+.Main_Container, .Main_Container2 {
+  width: 375px;
+  height: 289px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  box-sizing: border-box;
+  color: #fff;
+
+  /* Gradient background แทน PNG */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  /* Border + shadow ด้านนอก */
+  border-radius: 10px;
+  border: 6px solid #74640a;
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+
+  /* ข้อความเงา */
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 15px 15px 5px 15px;
+  position: relative;
+
+  /* ไม่จำกัด overflow เพื่อให้ shadow ด้านนอกเห็น */
+  overflow: visible;
+
+  margin-bottom: 10px;
+  transition: all 0.5s ease;
+}
+
+/* Glow effect ขยายภายใน container */
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;   /* ขยายภายใน ไม่ล้น */
+  height: 120%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+
+  /* สี glow เหมือนเดิม */
+  box-shadow: 0 0 50px 20px rgba(245, 169, 5, 0.999); 
+  animation: pulseGreen 2s infinite alternate ease-in-out;
+}
+
+@keyframes pulseGreen {
+  0% { box-shadow: 0 0 40px 10px rgba(188, 193, 40, 0.4); }
+  50% { box-shadow: 0 0 70px 25px rgba(183, 193, 40, 0.6); }
+  100% { box-shadow: 0 0 40px 10px rgba(193, 170, 40, 0.4); }
+}
+
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 40px 10px rgba(184, 37, 0, 0.4); }
+  50% { box-shadow: 0 0 70px 25px rgba(230, 57, 57, 0.6); }
+  100% { box-shadow: 0 0 40px 10px rgba(184, 37, 0, 0.4); }
+}
+
+
+.Main_Container, .glow {
+  transition: all 0.5s ease;
+}
+
+/* Total Bar Label Styling */
+#Total_Bar_Label {
+  display: inline-block;
+  padding: 8px 16px;
+  margin-top: -34px;
+  border: 4px solid #74640a;
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 50%,
+    #fff8e8 100%
+  );
+  color: #74640a;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Shared class for both total bar labels so they look identical */
+.total-bar-label {
+  display: inline-block;
+  padding: 8px 16px;
+  margin-top: -34px;
+  border: 4px solid #74640a;
+  border-radius: 8px;
+  background: linear-gradient(180deg,#f8f6f0 0%,#fffef8 50%,#fff8e8 100%);
+  color: #74640a;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+}
+
+
+.Floor_Container {
+  width: 300px;   /* ขนาดเดิม */
+  height: 80px;   /* ขนาดเดิม */
+  font-size: 12px;
+  font-weight: 700;  /* หนาขึ้น */
+  text-align: center;
+  box-sizing: border-box;
+  color: #fff;
+
+  /* Gradient background แทน PNG */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  /* ขอบโค้ง + ความหนาและสี */
+  border-radius: 10px;
+  border: 6px solid #74640a;
+
+  /* เงาและ shadow */
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+
+  /* ข้อความเงา */
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: visible;
+  padding: 15px;
+
+  /* Animation / Transition */
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+
+
+/* ================= Realtime Container ================= */
+.Realtime_Container {
+  width: 355px;  /* ปรับให้เท่ากับ Main_Container */
+  height: 220px;
+  padding: 10px;
+  position: relative;  /* เพื่อให้ canvas อยู่ภายใน container */
+  z-index: 1;          /* ต่ำสุด เพื่อไม่บังปุ่ม */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  /* Gradient background - เหมือน Meter */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  
+  /* ขอบโค้ง + สไตล์เหมือน Meter */
+  border-radius: 10px;      
+  border: 6px solid #74640a;
+  
+  /* เงาแบบ Meter */
+  box-shadow: 
+    1px 1px 0 #000,
+    -5px 5px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+}
+
+
+/* ================= Bottom Info ================= */
+.Bottom_info {
+  width: 200px;         /* กำหนดความกว้างของกล่อง */
+  height: auto;         /* ความสูงปรับตามรูป */
+  display: flex;        /* ใช้ flex จัดตำแหน่ง */
+  justify-content: center;  /* กึ่งกลางแนวนอน */
+  align-items: center;      /* กึ่งกลางแนวตั้ง */
+}
+
+.Bottom_info img {
+  max-width: 100%;      /* ปรับขนาดรูปไม่เกินกล่อง */
+  height: auto;         /* รักษาอัตราส่วน */
+  display: block;
+}
+
+/* Move version label slightly down */
+.Bottom_info .Version {
+  margin-top: 12px;
+}
+
+/* ================= Navbar ================= */
+.Navbar {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 20px auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.Todayinfo {
+  font-size: 14px;
+  text-shadow: 1px 2px 4px rgba(0,0,0,0.6);
+  white-space: nowrap;
+  margin-left: 10px;
+  position: relative;
+  left: 10px;  /* เลื่อนซ้าย 40px (ปรับค่าตามต้องการ) */
+}
+
+/* วันที่ซ้าย */
+#Date_icon {
+  position: relative;
+  width: 357px;
+  height: 20px;
+
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0px;
+  flex-wrap: nowrap;
+
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border-radius: 10px;
+  border: 6px solid #74640a;
+
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #201b02,
+    0 0 20px rgba(26, 20, 4, 0.55);
+
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  padding-top: 10px;
+  padding-left: 15px;
+  margin-left: -0px;
+  margin-bottom: 10px;
+
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+
+  overflow: hidden; /* ✅ เพิ่มเพื่อซ่อนส่วนเกิน */
+}
+
+/* ✅ ตัววิ่ง */
+#Date_icon .marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 12s linear infinite;
+}
+
+/* ✅ Animation */
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-200%); }
+}
+
+
+#Date_icon h2, 
+#Date_icon h1,
+#weather {
+  margin: 0;
+  padding: 0;
+  display: flex;           /* เปิด Flexbox */
+  justify-content: center; /* จัดกึ่งกลางแนวนอน */
+  align-items: center;     /* ถ้าต้องการกึ่งกลางแนวตั้งด้วย */
+  height: 100%;            /* กำหนดความสูงให้ Flexbox ทำงาน */
+}
+.Meter {
+  position: absolute;
+  right: 18px;
+  top: 60px;
+  width: 80px;
+  height: auto;
+  padding: 10px;
+
+  /* Gradient background */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  /* ขอบโค้ง + ความหนาและสี */
+  border-radius: 10px;      
+  border: 6px solid #74640a; 
+
+  /* เงาและ shadow */
+  box-shadow: 
+    0 0 20px rgba(255, 230, 160, 0.55);
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  /* Animation / Transition */
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+.Meter h1 {
+  font-size: 14px;
+  margin: 0;
+
+  /* ข้อความเงา */
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  color: #000000;
+  text-align: center;
+}
+
+#Date {
+  /* ป้องกันการขึ้นบรรทัดใหม่ */
+font-size: 14px;
+  color: #000000;
+    margin: 0px;
+    
+}
+/* กลุ่มไอคอนขวา */
+#Icons_group {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  gap: 2px;         /* ระยะห่างระหว่างไอคอน */
+  margin-left: 185px; /* ลดค่าจาก 60px → 20px เพื่อดันซ้าย */
+  margin-bottom: 10px; 
+}
+
+
+/* ไอคอนทั่วไป */
+.Navbar div img {
+
+  cursor: pointer;
+  display: block;
+  object-fit: contain;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+/* ปรับขนาดเฉพาะไอคอน */
+#Calendar_icon img { 
+  width: 30px; 
+  height: 30px; 
+  /* ปรับตำแหน่งเฉพาะ */
+  margin-top: 0px;  /* บวก/ลบเพื่อเลื่อนขึ้นลง */
+}
+
+#Kwang_icon img { 
+  width: 50px; 
+  height: 50px; 
+  margin-top: -5px; /* ตัวอย่างเลื่อนขึ้น 5px */
+}
+
+#Bell_icon img { 
+  width: 50px; 
+  height: 50px; 
+  margin-top: -4px; /* ตัวอย่างเลื่อนลง 5px */
+  margin-left: -15px;
+}
+/* Hover / Active */
+.Navbar div img:hover  { transform: scale(1.1); opacity: 0.9; }
+.Navbar div img:active { transform: scale(0.95); opacity: 0.8; }
+
+/* ================= Main Picinfo ================= */
+
+
+#Main_Picinfo {
+  position: absolute;
+  top: 46px;           /* ปรับตำแหน่งบน (moved down 6px total) */
+  left: 50px;          /* ปรับตำแหน่งซ้าย */
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  z-index: 10;
+}
+
+#Main_Picinfo img {
+  max-width: 65px;      /* ปรับสเกลให้พอดีกับ container */
+  height: auto;
+}
+
+/* Meter */
+#Meter_Pic {
+  position: absolute;
+  top: 90px;          /* ปรับตำแหน่งบน */
+  left: 210px;         /* ปรับตำแหน่งซ้าย */
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  z-index: 50;
+}
+
+#Meter_Pic img {
+  max-width: 120px;    /* ปรับสเกลให้พอดีกับ container */
+  height: auto;
+  border-radius: 7px;
+  align-items: center;
+}
+
+.Meterunit{
+   position: absolute;
+   top: 126px;
+   right: 68px;
+   width: 50px;
+   background-color: #000000;
+      z-index: 100;      
+}
+#Containerglow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;          /* กว้างกว่ากล่อง */
+  height: 120%;
+  transform: translate(-50%, -50%);
+  border-radius: 15px;  /* ทำให้โค้งเหมือนกล่อง */
+  background: radial-gradient(
+    circle,
+    rgba(245, 173, 4, 0.881) 0%,   /* เขียว */
+    rgba(0,255,0,0) 80%
+  );
+   
+  filter: blur(40px);       /* ทำให้กระจาย */
+  z-index: -1;              /* อยู่หลังกล่อง */
+  pointer-events: none;     /* ไม่รบกวนการคลิก */
+}
+
+/* Glow แสงหลอดไฟ */
+#Main_Picinfo .glow {
+  position: absolute;
+  top: 25%;
+  left: 40%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 50%;
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 100%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255,200,50,0.4) 20%,
+    rgba(255,200,50,0) 90%
+  );
+  filter: blur(30px);
+  z-index: 1;
+  transition: background 0.1s linear,
+              width 0.1s linear,
+              height 0.1s linear;
+}
+
+/* ================= Progress Bars ================= */
+.progress-container {
+  position: relative;     /* จาก absolute -> relative */
+  width: 140px;
+  height: 11px;
+  background-color: rgb(255, 247, 247);
+  box-shadow: inset 0 1px 2px rgba(73, 72, 72, 0.6);
+  border-radius: 6px;
+  overflow: visible;
+  margin: 6px 0;        /* เว้นระยะระหว่าง bar กับ element อื่น */
+}
+.progress-text {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: bold;
+  color: #000;
+}
+
+#floor1_Text {
+  position: absolute;
+  top: -3px;                 /* อยู่บนพื้นขาว */
+  left: 93%;              /* กึ่งกลางแนวนอน */
+  transform: translateX(-50%);
+  font-weight: bold;
+  color: #000;            /* สีตัวอักษร */
+  line-height: 20px;      /* ให้ตัวเลขอยู่กึ่งกลางสูง bar */
+  pointer-events: none;   /* คลิกไม่ไปโดน text */
+  z-index: 2;             /* อยู่เหนือ bar */
+  font-size: 8px;   /* ปรับเป็นขนาดที่ต้องการ */
+  color: #000;       /* สีตัวอักษร */
+
+
+}
+
+#floor1,
+#floor2 {
+  bottom: auto;           /* ยกเลิก bottom */
+  margin-left: -60px;
+  transform: none;   
+  font-size: 10px;  /* ปรับขนาดตัวเลขตามต้องการ */
+  font-weight: bold; /* หนาขึ้นถ้าต้องการ */
+  color: #0e0e0e
+     /* ยกเลิก translate */
+}
+
+
+.progress-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 1s ease-in-out,
+              background-color 0.5s ease-in-out;
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.5);
+}
+
+
+.floor-wrapper {
+  display: flex;
+  align-items: center;  /* ให้ bar และชื่ออยู่แนวเดียวกัน */
+  gap: 60px;            /* ระยะระหว่างชื่อกับ bar */
+  margin-right: 95px;
+}
+
+.Bar_name {     
+  margin: 0;  
+  padding: 0;      
+  width: 60px;
+  font-size: 12px;     
+  color: #000000; 
+}
+
+/* ================= Total Donut Label ================= */
+#Total_Bar_Label {
+  position: absolute;
+  top: 40px;
+  left: 32%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 700;
+  color: #2c1810;
+  text-align: center;
+  white-space: nowrap;
+  z-index: 1;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* ================= Total Donut Container ================= */
+#Total_Bar {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: -130px;
+  margin-top: 40px;
+
+  /* ขอบนอก + gradient */
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%, 
+    #fff,
+    #fff 45%, 
+    #fff 55%, 
+    #fff 100%
+  );
+  border: 4px solid #74640a;
+
+  /* เงา inset + glow */
+  box-shadow:
+    inset 0 0 8px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -12px 4px #3b3305,
+}
+
+/* Canvas ให้เต็ม container และเป็นวงกลม */
+#Total_Bar canvas {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* ตัวเลขตรงกลาง */
+#Total_Bar_Text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  font-weight: 700;
+  color: #2c1810;
+  text-align: center;
+  pointer-events: none;
+}
+
+
+  
+
+
+#Bar_Bg {
+  position: absolute;        /* วางทับหรือแยกจาก flow */
+  right: 65px;              /* ปรับตำแหน่งขวา */
+  top: 40%;                  /* กึ่งกลางแนวตั้ง */
+  transform: translateY(-50%); /* กึ่งกลางแนวตั้ง */
+  width: 86px;               /* ปรับความกว้าง */
+  height: 192px;             /* ปรับความสูง */
+  z-index: 1;                /* อยู่ใต้ Total_Bar */
+}
+
+#Bar_Bg img {
+  width: 100%;               /* ให้รูปเต็ม div */
+  height: 100%;              /* ให้รูปเต็ม div */
+  object-fit: cover;         /* ครอบเต็มพื้นที่ */
+  border-radius: 10px;
+}
+.Marker {
+  position: absolute;
+  width: 18px;   
+  height: 2px;
+  background-color: #100f0f;
+  border-radius: 10px;
+  z-index: 5;
+  display: flex;
+  justify-content: center; 
+  align-items: center;     
+  color: rgb(1, 1, 1); 
+  font-weight: bold;
+  font-size: 8px;
+}
+
+/* Marker1: เว้นตัวเลขบนเส้น */
+#marker1 {
+  top: 50%;
+  right: 215px;
+  flex-direction: column;   /* ตัวเลขบนเส้น */
+  align-items: center;
+  text-align: center;
+}
+
+#marker1::after {
+  content: "";
+  display: block;
+  width: 10px;       
+  height: 2px;       
+  background-color: #100f0f;
+  border-radius: 10px;
+  margin-top: 10px;   /* เว้นระยะตัวเลข */
+}
+
+/* Marker2 และ Marker3: ใช้แบบปกติ ไม่เว้น */
+#marker2 { top: 65%; right: 215px; }
+#marker3 { bottom: 65%; right: 215px; }
+
+.Realtime_kW {
+  position: absolute;
+  right: 8px;
+  bottom: 6.5px;   /* วางห่างจากขอบล่าง */
+  width: 65px;
+  height: 50px;
+
+  /* Gradient background แทนรูป */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  /* ขอบโค้ง + ความหนาและสี */
+  border-radius: 10px;
+  border: 4px solid #74640a; 
+
+  /* เงา */
+  box-shadow: 
+    1px 1px 0 #000,
+    -4px 4px #3b3305,
+    0 0 15px rgba(255, 230, 160, 0.55);
+
+  /* Layout */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* ข้อความ */
+  font-size: 14px;
+  color: #100f0f;
+  font-weight: bold;
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1),
+    1px 2px 4px rgba(0,0,0,0.6);
+
+  /* Animation / Transition */
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+
+/* ================= Chart ================= */
+
+
+.Realtime_Container canvas {
+  width: 300px;
+  height: 150px;
+  margin-top: 40px;   /* ขยับลงจากด้านบน */
+  padding-bottom: 20px; /* เพิ่ม margin ด้านล่าง */
+}
+
+
+#PickDate {
+  font-family: 'Roboto', serif;
+  font-size: 18px;
+  text-align: center;
+  position: relative;
+  top: 20px;      /* ขยับลง 20px จากตำแหน่งปกติ */
+  cursor: pointer;
+  user-select: none;
+  color: #fff;
+  z-index: 999;
+}
+
+/* ตัว "<" และ ">" แยกออกมาให้ขยับเล็กน้อย */
+#PickDate span {
+  margin: 0 8px;
+   z-index: 1001;
+}
+
+.popup-stats > div {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c1810;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 14px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.15);
+  margin-top: 15px; /* ระยะห่างจากวงกลม */
+  text-align: center;
+}
+
+/* CSS popup */
+/* ตัว popup ครอบ */
+#DatePopup {
+  display: none;          
+  position: fixed;        
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5); /* พื้นหลังโปร่งแสง */
+  display: flex;
+  justify-content: center; 
+  align-items: center;     
+  z-index: 1000;           
+}
+
+/* กล่องเนื้อหา popup */
+#popupContent {
+  background: #fff;         /* พื้นสีขาว */
+  padding: 20px 30px;       /* ระยะขอบ */
+  border-radius: 10px;      /* ขอบมน */
+  max-width: 400px;         /* กว้างสูงสุด */
+  width: 80%;               /* ปรับตามหน้าจอ */
+  max-height: 80%;          /* สูงสุด */
+  overflow-y: auto;         /* เลื่อนถ้าเนื้อหายาว */
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3); /* เงา */
+}
+
+.popup-content {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+#DailyBill {
+       /* ลอยอิสระไม่ขึ้นกับกล่องแม่ */
+  top: 50%;                  /* กึ่งกลางแนวตั้ง */
+  left: 30%;                 /* กึ่งกลางแนวนอน */  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+    text-shadow: 1px 2px 4px rgba(0,0,0,0.6); /* เพิ่มเงา */
+}
+.ClientName {
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap; 
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+  margin-left: 0;       /* เลื่อนไปซ้าย */
+  margin-right: auto;   /* กึ่งกลางหรือขยับขวาได้ */
+  position: relative;   /* หรือ absolute ถ้าต้องการวางทับ */
+  top: 0;               /* ลบ top ที่ไม่จำเป็น */
+}
+.Date_install{
+  font-size: 12px;
+  font-weight: bold;
+  top: 23%;            /* ปรับตำแหน่งแนวตั้ง */
+  right: 80% ;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+}
+.ClientNo {
+  font-size: 12px;
+  font-weight: bold;
+  top: 23%;            /* ปรับตำแหน่งแนวตั้ง */
+  right: 50% ;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+}
+
+
+.unit {
+  font-size: 14px;
+  font-weight: bold;
+  top: 50%;                  /* กึ่งกลางแนวตั้ง */
+  left: 50%; 
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6); /* เพิ่มเงา */
+}
+#kwangCurrentDay {
+  color: #000;
+  font-weight: bold;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 3px solid #74640a;
+  border-radius: 10px;
+  padding: 4px 8px;
+  text-align: center;
+  box-shadow:
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+  
+  margin: 0 5px; /* เว้นซ้ายขวา 5px */
+}
+
+#kwangPrevDay, #kwangNextDay {
+  color: #000;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 3px solid #74640a;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow:
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+  transition: 0.2s ease;
+
+  margin: 0 5px; /* เว้นซ้ายขวา 5px */
+}
+
+#kwangPrevDay:hover, #kwangNextDay:hover, #kwangCurrentDay:hover {
+  filter: brightness(1.1);
+}
+
+#currentDay, #prevDay, #nextDay {
+  color: #2c1810;       
+  font-weight: bold;     
+  font-size: 14px;       /* ลดฟอนต์ลงครึ่งหนึ่ง */
+  text-align: center;
+
+  /* Gradient แบบ Meter */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border: 6px solid #74640a; 
+  border-radius: 10px;       
+  
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.3),
+    0 -1px 0 rgba(0,0,0,0.1);
+
+  padding: 4px 10px;      /* ลด padding บน-ล่าง เหลือ 4px, ซ้าย-ขวา 10px */
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 1001;
+  position: relative;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#PickDate {
+  position: relative;
+  z-index: 999;
+  pointer-events: auto;
+}
+
+
+#currentDay:hover, #prevDay:hover, #nextDay:hover {
+  transform: scale(1.05);
+  box-shadow:
+    inset 0 0 8px rgba(0,0,0,0.2),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 15px rgba(255, 230, 160, 0.55);
+}
+
+
+/* เพิ่ม z-index ให้ container */
+
+
+
+#weather {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: -5px;
+  position: relative;      /* ⬅️ เพิ่มบรรทัดนี้ */
+  left: -10px; 
+  bottom: 3px;           /* ⬅️ เพิ่มบรรทัดนี้ (ปรับค่าตามต้องการ) */
+}
+
+#weather-city {
+  font-size: 14px;
+  color: #000000;
+    margin-top: 0px;
+    display:none;
+}
+
+#weather-icon {
+  font-size: 20px;
+  margin-top: 0px;
+  padding: 0;
+}
+
+#weather-temp {
+  font-size: 14px;
+  color: #000;
+    margin-top: 0px;
+}
+#EnergyChart {
+  width: 100%;
+  height: 500px;
+  width:10px;
+  pointer-events: none; /* ปล่อยให้ click ผ่านไป */
+  position: relative;
+  z-index: 1000; /* ต่ำกว่า #PickDate */
+  
+}
+/* ===== Calendar Popup ===== */
+#calendarPopup {
+  display: none; /* ซ่อนก่อน */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+#calendarPopup.active {
+  display: flex; /* โชว์ popup */
+}
+
+#calendar {
+  width: 1000px;
+  height: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;
+  background: linear-gradient(to bottom, #ebd09e 0%, #251f03 100%);
+}
+
+/* ===== Popup Content ===== */
+#DatePopup {
+  display: none;          
+  position: fixed;        
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center; 
+  align-items: center;     
+  z-index: 1000;           
+}
+
+#popupContent {
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 10px;
+  max-width: 400px;
+  width: 80%;
+  max-height: 80%;
+  overflow-y: auto;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* ===== Header Title ===== */
+.fc .fc-toolbar-title {
+  
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #000;
+  width: 250px;
+  height: 50px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 5px;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  box-shadow: 1px 1px 0 #000, -8px 6px #3b3305, 0 0 20px rgba(255, 230, 160, 0.55);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3), 0 -1px 0 rgba(0,0,0,0.1);
+}
+
+/* ===== Buttons ===== */
+.fc .fc-button, .fc .fc-button-primary {
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 2px solid #74640a;
+  border-radius: 8px;
+  color: #000;
+  font-weight: bold;
+  padding: 6px 12px;
+  cursor: pointer;
+  box-shadow: 1px 1px 0 #000, -4px 3px #3b3305, 0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3), 0 -1px 0 rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.fc .fc-toolbar-prev,
+.fc .fc-toolbar-next {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #090909;
+}
+
+/* ===== Table Day Cells ===== */
+.fc-theme-standard td, 
+.fc-theme-standard th {
+  border: 1px solid #101011;
+}
+
+.fc-daygrid-day {
+  min-height: 120px;
+  max-height: 120px;
+  width: 100px;
+  padding: 5px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg,#f8f6f0 0%,#fffef8 45%,#fff8e8 55%,#f5f0e5 100%);
+  border-radius: 0;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+}
+
+.fc-daygrid-day-frame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* keep date at top and events below */
+}
+
+.fc-daygrid-day-number {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+  margin-right: 0; /* remove large right margin that pushed events left */
+  padding-right: 6px;
+  align-self: flex-start; /* keep day number at the top-left when frame centers */
+  color: #090a0a;
+}
+
+/* ===== Event Harness ===== */
+.fc-daygrid-event-harness {
+  margin-top: auto; /* keep events area at bottom of the day frame */
+  display: block;
+}
+
+/* ===== Events ===== */
+.fc-event {
+  background: transparent !important;   /* ไม่มีพื้นหลัง */
+  border: none !important;             /* ไม่มีขอบ */
+  color: #000 !important;              /* ตัวอักษรสีดำ */
+  text-align: center !important;
+  padding: 0 !important;               /* ลบ padding */
+  box-shadow: none !important;         /* ไม่มีเงา */
+  font-weight: bold !important;        /* ตัวหนา */
+  white-space: normal !important;      /* ขึ้นบรรทัดใหม่ถ้าตัวหนังสือยาว */
+}
+
+.fc-event .fc-event-title {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  margin: 2px 0 !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
+.fc-event:hover {
+  filter: brightness(0.9);
+  cursor: pointer;
+  transform: scale(1.02);
+  transition: 0.2s;
+}
+
+/* ===== Today ===== */
+.fc .fc-day-today {
+  background: #fef3c7 !important;
+}
+
+/* ===== Column Header ===== */
+.fc .fc-col-header-cell-cushion {
+  width: 90px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #000;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  margin: 10px 0 10px 25px;
+  background: linear-gradient(
+    180deg,#f8f6f0 0%,#fffef8 45%,#fff8e8 55%,#f5f0e5 100%
+  );
+  border-radius: 6px;
+  box-shadow: 1px 1px 0 #000, -4px 3px #3b3305, 0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3),0 -1px 0 rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+}
+
+/* =================diff================= */
+   #overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none; /* เริ่มต้นซ่อน */
+    z-index: 1000;
+  }
+
+/* popup กลางจอ */
+
+/* ================= Kwang Circle ================= */
+.kwangcircle-container {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+
+  /* Gradient แบบ Meter */
+  background: radial-gradient(
+    circle at 30% 30%, 
+    #f8f6f0,
+    #fffef8 45%, 
+    #fff8e8 55%, 
+    #f5f0e5 100%
+  );
+
+  border: 3px solid #74640a;  /* ขอบเข้มแบบ Meter */
+
+  /* เงา inset + เงาขอบนอก */
+  box-shadow: 
+    inset 0 0 5px rgba(0,0,0,0.15),   /* เงาด้านใน */
+    1px 1px 0 #000,                    /* เงาเส้นขอบด้านบนซ้าย */
+    -4px 3px #3b3305,                  /* เงาเส้นขอบด้านล่างขวา */
+    0 0 12px rgba(255, 230, 160, 0.55); /* เงา glow ขอบนอก */
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  color: #2c1810;  
+  font-weight: bold;
+  text-align: center;
+  font-size: 14px;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-top: 15px;
+  cursor: pointer;
+}
+
+.kwangcircle-container:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    inset 0 0 8px rgba(0,0,0,0.2),
+    4px 4px 0 #000,
+    -5px 5px #3b3305,
+    0 0 15px rgba(255, 230, 160, 0.6);
+}
+
+
+/* ================= Daily Popup ================= */
+#dailyPopup.show {
+  display: flex; /* แสดง popup */
+}
+
+#dailyPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* Gradient แบบ Meter */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border: 3px solid #74640a;
+  border-radius: 12px;
+
+  box-shadow: 1px 1px 0 #000, -4px 3px #3b3305, 0 0 12px rgba(255, 230, 160, 0.55);
+
+  padding: 25px 30px;
+  max-width: 310px;
+  width: 90%;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  font-family: "Prompt", sans-serif;
+  text-align: center;
+  z-index: 1001;
+  overflow: visible;
+}
+
+#dailyPopup h3 {
+  margin: 10px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #4a2b07;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+/* ================= Circle Container ================= */
+.circle-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px; /* ระยะห่างระหว่างวงกลม */
+}
+
+/* ================= วงกลม Day Before / Yesterday ================= */
+#dailyDayBefore, #dailyYesterday {
+  width: 140px;
+  height: 140px;
+
+  /* Gradient แบบ .popupValue1 */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border: 6px solid #74640a; /* ขอบเข้มแบบ Meter */
+  border-radius: 50%;         /* เป็นวงกลม */
+
+  /* เงา inset + shadow แบบ .popupValue1 */
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  /* ข้อความ */
+  color: #2c1810;
+  font-weight: bold;
+  text-align: center;
+  font-size: 14px;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  margin-top: 10px; /* เว้นระยะจากบน */
+  cursor: pointer;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#dailyDayBefore:hover, #dailyYesterday:hover {
+  transform: scale(1.05);
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.2),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 15px rgba(255, 230, 160, 0.6);
+}
+
+
+/* ================= ค่าผลต่าง ================= */
+#dailyDiffValue {
+  font-size: 16px;
+  font-weight: bold;
+  color: #2c1810;
+
+  /* Gradient แบบ Meter */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border: 3px solid #74640a;
+  border-radius: 8px;
+  padding: 6px 12px;
+
+  /* เงา inset + shadow แบบ Meter */
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+
+  margin-top: 10px;
+  text-align: center;
+}
+
+
+
+
+.popupValue1 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #2c1810;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 6px solid #74640a;
+  border-radius: 10px;
+  padding: 8px 14px;
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 10px; /* เว้นระยะพอเหมาะ */
+  text-align: center;
+}
+
+.popupValue2 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #2c1810;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 6px solid #74640a;
+  border-radius: 10px;
+  padding: 8px 14px;
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 10px; /* เว้นระยะเท่ากัน */
+  text-align: center;
+}
+
+/* ปุ่ม */
+#dailyPopup .popup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px; /* ระยะห่างระหว่างปุ่ม */
+  margin-top: 20px; /* เพิ่มระยะห่างจาก Diff */
+}
+
+#dailyPopup button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+#downloadBtn {
+  background-color: #e74c3c; /* แดง */
+}
+#downloadBtn:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+}
+
+#shareBtn {
+  background-color: #2ecc71; /* เขียว */
+}
+#shareBtn:hover {
+  background-color: #27ae60;
+  transform: translateY(-2px);
+}
+.Kwang_baner {
+  position: absolute;
+  top: -2px;
+  right: -16px;
+  z-index: 0; /* อยู่หลัง element อื่นที่มี z-index สูงกว่า */
+}
+
+.daily-dates-arc {
+  display: flex;           /* จัดเรียงเป็นบรรทัดเดียว */
+  justify-content: center; /* จัดตรงกลางแนวนอน */
+  align-items: center;     /* จัดกลางแนวตั้ง */
+  gap: 50px;               /* ระยะห่างระหว่างสองวันที่ */
+  margin-top: 10px;        /* ขยับลงจากด้านบน */
+  margin-bottom: 10px; 
+}
+
+.daily-date-arc {
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+
+  /* Gradient แบบ Meter */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border: 3px solid #74640a; /* ขอบเข้มแบบ Meter */
+  border-radius: 8px;
+  padding: 6px 12px;
+
+  /* เงา inset + outer shadow แบบ Meter */
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+
+  color: #2c1810;
+}
+
+
+
+
+/* ================= Kwang Popup ================= */
+#kwangPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* Gradient แบบ Meter */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  /* ขอบ + radius เหมือน Meter */
+  border-radius: 10px;
+  border: 6px solid #74640a;
+
+  /* เงาเหมือน Meter */
+  box-shadow:
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+
+  /* Text */
+  color: #000;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  padding: 20px 25px;
+  max-width: 310px;
+  width: 90%;
+  text-align: center;
+
+  display: none; /* เริ่มต้นซ่อน */
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+
+  font-family: "Roboto", sans-serif;
+  z-index: 1001;
+  overflow: visible;
+}
+
+
+.kwangcircle-wrapper {
+  display: flex;           /* เรียงลูกในแนวนอน */
+  gap: 20px;               /* ระยะห่างระหว่างวงกลม */
+  justify-content: center; /* จัดกลางแนวนอน */
+  align-items: center;     /* จัดกลางแนวตั้ง */
+  width: 100%;             /* ครอบเต็ม popup */
+}
+
+
+
+#popupContent {
+
+  padding: 25px 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+      background-image: url('./images/noise.png');
+  background-size: cover;       /* ปรับขนาดให้เต็มหน้าจอ */
+  background-position: center;  /* กึ่งกลางรูป */
+  background-repeat: no-repeat; /* ไม่ทำซ้ำรูป */
+
+}
+
+#popupContent h3 {
+  font-size: 22px;
+  margin-bottom: 15px;
+  color: hsl(0, 0%, 0%);
+}
+
+#popupContent label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+#popupContent input[type="date"] {
+  padding: 8px 10px;
+  font-size: 14px;
+  margin-bottom: 15px;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+#popupContent p {
+  margin: 8px 0;
+  font-size: 15px;
+  color: #555;
+}
+
+#popupContent button {
+  margin-top: 15px;
+  padding: 8px 20px;
+  background-color: #10b981; /* สีเขียว */
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#popupContent button:hover {
+  background-color: #059669; /* สีเข้มเมื่อ hover */
+}
+
+.circle {
+  width: 100px;
+  height: 100px;
+  background-color: skyblue;
+  border-radius: 50%;
+  display: flex;                 /* เปิดใช้งาน flex */
+  justify-content: center;       /* จัดแนวนอนให้อยู่ตรงกลาง */
+  align-items: center;           /* จัดแนวตั้งให้อยู่ตรงกลาง */
+  font-size: 18px;               /* ขนาดตัวอักษร */
+  color: white;                  /* สีตัวอักษร */
+  font-weight: bold;             /* ตัวหนา (เลือกได้) */
+}
+
+.kwangcircle-container .home-icon {
+  width: 30px;       /* ปรับขนาดตามต้องการ */
+  height: 30px;
+  margin-bottom: 5px; /* เว้นระยะจากข้อความด้านล่าง */
+  margin-top: 1px;
+  object-fit: contain; /* ป้องกันรูปบิดเบี้ยว */
+}
+
+.kwangcircle-container .solar-cell-icon {
+  width: 35px;       /* ปรับขนาดตามต้องการ */
+  height: 35px;
+  margin-bottom: 5px; /* เว้นระยะจากข้อความด้านล่าง */
+  margin-top: 1px;
+  object-fit: contain; /* ป้องกันรูปบิดเบี้ยว */
+}
+
+.arrow {
+  margin-top: 0px;      /* เว้นระยะจากข้อความด้านบน */
+  display: inline-block; /* ให้อยู่ใต้ข้อความ */
+  padding: 0px;
+}
+/* เริ่มต้นซ่อน Share ตอน capture */
+
+/* Badge กระดิ่ง */
+#Bell_icon {
+  position: relative;
+  cursor: pointer;
+}
+
+#Bell_icon img {
+  display: block;
+}
+
+#Bell_icon {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Hide numeric badge on bell icon (UI requested) */
+#bellBadge {
+  display: none !important;
+}
+
+
+/* Popup notification */
+#notificationPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 350px;
+  max-height: 500px;
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 6px solid #74640a; /* ขอบเข้มแบบ Meter */
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55); /* เงา inset + เงาขอบนอก */
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  padding: 10px;
+  box-sizing: border-box;
+}
+#notificationItems::-webkit-scrollbar {
+  display: none;
+}
+#notificationItems {
+  max-height: 450px;
+  overflow-y: auto;
+   scrollbar-width: none;
+     -webkit-overflow-scrolling: touch;
+
+}
+
+.notification-item {
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  transform: translateX(-2px);
+}
+
+/* Report Action Modal */
+.report-modal {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+.report-modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border-radius: 10px;
+  border: 6px solid #74640a;
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+  padding: 20px 25px;
+  max-width: 310px;
+  width: 90%;
+  animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  padding: 0 0 12px 0;
+  border-bottom: 2px solid rgba(116, 100, 10, 0.2);
+  text-align: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #74640a;
+  letter-spacing: -0.02em;
+}
+
+.modal-body {
+  padding: 12px 0 0 0;
+}
+
+.modal-description {
+  margin: 0 0 15px 0;
+  font-size: 13px;
+  color: #555;
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.report-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.report-action-btn:hover::before {
+  opacity: 1;
+}
+
+.report-action-btn:hover {
+  transform: translateY(-2px);
+}
+
+.report-action-btn:active {
+  transform: translateY(0);
+}
+
+.report-action-btn svg {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s ease;
+}
+
+.download-btn {
+  border-color: #8B4513;
+  background: linear-gradient(135deg, #8B4513 0%, #74640a 100%);
+  color: white;
+}
+
+.download-btn:hover {
+  border-color: #74640a;
+  box-shadow: 0 8px 20px rgba(139, 69, 19, 0.4);
+}
+
+.download-btn svg {
+  stroke: white;
+}
+
+.download-btn:hover svg {
+  transform: translateY(2px);
+}
+
+.share-btn {
+  border-color: #d4a574;
+  background: linear-gradient(135deg, #d4a574 0%, #b8935f 100%);
+  color: white;
+}
+
+.share-btn:hover {
+  border-color: #b8935f;
+  box-shadow: 0 8px 20px rgba(212, 165, 116, 0.4);
+}
+
+.share-btn svg {
+  stroke: white;
+}
+
+.share-btn:hover svg {
+  transform: scale(1.1);
+}
+
+.btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  text-align: left;
+}
+
+.btn-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  display: block;
+}
+
+.btn-subtitle {
+  font-size: 12px;
+  opacity: 0.85;
+  font-weight: 400;
+  line-height: 1.3;
+  display: block;
+  margin-top: 2px;
+}
+
+.modal-footer {
+  padding: 12px 0 0 0;
+  border-top: 2px solid rgba(116, 100, 10, 0.2);
+  margin-top: 12px;
+}
+
+.report-cancel-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  color: #8B4513;
+  border: 2px solid rgba(139, 69, 19, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.report-cancel-btn:hover {
+  background: rgba(139, 69, 19, 0.05);
+  border-color: rgba(139, 69, 19, 0.3);
+  color: #74640a;
+}
+
+.report-cancel-btn:active {
+  background: rgba(139, 69, 19, 0.1);
+  transform: scale(0.98);
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0;
+  }
+  to { 
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from { 
+    transform: translate(-50%, -48%);
+    opacity: 0;
+  }
+  to { 
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .report-modal-content {
+    width: 95%;
+    max-width: none;
+  }
+  
+  .report-action-btn {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  
+  .btn-title {
+    font-size: 14px;
+  }
+  
+  .btn-subtitle {
+    font-size: 11px;
+  }
+}
+
+#reportWrapper {
+    width: 794px;          /* ขนาด A4 กว้าง */
+    min-height: 1123px;    /* ขนาด A4 สูง */
+    padding: 60px 40px 40px 40px;
+    background-color: #fff;
+    border: 3px solid #8B4513;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    font-family: Arial, sans-serif;
+    text-align: center;
+    box-sizing: border-box;
+
+    /* อยู่กลางจอ */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: top left;
+
+    /* ให้เนื้อหา overflow ได้ */
+    overflow: visible;
+    opacity: 0; /* ซ่อนตอนไม่ใช้งาน */
+}
+#reportWrapper p {
+  text-align: left;
+  margin: 4px 0;
+}
+
+#reportWrapper h2 {
+    margin-bottom: 15px;
+    color: #8B4513;
+    font-size: 28px;
+}
+
+#reportWrapper p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.info-container {
+  display: flex;
+  justify-content: space-between; /* ให้ box1 ซ้าย box2 ขวา */
+  gap: 20px; /* ระยะห่างระหว่างกล่อง */
+}
+
+.info-box1 {
+  border: 2px solid #ecc246ff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  background-color: #fff5e6; /* สีอ่อนส้ม */
+  width: 49%;
+  box-sizing: border-box;
+  text-align: left;
+  float: left; /* วางซ้าย */
+}
+.padded-bottom {
+  padding-bottom: 8px; /* ปรับค่าได้ตามต้องการ */
+}
+.info-box2 {
+  border: 2px solid #50bcf2ff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  background-color: #e6f0ff; /* สีอ่อนฟ้า */
+  width: 49%;
+  box-sizing: border-box;
+  text-align: left;
+  float: right; /* วางขวา */
+}
+
+
+#kwangHourlyTable {
+    width: 100%;              /* กว้างเต็มจอ */
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+#kwangHourlyTable th, #kwangHourlyTable td {
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    text-align: center;
+    font-size: 12px;
+    word-wrap: break-word;
+}
+
+#kwangHourlyTable th {
+    background-color: #f5f5f5;
+}
+
+#kwangHourlyTable tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+
+
+#info_icon {
+  position: absolute; /* จำเป็น */
+  top: 4%;          /* ระยะจากบน */
+  left: 10px;        /* ระยะจากขวา */
+  width: 40px;
+  height: 40px;
+  z-index: 10;
+  display: none;
+}
+
+#maincon_info {
+  position: relative; /* หรือ relative ขึ้นกับว่าต้องการวางแบบไหน */
+  top: -290px;          /* ระยะจากด้านบน */
+  right: 100%;         /* ระยะจากด้านซ้าย */
+  z-index: 10;        /* วางเหนือ element อื่น */
+  display:none;
+  opacity: 0;              /* สำหรับ animation fade */
+  transition: opacity 0.4s ease; /* ความลื่นของ fade */
+}
+#info_icon img {
+  width: 50%;
+  height: 100%;
+  object-fit: contain; /* รักษาสัดส่วน */
+}
+
+#Bar_info {
+  width: 140px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 250px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: 45%;          /* ระยะจากบน */
+  left: 220px;    
+}
+
+#Bar_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 10%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;          /* สีตัวเลข */
+}
+
+#Bar_text {
+  display: block;
+  margin-top: 210px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+   font-weight: bold;
+}
+
+#Popup_info {
+  width: 140px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 50px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: -20%;          /* ระยะจากบน */
+  left: 190px;  
+}
+
+#Popup_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 10%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+
+#Popup_text {
+  display: block;
+  margin-top: 200px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+  border: 2px solid #ec1717ff;    /* กรอบสีขาว */
+  border-radius: 5px;         /* มุมโค้งเล็กน้อย */
+  padding: 5px 8px;           /* เว้นระยะด้านในข้อความ */
+  background-color: rgba(0,0,0,0.5); /* พื้นหลังโปร่งเล็กน้อย */
+}
+
+.line-horizontal  {
+  width: 30px;              /* ความยาวเส้น */
+  height: 2px;               /* ความหนาเส้น */
+  background-color: #ec0909ff;    /* สีของเส้น */
+  
+  position: absolute;        /* สามารถขยับอิสระ */
+  top: 25px;                 /* ระยะจากบน container */
+  left: -30px;                /* ระยะจากซ้าย container */
+}
+.line-horizontal2  {
+  width: 30px;              /* ความยาวเส้น */
+  height: 2px;               /* ความหนาเส้น */
+  background-color: #ec0909ff;    /* สีของเส้น */
+  
+  position: absolute;        /* สามารถขยับอิสระ */
+  top: 223px;                 /* ระยะจากบน container */
+  left: -30px;                /* ระยะจากซ้าย container */
+}
+.line-vertical {
+  position: absolute;
+  top: 25px;            /* ระยะจากบน container */
+  left: -22%;          /* ระยะจากซ้าย container */
+  width: 2px;           /* ความหนาเส้น */
+  height: 200px;        /* ความยาวเส้น */
+  background-color: #f20909ff;
+}
+
+#Amp_info {
+  width: 140px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 100px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: 2.5%;          /* ระยะจากบน */
+  left: 190px;   
+}
+
+#Amp_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 10%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+
+#Amp_text {
+  display: block;
+  margin-top: 70px;
+  margin-left : 10px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+#Name_info {
+  width: 185px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 140px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: -80%;          /* ระยะจากบน */
+  left:-44px;   
+}
+
+#Name_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 10%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+
+#Name_text {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+
+#Bill_info {
+  width: 185px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 140px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: -80%;          /* ระยะจากบน */
+  left: 153px;   
+}
+
+#Bill_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 10%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+
+#Bill_text {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+#BillCal_text {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+#Bill_info {
+  width: 185px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 140px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: -80%;          /* ระยะจากบน */
+  left: 153px;   
+}
+
+#Bill_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 10%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+
+#Bill_text {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+#Bill_info {
+  width: 185px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 140px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: -80%;          /* ระยะจากบน */
+  left: 153px;   
+}
+
+#Bill_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 10%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+
+#Bill_text {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+#BillCal_text {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+#Floor_info {
+  width: 310px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 90px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: 95%;          /* ระยะจากบน */
+  left: -10px;   
+}
+
+#Floor_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 1px;            
+  left: 5%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+#Floor_text {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+#Floor_text2 {
+  display: block;
+  margin-top:5px;
+  margin-left : 30px;
+  font-size: 8px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+
+#Chart_info {
+  width: 370px;          /* ความกว้างของสี่เหลี่ยม */
+  height: 220px;         /* ความสูง */
+  background-color: rgba(0, 0, 0, 0.6); /* สีดำโปร่งแสง 50% */
+  border: 3px solid #ea0505ff; /* เส้นขอบ */
+  border-radius: 5px;    /* ปรับโค้งมุมเล็กน้อย */
+  position: absolute;    /* สำหรับวาง child ถ้าต้องการ */
+  margin: 20px auto;   
+  z-index: 20;  /* วางตรงกลาง container (แนวนอน) */
+  top: 85%;          /* ระยะจากบน */
+  left: -30px;   
+}
+
+#Chart_number {
+  position: absolute;   /* ขยับตาม top/left */
+  top: 5px;            
+  left: 5%;            
+  transform: translateX(-50%);
+  
+  width: 20px;          /* ขนาดวงกลม */
+  height: 20px;
+  background-color: #ea0505ff; /* สีพื้นวงกลม */
+  border-radius: 50%;   /* ทำเป็นวงกลม */
+  
+  display: flex;        /* จัดเลขตรงกลางวงกลม */
+  justify-content: center;
+  align-items: center;
+  
+  font-size: 14px;
+  font-weight: bold;
+  color: #f8f6f6ff;            /* ไม่ย่อเมื่อขนาดข้อความยาว */
+}
+#Chart_text {
+  display: block;
+  margin-top:10px;
+  margin-left : 40px;
+  font-size: 8.5px;
+  line-height: 1.4;
+  color: #fff;
+  text-align: left;
+  font-weight: bold;
+  
+}
+
+
+
+/* ✅ ขยายเฉพาะ iPad (แนวนอนและแนวตั้ง) */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  html {
+    zoom: 1.8;                /* ✅ ใช้ zoom แทน transform */
+  }
+  #maincon_info {
+  position: relative; /* หรือ relative ขึ้นกับว่าต้องการวางแบบไหน */
+  top: -290px;          /* ระยะจากด้านบน */
+  right: 68%;         /* ระยะจากด้านซ้าย */
+  z-index: 10;        /* วางเหนือ element อื่น */
+  display:none;
+  opacity: 0;              /* สำหรับ animation fade */
+  transition: opacity 0.4s ease; /* ความลื่นของ fade */
+  
+}
+
+.ClientName {
+  font-size: 22px;
+  font-weight: bold;
+  white-space: nowrap; 
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+  margin-left: 0;       /* เลื่อนไปซ้าย */
+  margin-right: auto;   /* กึ่งกลางหรือขยับขวาได้ */
+  position: relative;   /* หรือ absolute ถ้าต้องการวางทับ */
+  top: 0;               /* ลบ top ที่ไม่จำเป็น */
+}
+.Date_install{
+  font-size: 18px;
+  font-weight: bold;
+  top: 23%;            /* ปรับตำแหน่งแนวตั้ง */
+  right: 80% ;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+}
+.ClientNo {
+  font-size: 18px;
+  font-weight: bold;
+  top: 23%;            /* ปรับตำแหน่งแนวตั้ง */
+  right: 50% ;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+}
+#DailyBill {
+       /* ลอยอิสระไม่ขึ้นกับกล่องแม่ */
+  top: 50%;                  /* กึ่งกลางแนวตั้ง */
+  left: 30%;                 /* กึ่งกลางแนวนอน */  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+    text-shadow: 1px 2px 4px rgba(0,0,0,0.6); /* เพิ่มเงา */
+}
+.unit {
+  font-size: 16px;
+  font-weight: bold;
+  top: 50%;                  /* กึ่งกลางแนวตั้ง */
+  left: 50%; 
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6); /* เพิ่มเงา */
+}
+
+#weather-city {
+  font-size: 12px;
+  color: #000000;
+    margin-top: 0px;
+    display:none;
+}
+
+#weather-icon {
+  font-size: 16px;
+  margin-top: 1px;
+  padding: 0;
+}
+
+#weather-temp {
+  font-size: 9px;
+  color: #000;
+    margin-top: 0px;
+}
+#Date {
+  /* ป้องกันการขึ้นบรรทัดใหม่ */
+font-size: 14px ;
+  font-size: 10px;
+  color: #000000;
+    margin: 0px;
+    
+}
+
+.Bar_name {
+  margin: 0;       
+  padding: 0;      
+  width: 60px;
+  font-size: 18px;     
+  color: #000000; 
+}
+
+.Meter h1 {
+font-size: 18px;
+margin: 0;
+text-shadow: 1px 2px 4px rgba(0,0,0,0.6);
+color: #000000;
+}
+
+.popupValue2 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #2c1810;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 14px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.15);
+}
+.popupValue1 {
+  font-size: 20px;
+}
+#kwangPower{
+    font-size: 20px;
+}
+#kwangCapacity{
+    font-size: 20px;
+}
+
+#dayBeforeDate{
+    font-size: 20px;
+  
+}
+#yesterdayDate{
+    font-size: 20px;
+    
+}
+.daily-dates-arc {
+  display: flex;           /* จัดเรียงเป็นบรรทัดเดียว */
+  justify-content: center; /* จัดตรงกลางแนวนอน */
+  align-items: center;     /* จัดกลางแนวตั้ง */
+  gap: 110px;               /* ระยะห่างระหว่างสองวันที่ */
+  margin-top: 10px;        /* ขยับลงจากด้านบน */
+  margin-bottom: 10px; 
+}
+
+#dailyDiffValue {
+  font-size: 22px;
+  font-weight: bold;
+  color: #2c1810;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 14px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.15);
+  margin-top: 15px; /* เพิ่มระยะห่างจากวงกลม */
+}
+#dailyDayBefore, #dailyYesterday {
+  width: 140px;
+  height: 140px;
+
+  /* Gradient แบบ .Meter */
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border: 6px solid #74640a;  /* ขอบเข้มแบบ Meter */
+  border-radius: 50%;          /* ทำเป็นวงกลม */
+
+  /* เงาแบบ Meter */
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  /* ข้อความเหมือน Meter */
+  color: #2c1810;
+  font-weight: bold;
+  text-align: center;
+  font-size: 12px;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#dailyDayBefore:hover, #dailyYesterday:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    1px 1px 0 #000,
+    -8px 6px #3b3305,
+    0 0 20px rgba(255, 230, 160, 0.55);
+}
+
+
+
+  #calendar {
+  width: 1000px;       /* ล็อกความกว้าง */
+  height: 800px;       /* ล็อกความสูง */
+  margin: 20px auto;
+  background-size: cover;        /* ขยายเต็มพื้นที่ */
+  background-position: center;   /* จัดกึ่งกลาง */
+  background-repeat: no-repeat;  /* ไม่ทำซ้ำ */
+  background-image: url("./images/BG.png");
+  border-radius: 16px;
+  padding: -0px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;    /* ป้องกัน scroll เกิน */
+}
+
+/* ===== ส่วน header (ปุ่ม + title) ===== */
+.fc .fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #000000;
+  width: 250px;
+  height: 25px;
+  border-radius: 6px;
+  background-image: url("./images/noise.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;               /* เพิ่ม flex */
+  justify-content: center;     /* กึ่งกลางแนวนอน */
+  align-items: center; 
+  margin: 5px;
+}
+
+.fc .fc-toolbar-prev {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #090909;
+}
+
+.fc .fc-button {
+  border: none;
+  color: #fff;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+
+
+
+/* ปุ่ม Today */
+.fc .fc-button-primary {
+  background: #c3b279;
+  color: #000;
+}
+
+.fc .fc-button-primary:hover {
+  background: #963305;
+}
+
+/* ===== ตารางวัน ===== */
+.fc-theme-standard td, 
+.fc-theme-standard th {
+  border: 1px solid #e5e7eb;
+}
+.fc-event {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: black !important;
+  display: flex !important;
+  justify-content: center !important; /* กึ่งกลางแนวนอน */
+  align-items: flex-start !important; /* ชิดบน */
+  padding: 0 !important;
+}
+
+/* ===== วันปัจจุบัน ===== */
+.fc .fc-day-today {
+  background: #fef3c7 !important;
+}
+
+/* ===== กิจกรรม (events) ===== */
+.fc-event {
+  border-radius: 8px;
+  padding: 2px 0px;
+  font-size: 2rem;
+  font-weight: bold;
+  border: none;
+}
+
+.fc-event:hover {
+  filter: brightness(0.9);
+  cursor: pointer;
+  transform: scale(1.02);
+  transition: 0.2s;
+}
+
+/* ===== ช่องวัน ===== */
+.fc-daygrid-day {
+  min-height: 120px;   /* ความสูงขั้นต่ำ */
+  max-height: 120px;   /* ล็อกความสูง */
+  width: 10px;        /* ความกว้างของแต่ละวัน */
+  padding: 4px;        /* ระยะห่างภายในช่อง */
+  box-sizing: border-box;
+  background-image: url("./images/noise.png");
+  background-size: cover;        /* ขยายเต็มพื้นที่ */
+  background-position: center;   /* จัดกึ่งกลาง */
+  background-repeat: no-repeat;  /* ไม่ทำซ้ำ */
+}
+
+/* ปรับพื้นที่ภายในวัน (frame) */
+.fc-daygrid-day-frame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ปรับเลขวัน ให้อยู่บนสุด */
+.fc-daygrid-day-number {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+  margin-right: 62px;
+  color: #090a0a;
+}
+
+/* เพิ่มช่องว่างสำหรับ event */
+.fc-daygrid-event-harness {
+  margin-top: auto; /* ทำให้ event อยู่ด้านล่างเลขวัน */
+}
+.fc .fc-col-header-cell-cushion {
+  font-size: 1rem;           /* ขนาดตัวอักษร */
+  font-weight: bold;          /* ความหนา */
+  color: #fafbfc;             /* สีตัวอักษร */
+  font-family: 'Cinzel', serif; /* ฟอนต์ */
+  text-transform: uppercase;  /* แปลงเป็นตัวพิมพ์ใหญ่ */
+  background-size: cover;        /* ขยายเต็มพื้นที่ */
+  background-position: center;   /* จัดกึ่งกลาง */
+  background-repeat: no-repeat;  /* ไม่ทำซ้ำ */
+  background-image: url("./images/noise.png");
+}
+}
+@media screen and (max-width: 450px) {
+  #Total_Bar {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: -120px;
+  margin-bottom: 10px;
+  margin-top: 40px;}
+  /* Container ปฏิทิน */
+  #calendar {
+    width: 100%;      /* เต็มความกว้างหน้าจอ */
+    max-width: 320px; /* จำกัดสูงสุด */
+    height: 100%;
+     max-height: 500px;
+    padding: 9px;
+  
+  }
+
+  /* Toolbar (Title + Buttons) */
+  .fc .fc-toolbar-title {
+    font-size: 1rem !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 2px 4px !important;
+    margin: 2px !important;
+  }
+  .fc .fc-toolbar-prev,
+  .fc .fc-toolbar-next,
+  .fc .fc-button {
+    font-size: 0.8rem !important;
+    padding: 2px 6px !important;
+  }
+  .fc .fc-button-primary {
+    font-size: 0.8rem !important;
+    padding: 2px 6px !important;
+  }
+
+  /* ตารางวัน */
+  .fc-daygrid-day {
+    max-height: 10px !important;
+    width: 40px !important;
+    padding: 0px !important;
+  }
+
+  /* ตัวเลขวัน */
+.fc-daygrid-day-number {
+  font-size: 0.5rem !important;
+  margin-right: 0 !important;
+  margin-bottom: 2px !important;
+  text-align: right;
+  padding-right: 2px; /* ปรับระยะเลขวัน */
+}
+
+  /* Event */
+  .fc-event {
+    font-size: 0.65rem !important;
+    padding: 1px 2px !important;
+  }
+  .fc-event .fc-event-title {
+     font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+
+.fc .fc-col-header-cell-cushion {
+  width: 39px; /* ลดความกว้างลงจาก 90px */
+  height: 20px; /* เพิ่มหรือลดตามต้องการ */
+  font-size: 0.6rem; /* ลดขนาดตัวอักษร */
+  font-weight: bold;
+  color: #030303;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  margin: 0px 0px 0px 2px; /* ลด margin */
+  background: linear-gradient(
+    180deg,#f8f6f0 0%,#fffef8 45%,#fff8e8 55%,#f5f0e5 100%
+  );
+  border-radius: 4px; /* ลดมุมขอบ */
+  box-shadow: 1px 1px 0 #000, -2px 2px #3b3305, 0 0 8px rgba(255, 230, 160, 0.55); /* ลดเงา */
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3), 0 -1px 0 rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+  /* Day today highlight */
+  .fc .fc-day-today {
+    background: #fef3c7 !important;
+  }
+  #maincon_info {
+  top: -290px;          /* ระยะจากด้านบน */
+  right: 100%;         /* ระยะจากด้านซ้าย */
+  z-index: 10;        /* วางเหนือ element อื่น */
+}
+}
+
+@media screen and (max-width: 375px) {
+  html, body { overflow-x: hidden; }
+  #calendarPopup {
+    display: none; /* ซ่อนก่อน */
+    position: fixed;
+    top: 0;
+    left: 0; /* ป้องกันล้นซ้าย */
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+  #EnergyChart {
+    left: 0;            /* ไม่ให้เลื่อนลบ */
+    width: 90%;
+    height: 300px;
+  }
+.Meter {
+  position: absolute;
+  right: 18px;
+  top: 110px;
+  width: 80px;
+  height: auto;
+  padding: 10px;}
+#Date_icon {
+  width: 94%;   /* แทน 357px ให้เต็มประมาณ 80% ของ container */
+}
+#Total_Bar {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: -8px; /* ยกเลิกค่าติดลบ */
+  margin-top: 40px;
+}
+.Top_Container,
+.Main_Container {
+  width: 100%;
+  max-width: 400px;   /* ปรับตาม layout */
+  box-sizing: border-box;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+/* Move install date and client number slightly left to align with ClientName */
+.Top_Container .ClientName_Container .Date_install,
+.Top_Container .ClientName_Container .ClientNo {
+  transform: translateX(-2.5%); /* adjusted: move right 2% (previously 5%) */
+  /* fallback for older rules that set 'right' - make right shift certain */
+  margin-left: -2.5%;
+}
+
+.ClientName {
+  font-size: 10.5px;
+  font-weight: bold;
+  white-space: nowrap; 
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+  margin-left: 0;       /* เลื่อนไปซ้าย */
+  margin-right: auto;   /* กึ่งกลางหรือขยับขวาได้ */
+  position: relative;   /* หรือ absolute ถ้าต้องการวางทับ */
+  top: 0;               /* ลบ top ที่ไม่จำเป็น */
+}
+.Date_install{
+  font-size: 10.5px;
+  font-weight: bold;
+  top: 23%;            /* ปรับตำแหน่งแนวตั้ง */
+  right: 80% ;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+}
+.ClientNo {
+  font-size: 10.5px;
+  font-weight: bold;
+  top: 23%;            /* ปรับตำแหน่งแนวตั้ง */
+  right: 50% ;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+}
+#DailyBill {
+       /* ลอยอิสระไม่ขึ้นกับกล่องแม่ */
+  top: 50%;                  /* กึ่งกลางแนวตั้ง */
+  left: 30%;                 /* กึ่งกลางแนวนอน */  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+    text-shadow: 1px 2px 4px rgba(0,0,0,0.6); /* เพิ่มเงา */
+}
+.ClientName_Container{
+    width: 160px;
+  height: 85px;
+  font-size: 12px;
+  /* shift further left */
+  margin-left: -8px;
+}
+
+.ElectricalBill_Container {
+      width: 160px;
+  height: 85px;
+  font-size: 12px;
+  margin-left: 2px;
+}
+.Realtime_Container {
+  width: 340px;
+  height: 218px;
+  font-size: 12px;
+}
+#EnergyChart {
+  position: relative;
+  left: 0;           /* ไม่ให้ล้นซ้าย */
+  width: 90%;
+  height: 300px;
+}
+#Main_Picinfo {
+  position: absolute;
+  top: 46px;           /* ปรับตำแหน่งบน (moved down 6px total) */
+  left: 20px;          /* ปรับตำแหน่งซ้าย */
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  z-index: 10;
+}
+#Calendar_icon{
+  margin-top: 2px; 
+}
+#weather {
+  bottom: 3px;  
+}
+
+  #maincon_info {
+    position: relative;
+    top: 0;
+    right: auto;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    z-index: 10;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+.neon-btn {
+  background: linear-gradient(180deg, #f8f6f0 0%, #fffef8 45%, #fff8e8 55%, #f5f0e5 100%);
+  color: #000000;
+  border: 6px solid #74640a;
+  border-radius: 9999px;
+  box-shadow: 1px 1px 0 #000, -8px 6px #3b3305, 0 0 20px rgba(255,230,160,0.55);
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3), 0 -1px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  padding: 16px 40px;
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+/* ================= Responsive: 375px (iPhone X, etc.) ================= */
+@media (max-width: 375px) {
+  html, body { overflow-x: hidden; }
+  body {
+    margin: 30px auto 10px auto;
+    padding: 0;
+    align-items: center;
+    max-width: 100%;
+  }
+  
+  .Main_Container,
+  .Realtime_Container,
+  .Floor_Container,
+  .Bottom_info,
+  #Date_icon {
+    margin-left: auto;
+    margin-right: auto;
+  }
+   .Main_Container,
+  .Bottom_info {
+    width: 95%; /* reduce width to 90% of viewport/container */
+}
+
+/* Very small screens: reduce ClientName by 2px (requested) */
+@media (max-width: 370px) {
+  /* Ensure ClientName matches Date_install and ClientNo on very small screens */
+  .Top_Container .ClientName,
+  .ClientName_Container .ClientName {
+    font-size: 10px !important; /* match .Date_install / .ClientNo */
+    line-height: 1.1;
+  }
+}
+  .Realtime_Container {
+    width: 95%;
+    max-width: 360px; /* ให้สัมพันธ์กับ viewport */
+  }
+  .Floor_Container{
+    width: 82%; /* reduce width to 90% of viewport/container */
+    max-width: 365px; /* keep original ceiling */
+  }
+  #Date_icon {
+    width: 88%;
+    max-width: 357px;
+    left: 0;
+  }
+ .ClientName{
+   font-size: 12px;
+   right: 5%;
+}
+.Date_install{
+   font-size: 10px;
+}
+.ClientNo{
+   font-size: 10px;
+}
+#DailyBill{
+   font-size: 18px;
+
+}
+.unit{
+   font-size: 16px; 
+}
+#Total_Bar{
+    width: 160px;
+    height: 160px;
+    margin-right: 110px;
+  }
+  .Meter {
+     left: 210px;
+     top: 60px;
+
+}
+}
+/* Responsive: shrink Realtime container horizontally by 10% on small screens */
+@media (max-width: 600px) {
+  .Realtime_Container {
+    width: 90%; /* reduce width to 90% of viewport/container */
+    max-width: 365px; /* keep original ceiling */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* Make the existing HTML `class="Containerglow"` work like the original glow */
+.Containerglow,
+#Containerglow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  transform: translate(-50%, -50%);
+  border-radius: 15px;
+  background: radial-gradient(
+    circle,
+    rgba(245, 173, 4, 0.881) 0%,
+    rgba(0,255,0,0) 80%
+  );
+  filter: blur(40px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.Main_Container2, .Containerglow {
+  transition: all 0.5s ease;
+}
+
+/* Total bar variants for the second container */
+#Total_Bar_Label2 {
+  position: absolute;
+  top: 40px;
+  left: 32%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 700;
+  color: #2c1810;
+  text-align: center;
+  white-space: nowrap;
+  z-index: 1;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+#Total_Bar2 {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: -130px;
+  margin-top: 40px;
+
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%, 
+    #fff,
+    #fff 45%, 
+    #fff 55%, 
+    #fff 100%
+  );
+  border: 4px solid #74640a;
+
+  box-shadow:
+    inset 0 0 8px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -12px 4px #3b3305,
+}
+
+#Total_Bar2 canvas {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50%;
+  background: transparent;
+}
+
+#Total_Bar_Text2 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  font-weight: 700;
+  color: #2c1810;
+  text-align: center;
+  pointer-events: none;
+}
+
+.Meter2 {
+  position: absolute;
+  right: 18px;
+  top: 60px;
+  width: 80px;
+  height: auto;
+  padding: 10px;
+
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+
+  border-radius: 10px;      
+  border: 6px solid #74640a; 
+  box-shadow: 0 0 20px rgba(255, 230, 160, 0.55);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+.Meter2 h1 {
+  font-size: 14px;
+  margin: 0;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3), 0 -1px 0 rgba(0, 0, 0, 0.1);
+  color: #000000;
+  text-align: center;
+}
+
+/* ========== PageView (swipe cards) ========== */
+.page-view {
+  width: 375px;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  overflow: visible; /* allow shadows to show */
+  margin-bottom: 10px;
+}
+.page-track {
+  position: relative;
+  width: 100%;
+  touch-action: pan-y;
+}
+.page {
+  width: 100%;
+  display: none; /* hidden by default; JS will show active page */
+  justify-content: center;
+  align-items: center;
+}
+.page.active {
+  display: flex;
+}
+/* ensure container boxes don't shrink on small screens */
+.page .Main_Container,
+.page .Main_Container2 {
+  margin: 0 auto;
+}
+
+.page-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  transform: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 28px; /* inset arrows further from left/right edges */
+  z-index: 20;
+  pointer-events: auto;
+}
+.page-dots .dot {
+  /* compact arrow style */
+  min-width: 30px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(255,255,255,0.95);
+  color: #2c1810;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  cursor: pointer;
+}
+.page-dots .dot[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Desktop navigation buttons */
+.page-nav-desktop {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.nav-btn{
+  background: linear-gradient(180deg,#fffef8,#f5f0e5);
+  border: 6px solid #74640a;
+  border-radius: 8px;
+  color: #2c1810;
+  font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
+  box-shadow: 1px 1px 0 #000, -6px 4px #3b3305;
+}
+.nav-btn:active{ transform: scale(0.98); }
+
+/* hide nav buttons on small screens (mobile) */
+@media (max-width:768px){
+  .page-nav-desktop{ display:none !important; }
+}
+
+/* PIN overlay styles */
+#pinOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+#pinOverlay[aria-hidden="true"] { display: none; }
+.pin-box {
+  background: #fffef8;
+  border-radius: 12px;
+  padding: 20px;
+  width: 320px;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  border: 4px solid #74640a;
+}
+.pin-box h2 { margin: 0 0 12px 0; font-size: 18px; color: #2c1810; }
+.pin-box input[type="password"]{ width: 80%; padding: 10px; font-size: 18px; text-align: center; border-radius:6px; border:1px solid #ccc }
+.pin-actions{ margin-top: 12px }
+.pin-actions button{ background:#74640a; color:#fff; border:none; padding:8px 18px; border-radius:6px; cursor:pointer }
+.pin-actions button:active{ transform: translateY(1px) }
+
+/* Mobile: reduce calendar event font-size inside calendar popup and date popup */
+@media screen and (max-width: 450px) {
+  /* apply specifically to popup container(s) */
+  #calendarPopup .fc-event,
+  #DatePopup .fc-event,
+  #calendarPopup .fc-daygrid-event-harness .fc-event {
+    font-size: 10px !important;
+    line-height: 1.05 !important;
+    padding: 2px 4px !important;
+    min-height: 20px !important;
+  }
+
+  /* ensure the title/time lines wrap and are centered */
+  #calendarPopup .fc-event .fc-event-title,
+  #DatePopup .fc-event .fc-event-title,
+  #calendarPopup .fc-event .fc-event-time,
+  #DatePopup .fc-event .fc-event-time {
+    font-size: 8px !important;
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+}
+
+/* Ensure popup bill/unit labels are not clipped on small screens */
+@media screen and (max-width: 480px) {
+  #popup-bill, #popup-unit, #popupContent, #DatePopup .popup-stats > div {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    hyphens: auto !important;
+    font-size: 12px !important;
+    line-height: 1.05 !important;
+    text-align: center !important;
+  }
+.fc-event .fc-event-title {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  margin: 0px 0 !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
+  /* If popup content was absolutely positioned, ensure it can expand */
+  #popupContent {
+    width: 90% !important;
+    max-width: 360px !important;
+    padding: 10px 12px !important;
+  }
+}
+
+/* Strong final overrides for mobile calendar readability */
+@media screen and (max-width: 480px) {
+  /* Calendar day cell events: make text readable and stacked */
+  #calendar .fc-event {
+    font-size: 10px !important;
+    line-height: 1.12 !important;
+    padding: 3px 6px !important;
+    min-height: 26px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  #calendar .fc-event .fc-event-title,
+  #calendar .fc-event .fc-event-time {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+  }
+
+  /* Popup bill/unit readable size */
+  #popup-bill, #popup-unit {
+    font-size: 11px !important;
+    line-height: 1.12 !important;
+  }
+
+  /* Ensure day numbers are still visible and not crowding */
+  #calendar .fc-daygrid-day-number {
+    font-size: 12px !important;
+    margin-right: 6px !important;
+    padding-right: 4px !important;
+  }
+}
+
+/* Safer overrides: ensure events wrap and titles/times are block-level and centered */
+#calendar .fc-daygrid-event-harness,
+#calendar .fc-daygrid-event-harness .fc-event,
+#calendar .fc-event-main-frame,
+#calendar .fc-event {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+#calendar .fc-event .fc-event-title,
+#calendar .fc-event .fc-event-time,
+#calendar .fc-event .fc-event-main {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure event text visible on small screens */
+@media screen and (max-width: 480px) {
+  #calendar .fc-event { font-size: 11px !important; line-height: 1.08 !important; }
+  #calendar .fc-event .fc-event-title, #calendar .fc-event .fc-event-time { font-size: 11px !important; }
+}
+
+/* FINAL OVERRIDES: make calendar event text a little smaller and consistent */
+/* Placed at the end so it wins over previous rules */
+.fc-event .fc-event-title { font-size: 10px !important; line-height: 1.12 !important; }
+#calendar .fc-event, #calendarPopup .fc-event, #DatePopup .fc-event { font-size: 9px !important; }
+#calendar .fc-event .fc-event-title, #calendar .fc-event .fc-event-time { font-size: 9px !important; }
+#popup-bill, #popup-unit { font-size: 10px !important; }

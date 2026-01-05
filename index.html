@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#8B4513">
+  <title>Momay</title>
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="preconnect" href="https://momaydocbn-production.up.railway.app">
+
+  <!-- iOS Safari full screen fix -->
+  <meta name="apple-mobile-web-app-title" content="Momay">
+  <!-- ใส่ CSS versioned แทนตัวเดิม -->
+  <link rel="stylesheet" href="style.css?v=2.8">
+</head>
+
+<body>
+  
+<!---->
+<div id="Date_icon">
+  <div class="marquee">
+    <div id="weather">
+      <span style="font-weight:bold; color:#000000;">Momay</span>
+      <span id="weather-city"></span>
+      <span id="Date"></span> |
+      <span id="weather-temp"></span> |
+      <span id="weather-icon"></span> |
+    </div>
+  </div>
+</div>
+
+
+   
+</div>
+
+<div class="Top_Container">
+  <div class="ClientName_Container">
+    <div class="ClientName">Naresuan University Library</div>
+    <div class="Date_install">Date Installed : 18-11-25</div>
+    <div class="ClientNo">Usernumber : No.003</div>
+  </div>
+<div class="ElectricalBill_Container">
+  <div id="DailyBill"></div>
+  <div class="unit"></div>
+</div>
+</div>
+  <!--maincon1 -->
+  <!-- Swipeable Page View wrapper -->
+  <div class="page-view">
+    <div class="page-track">
+      <div class="page active">
+        <div class="Main_Container">
+  <div class="Containerglow"></div>
+  <div id="Total_Bar_Label" class="total-bar-label">IRA Air<br>electrical Usage</div>
+  <div id="Total_Bar">
+    <canvas id="totalDonutCanvas"></canvas>
+    <div id="Total_Bar_Text">0%</div>
+  </div>
+  
+
+  <div id="Main_Picinfo">
+    <div id="Icons_group">
+      
+      <div id="Calendar_icon">
+        <img src="./images/calendar_icon.png" alt="Calendar">
+      </div>
+      
+      <div id="Kwang_icon">
+        <img src="./images/Kwang_icon.png" alt="Kwang">
+      </div>
+      
+      <div id="Bell_icon">
+        <img src="./images/Bell_icon.png" alt="Bell">
+        <span id="bellBadge">0</span>
+      </div>
+      
+    </div>
+  </div>
+
+  <div class="Meter">
+    <h1>150 A</h1>
+    <h1>3 Phase</h1>
+  </div>
+   <div id="info_icon">
+    <img src="./images/info.png" alt="info">
+  </div>
+        </div>
+      </div>
+      <!-- page 2 -->
+      <div class="page">
+        <div class="Main_Container2">
+          <div class="Containerglow"></div>
+          <div id="Total_Bar_Label2" class="total-bar-label">IRA Plug&light<br> electrical Usage</div>
+          <div id="Total_Bar2">
+            <canvas id="totalDonutCanvas2"></canvas>
+            <div id="Total_Bar_Text2">0%</div>
+          </div>
+
+          <div id="Main_Picinfo">
+            <div id="Icons_group">
+              <div id="Calendar_icon">
+                <img src="./images/calendar_icon.png" alt="Calendar">
+              </div>
+              <div id="Kwang_icon">
+                <img src="./images/Kwang_icon.png" alt="Kwang">
+              </div>
+              <div id="Bell_icon">
+                <img src="./images/Bell_icon.png" alt="Bell">
+                <span id="bellBadge">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="Meter2">
+            <h1>100 A</h1>
+            <h1>3 Phase</h1>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- pagination dots -->
+    <div class="page-dots" aria-hidden="true">
+      <button id="dotLeft" class="dot prev">&lt;</button>
+      <button id="dotRight" class="dot next">&gt;</button>
+    </div>
+  </div>
+
+<!-- Info Popup -->
+<div id="maincon_info"> 
+  <div id="Bar_info">
+  <span id="Bar_number">3</span>
+  <span id="Bar_text">The bar shows and lights up the percent of current amps used from the max amps.</span>
+  <div id="Popup_info">
+  <span id="Popup_number">4</span>
+  <div class="line-horizontal"></div>
+  <div class="line-horizontal2"></div>
+  <div class="line-vertical"></div>
+  <span id="Popup_text">Includes Menu, Calendar, Solar Panel, and Notifications.</span>
+  </div>
+   <div id="Amp_info">
+    <span id="Amp_number">5</span>
+  <span id="Amp_text">Display the maximum amps and the electrical system.</span>
+   </div>
+    <div id="Name_info">
+    <span id="Name_number">1</span>
+  <span id="Name_text">Basic information: Name, Time, Weather...</span>
+   </div>
+    <div id="Bill_info">
+    <span id="Bill_number">2</span>
+  <span id="Bill_text">Daily Usage & Cost</span>
+  <span id="BillCal_text">Daily electricity cost = Daily usage × Rate (4.4 THB)</span>
+   </div>
+       <div id="Floor_info">
+    <span id="Floor_number">6</span>
+   <span id="Floor_text">Percentage of electricity usage per floor </span>
+     <span id="Floor_text2">"Floor electricity usage (%) = Current amps ÷ Maximum amps"</span>
+
+    <div id="Chart_info">
+    <span id="Chart_number">7</span>
+   <span id="Chart_text">Real-time graph</span>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div id="notificationPopup">
+  <div id="notificationItems"></div>
+  <div style="text-align:center; margin-top:5px;">
+  </div>
+</div>
+
+<div class="Floor_Container">
+  <div class="floor-wrapper">
+    <h1 class="Bar_name">Air</h1>
+    <div id="floor1" class="progress-container">
+      <div id="floor1_Text" class="progress-text"></div> <!-- ตัวเลขเปอร์เซ็นต์ -->
+      <div class="progress-bar" style="width: 40%"></div>
+    </div>
+  </div>
+
+  <div class="floor-wrapper">
+    <h1 class="Bar_name">Plug&light</h1>
+    <div id="floor2" class="progress-container">
+      <div id="floor2_Text" class="progress-text"></div> <!-- ตัวเลขเปอร์เซ็นต์ -->
+      <div class="progress-bar" style="width: 20%"></div>
+    </div>
+  </div>
+
+  <div class="Realtime_kW"></div>
+</div>
+<!-- Overlay มีอยู่แล้ว -->
+<div id="overlay"></div>
+
+<!-- Kwang Popup -->
+<div id="kwangPopup" style="display:none;">
+  <div class="kwangPopupContent">
+    <div id="kwangDatePickerUI">
+      <button id="kwangPrevDay">&lt;</button>
+      <span id="kwangCurrentDay">01 - January - 2025</span>
+      <button id="kwangNextDay">&gt;</button>
+    </div>
+
+    <div class="kwangcircle-wrapper">
+      <div class="kwangcircle-container">
+        <img src="./images/home-icon.png" alt="home-icon" width="15" height="15" class="home-icon">
+        <div id="kwangPowerContainer" class="daily-info"><span id="kwangPower">- Unit</span></div>
+      </div>
+      <div class="kwangcircle-container">
+      <img src="./images/solar-cell-icon.png" alt="solar-cell-icon" width="15" height="15" class="solar-cell-icon">
+        <div id="kwangCapacityContainer" class="daily-info"><span id="kwangCapacity">- kW</span></div>
+      </div>
+    </div>
+
+    <div class="popupValue1">Daily Savings: <span id="kwangBill">- THB</span></div>
+    <div class="popupValue2">Monthly Savings: <span id="kwangMonth">- THB</span></div>
+
+    <img src="./images/Kwang_baner.png" alt="Kwang_baner" width="64" height="113" class="Kwang_baner">
+  <img id="generateReport" src="./images/share.png" alt="Generate Report" 
+     style="width:30px; height:30px; cursor:pointer; padding-top:10px;">
+  </div>
+</div>
+
+<!-- overlay -->
+<div id="overlay"></div>
+
+<!-- popup -->
+<div id="dailyPopup">
+
+  <div class="daily-dates-arc">
+    <div class="daily-date-arc" id="dayBeforeDate"></div>
+    <div class="daily-date-arc" id="yesterdayDate"></div>
+  </div>
+
+  <!-- วงกลมข้อมูล -->
+  <div class="circle-container">
+    <div id="dailyDayBefore" class="daily-info"></div>
+    <div id="dailyYesterday" class="daily-info"></div>
+  </div>
+
+  <div id="dailyDiffValue"></div>
+<!--
+  <div class="popup-actions">
+    <button id="downloadBtn">Download Image</button>
+    <button id="shareBtn">Share</button>
+  </div>
+-->
+  <img src="./images/Kwang_baner.png" alt="Kwang_baner" width="64" height="113" class="Kwang_baner">
+</div>
+
+
+<div class="Realtime_Container">
+  <!-- Vintage Date Picker -->
+<div id="PickDate">
+  <button id="prevDay" type="button">&lt;</button>
+  <span id="currentDay"></span>
+  <button id="nextDay" type="button">&gt;</button>
+</div>
+  <!-- Chart.js Canvas -->
+  <canvas id="EnergyChart"></canvas>
+</div>
+
+<div class="Bottom_info">
+<div class="Version">V.11225</div>
+</div>
+
+<div id="calendarPopup">
+  <div id="calendar"></div>
+</div>
+
+<!-- Report Action Modal -->
+<div id="reportActionModal" class="report-modal">
+  <div class="report-modal-content">
+    <div class="modal-header">
+      <h3>Export Report</h3>
+    </div>
+    <div class="modal-body">
+      <p class="modal-description">Choose how you want to export your report</p>
+      <div class="action-buttons">
+        <button id="downloadReportBtn" class="report-action-btn download-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-title">Download</span>
+            <span class="btn-subtitle">Save to device</span>
+          </div>
+        </button>
+        <button id="shareReportBtn" class="report-action-btn share-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-title">Share</span>
+            <span class="btn-subtitle">Send to others</span>
+          </div>
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="cancelReportBtn" class="report-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report Wrapper -->
+<div id="reportWrapper">
+<img src="./images/kwang_logo_report.png" 
+     alt="Kwangreport" 
+     style="width:100%; max-width:213px; height:auto; display:block; margin-left:-20px;">
+     <p>Client Name: <span>Naresuan University Library</span></p>
+  <p>Date: <span id="kwangDateReport"></span></p>
+  <p>Electricity usage (within 1 day) :  <strong><span id="kwangTOTEL"></span></strong></p>
+<p class="padded-bottom">
+  Electricity Bill (within 1 day) : <strong><span id="kwangTOTBill"></span></strong>
+</p>
+<div class="info-container">
+  <div class="info-box1">
+    <p>Electricity usage (06:00AM–18:00PM):  <strong><span id="kwangPowerReport">-</span></strong></p>
+    <p>Recommended Solar Cell Installation:  <strong><span id="kwangCapacityReport">-</span></strong></p>
+    <p>Daily savings:  <strong><span id="kwangBillReport">-</span></strong></p>
+    <p>Monthly savings:  <strong><span id="kwangMonthReport">-</span></strong></p>
+  </div>
+  <div class="info-box2">
+    <p>Electricity usage (18:00PM–6:00AM):  <strong><span id="kwangnight">-</span></strong></p>
+  </div>
+</div>
+   <div style="margin-top:20px;">
+    <canvas id="EnergyChartReport" width="600" height="300"></canvas>
+  </div>
+  <table id="kwangHourlyTable">
+    <thead>
+      <tr>
+        <th>Hour</th>
+        <th>Energy (Unit)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="2">No data</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+  
+<!--
+<div id="DatePopup" class="popup">
+  <div id="popupContent">
+    <span class="popup-date"></span>
+    <div id="popup-bill"></div>
+    <div id="popup-unit"></div>
+    <button id="downloadPopup">ดาวน์โหลด</button>
+  </div>
+</div>
+-->
+<script>
+// Register service worker with correct path for any subfolder
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    // Use relative path so it works from subfolders (e.g. /Momay02/)
+    var swPath = (window.location.pathname.endsWith('/') ? '' : '../') + 'sw.js';
+    // But if at root, use '/sw.js'
+    if (window.location.pathname === '/' || window.location.pathname === '/index.html') swPath = '/sw.js';
+    navigator.serviceWorker.register(swPath)
+      .then(reg => console.log('ServiceWorker registered', reg))
+      .catch(err => console.error('SW register failed', err));
+  });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script src="pageview.js" defer></script>
+<script src="script.js?v=2.8" defer></script>
+
+
+
+</body>
+</html>
