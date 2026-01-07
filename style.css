@@ -6,6 +6,99 @@
   10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
   20%, 40%, 60%, 80% { transform: rotate(10deg); }
 }
+
+/* Additional responsive fixes for iPad portrait and narrow phones */
+@media (max-width: 820px) {
+  .Top_Container {
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .Top_Container .ClientName_Container {
+    width: 48%;
+    margin-left: 0;
+  }
+  .Main_Container, .Main_Container2, .Realtime_Container {
+    width: calc(100% - 24px);
+    max-width: 360px;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+  #Total_Bar, #Total_Bar canvas, #Total_Bar_Text {
+    max-width: 100%;
+  }
+  /* Phase toggle button and legend - smaller and anchored inside chart */
+  #phaseToggleBtn {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 6px;
+    z-index: 2000;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  #phaseLegend {
+    position: absolute;
+    right: 12px;
+    bottom: 48px;
+    font-size: 11px;
+    background: rgba(255,255,255,0.95);
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  }
+  .ClientName, .Date_install, .ClientNo {
+    font-size: 11px;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 420px) {
+  .Main_Container, .Main_Container2, .Realtime_Container {
+    width: calc(100% - 16px);
+    max-width: 360px;
+  }
+  .Top_Container { gap: 8px; padding: 6px; }
+  #phaseToggleBtn { right: 8px; bottom: 8px; padding: 5px 6px; font-size: 11px; }
+  #phaseLegend { right: 8px; bottom: 44px; font-size: 10px; padding: 4px 6px; }
+  .ClientName { font-size: 10px; line-height: 1; }
+  .Date_install, .ClientNo { font-size: 9.5px; }
+  body { margin-top: 10px; }
+  canvas { max-width: 100%; height: auto !important; }
+  .Main_Container { overflow: hidden; }
+}
+
+/* Make phase legend text and dots smaller across all devices */
+#phaseLegend {
+  font-size: 10px !important;
+  gap: 6px !important;
+}
+#phaseLegend > div {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 0 !important;
+}
+/* first span is the colored dot, second is the label text */
+#phaseLegend span:first-child {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+}
+#phaseLegend span:last-child {
+  font-size: 10px !important;
+  line-height: 1 !important;
+  color: #222 !important;
+}
+
+/* Reduce Chart.js built-in legend text if used */
+.chartjs-legend, .chartjs-legend ul, .chartjs-legend li {
+  font-size: 10px !important;
+}
+
 body {
   font-family: 'Roboto', serif;
   display: flex;
@@ -53,8 +146,10 @@ body::after {
   flex-direction: row;     /* จัดแนวนอน */
   justify-content: center; /* กึ่งกลางแนวนอน */
   gap: 20px;               /* ระยะห่างระหว่างกล่อง */
-  min-width: 400px;  /* ป้องกัน container ย่อ */
-  max-width: 300px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  flex-wrap: wrap;
   margin-bottom: 10px;
 }
 
@@ -1006,6 +1101,31 @@ font-size: 14px;
   top: 23%;            /* ปรับตำแหน่งแนวตั้ง */
   right: 50% ;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
+}
+
+/* Responsive adjustments for narrow screens (e.g. iPad portrait) */
+@media (max-width: 820px) {
+  .ClientName_Container {
+    width: 140px; /* reduce container width */
+    height: 64px;
+    padding: 6px 8px;
+  }
+  .ClientName {
+    font-size: 11px !important;
+    white-space: normal !important;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 2.4em;
+  }
+  .Date_install, .ClientNo {
+    font-size: 10px !important;
+    white-space: normal !important;
+    line-height: 1.05;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 2.2em;
+  }
 }
 
 
