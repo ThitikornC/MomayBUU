@@ -765,7 +765,7 @@ function initializeChart() {
             maxRotation: 0,
             minRotation: 0,
             color: '#2c1810',
-            font: { size: 6 },
+            font: { size: 10 },
             // Show labels every 3 hours: 00.00, 03.00, 06.00, 09.00, 12.00, 15.00, 18.00, 21.00, 24.00
             callback: function(v) {
               const l = this.getLabelForValue(v);
@@ -808,7 +808,7 @@ function initializeChart() {
           beginAtZero: true,
           grid: { display: false },
           min: 0,
-          ticks: { color: '#2c1810', font: { size: 6 } },
+          ticks: { color: '#2c1810', font: { size: 10 } },
           title: { display: true, text: 'Power (kW)', color: '#2c1810', font: { size: 14, weight: 'bold' } }
         }
       }
@@ -910,8 +910,8 @@ function initializeChart() {
   // Responsive axis font sizing helper
   function getResponsiveSizes() {
     if (typeof window === 'undefined') return { x: 14, y: 14, titleFont: '14px sans-serif' };
-    if (window.innerWidth <= 600) return { x: 11, y: 11, titleFont: '12px sans-serif' };
-    return { x: 14, y: 14, titleFont: '14px sans-serif' };
+    if (window.innerWidth <= 600) return { x: 9, y: 9, titleFont: '11px sans-serif' };
+    return { x: 10, y: 10, titleFont: '12px sans-serif' };
   }
 
   function applyResponsiveAxisFontSizes(targetChart) {
