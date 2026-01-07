@@ -821,6 +821,12 @@ function initializeChart() {
   chart = new Chart(ctx, config);
   chartInitialized = true;
 
+  // make chart canvas clickable to open fullscreen view
+  try {
+    canvas.style.cursor = 'zoom-in';
+    canvas.addEventListener('click', () => openChartFullscreen(chart));
+  } catch (e) { /* ignore */ }
+
   // Create a single toggle button: when ON show Phase A/B/C, when OFF show total power
   (function createPhaseToggleButton(){
     try {
@@ -831,7 +837,8 @@ function initializeChart() {
       const btn = document.createElement('button');
       btn.id = 'phaseToggleBtn';
       btn.type = 'button';
-      btn.textContent = 'Phase balance';
+      // initial label shows 'Total power' and graph displays Total by default
+      btn.textContent = 'Total power';
       btn.setAttribute('aria-pressed', 'false');
       btn.style.cssText = 'position:absolute; right:12px; bottom:30px; background:#fffef8; color:#3b3305; border:1px solid #74640a; padding:4px 8px; border-radius:6px; font-size:11px; z-index:40; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 0 #3b3305; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
 
@@ -841,6 +848,8 @@ function initializeChart() {
         const turnOn = !isOn;
         btn.setAttribute('aria-pressed', String(turnOn));
         btn.style.background = turnOn ? '#f5f5f5' : '#fff';
+        // show current view label: when ON we show phases, label 'Phase balance'; when OFF show total label
+        btn.textContent = turnOn ? 'Phase balance' : 'Total power';
         // when ON -> show phases and hide total
         if (chart && chart.data && chart.data.datasets) {
           chart.data.datasets[0].hidden = turnOn; // total
@@ -857,6 +866,17 @@ function initializeChart() {
       });
 
       container.appendChild(btn);
+
+      // set initial datasets visibility: show total, hide phases
+      try {
+        if (chart && chart.data && chart.data.datasets) {
+          chart.data.datasets[0].hidden = false; // show total
+          if (chart.data.datasets[3]) chart.data.datasets[3].hidden = true; // hide A
+          if (chart.data.datasets[4]) chart.data.datasets[4].hidden = true; // hide B
+          if (chart.data.datasets[5]) chart.data.datasets[5].hidden = true; // hide C
+          chart.update();
+        }
+      } catch (e) { /* ignore */ }
 
       // Legend (center-bottom) showing phase color mapping — hidden by default
       const legend = document.createElement('div');
@@ -882,6 +902,8 @@ function initializeChart() {
       });
 
       container.appendChild(legend);
+      // hide legend by default (graph shows total initially)
+      try { legend.style.display = 'none'; } catch (e) {}
     } catch (e) { /* ignore UI errors */ }
   })();
 
@@ -934,6 +956,84 @@ function initializeChart() {
   }
   chart.options.plugins.xAxisTitle = { text: 'Time (HH:MM)', offset: baseOffset, relativeOffsetPercent: 0.2, padding: 36, color: '#000', font: '14px sans-serif', align: 'center' };
   updateChartData(currentDate);
+}
+
+// ===== Fullscreen chart helper =====
+let _fullscreenOverlay = null;
+let _fullscreenChart = null;
+function openChartFullscreen(sourceChart) {
+  try {
+    if (_fullscreenOverlay) return; // already open
+
+    // overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'chart-fullscreen-overlay';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:9999;';
+
+    // container for card-like look
+    const card = document.createElement('div');
+    card.style.cssText = 'width:90%; max-width:1200px; height:80%; background:#fffef8; border-radius:10px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:flex; flex-direction:column; position:relative;';
+
+    // close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Close';
+    closeBtn.style.cssText = 'position:absolute; right:12px; top:8px; background:#fff; border:1px solid #74640a; color:#3b3305; padding:6px 10px; border-radius:6px; cursor:pointer;';
+    closeBtn.addEventListener('click', closeFullscreenChart);
+
+    // canvas
+    const bigCanvas = document.createElement('canvas');
+    bigCanvas.id = 'EnergyChartFull';
+    bigCanvas.style.cssText = 'flex:1; width:100%; height:100%; display:block;';
+
+    card.appendChild(closeBtn);
+    card.appendChild(bigCanvas);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    // copy config and data to new chart
+    const ctx = bigCanvas.getContext('2d');
+    // Deep clone config but keep data references (we want same data snapshot)
+    const cfg = JSON.parse(JSON.stringify(sourceChart.config));
+    // ensure responsive false so canvas respects container size; we'll set maintainAspectRatio false
+    cfg.options = cfg.options || {};
+    cfg.options.responsive = true;
+    cfg.options.maintainAspectRatio = false;
+
+    // recreate datasets' hidden flags using sourceChart state (sourceChart.config may be canonical but ensure visibility)
+    for (let i = 0; i < (cfg.data.datasets || []).length; i++) {
+      cfg.data.datasets[i].hidden = sourceChart.data.datasets[i] && sourceChart.data.datasets[i].hidden ? true : false;
+    }
+
+    // create chart instance
+    _fullscreenChart = new Chart(ctx, cfg);
+    _fullscreenOverlay = overlay;
+
+    // allow close with ESC or backdrop click
+    function onKey(e) { if (e.key === 'Escape') closeFullscreenChart(); }
+    function onBackdropClick(e) { if (e.target === overlay) closeFullscreenChart(); }
+    document.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', onBackdropClick);
+
+    // store listeners for removal
+    overlay._onKey = onKey;
+    overlay._onBackdrop = onBackdropClick;
+  } catch (e) { console.error('Open fullscreen chart failed', e); }
+}
+
+function closeFullscreenChart() {
+  try {
+    if (!_fullscreenOverlay) return;
+    // remove listeners
+    document.removeEventListener('keydown', _fullscreenOverlay._onKey);
+    _fullscreenOverlay.removeEventListener('click', _fullscreenOverlay._onBackdrop);
+    // destroy chart
+    if (_fullscreenChart) try { _fullscreenChart.destroy(); } catch (e) {}
+    // remove overlay
+    try { document.body.removeChild(_fullscreenOverlay); } catch (e) {}
+  } finally {
+    _fullscreenOverlay = null;
+    _fullscreenChart = null;
+  }
 }
 
 // ================= Date Picker =================
