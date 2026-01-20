@@ -3,19 +3,19 @@
 
 /* Small iPad nudge: reduce right-side crowding by adjusting paddings
    This moves visible text slightly left and ensures `Date_install` has a small right gutter. */
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 768px) and (max-width: 1026px) {
   .ClientName_Container {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    margin-left: 0 !important;
+    padding-left: 4px !important;
+    padding-right: 8px !important;
+    margin-left: -6px !important;
   }
   .ClientName_Container .Date_install {
     padding-right: 8px !important;
     white-space: nowrap !important;
   }
   .Top_Container {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    padding-left: 4px !important;
+    padding-right: 6px !important;
   }
 }
 
@@ -183,7 +183,7 @@ body {
 
 /* ================= iPad normalization ================= */
 /* Ensure iPad portrait and landscape use the same base font-size */
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 768px) and (max-width: 1026px) {
   html {
     /* fixed base so orientation doesn't change readable size */
     font-size: 16px !important;
@@ -216,6 +216,16 @@ body {
   /* Ensure electrical box text also scales down a bit on iPad */
   .ElectricalBill_Container { font-size: 0.92rem; }
   .ElectricalBill_Container span { font-size: 0.85rem; }
+  /* Reduce main container inner padding on iPad so content can sit closer to left edge */
+  .Main_Container,
+  .Main_Container2,
+  .Realtime_Container,
+  .ClientName_Container,
+  .ElectricalBill_Container,
+  .Floor_Container {
+    padding-left: 4% !important;
+    padding-right: 4% !important;
+  }
 
 }
 body {
@@ -3051,7 +3061,7 @@ font-size: 14px;
 
 
 /* ✅ ขยายเฉพาะ iPad (แนวนอนและแนวตั้ง) */
-@media screen and (min-width: 768px) and (max-width: 1024px) {
+@media screen and (min-width: 768px) and (max-width: 1026px) {
   html {
     zoom: 1.8;                /* ✅ ใช้ zoom แทน transform */
   }
@@ -4142,7 +4152,7 @@ color: #000000;
 }
 
 /* iPad portrait: make client text match .unit size */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation:portrait) {
+@media (min-width: 768px) and (max-width: 1026px) and (orientation:portrait) {
   .Top_Container .ClientName,
   .Top_Container .ClientName_Container .Date_install,
   .Top_Container .ClientName_Container .ClientNo {
