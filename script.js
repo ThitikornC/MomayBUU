@@ -1274,7 +1274,7 @@ initializeChart();
 
     } catch (e) {
       console.error("Error fetching current weather:", e);
-      document.getElementById('weather-city').innerText = "Sukhothai";
+      document.getElementById('weather-city').innerText = "";
       document.getElementById('weather-icon').innerText = "❓";
       document.getElementById('weather-temp').innerText = "-°C";
     }
@@ -1301,7 +1301,7 @@ initializeChart();
       return "🌡️";
     }
     
-    document.getElementById('weather-city').innerText = "Sukhothai";
+    document.getElementById('weather-city').innerText = "";
     document.getElementById('weather-icon').innerText = weatherCodeToEmoji(weatherCode);
     document.getElementById('weather-temp').innerText = temp.toFixed(1) + "°C";
   }

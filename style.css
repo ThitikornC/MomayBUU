@@ -3,21 +3,38 @@
 
 /* Small iPad nudge: reduce right-side crowding by adjusting paddings
    This moves visible text slightly left and ensures `Date_install` has a small right gutter. */
-@media (min-width: 768px) and (max-width: 1026px) {
+@media (min-width: 768px) and (max-width: 1024px) {
   .ClientName_Container {
-    padding-left: 4px !important;
-    padding-right: 8px !important;
-    margin-left: -6px !important;
+    /* reduce left padding and increase right padding per user request */
+    padding-left: 0 !important;
+    padding-right: 40px !important;
+    margin-left: -50px !important;
+    transform: translateX(-36px) !important;
+    position: relative !important;
   }
   .ClientName_Container .Date_install {
-    padding-right: 8px !important;
+    padding-right: 12px !important;
     white-space: nowrap !important;
+    font-size: 0.72rem !important;
   }
   .Top_Container {
-    padding-left: 4px !important;
-    padding-right: 6px !important;
+    padding-left: 0 !important;
+    padding-right: 28px !important;
+    margin-left: -28px !important;
+    transform: translateX(-14px) !important;
+    position: relative !important;
+  }
+
+  /* Ensure inner labels don't add extra left offset */
+  .ClientName_Container .ClientName,
+  .ClientName_Container .Date_install,
+  .ClientName_Container .ClientNo {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    padding-right: 8px !important; /* add right gutter for inner text */
   }
 }
+
 
 body {
   0%, 100% { transform: rotate(0deg); }
@@ -183,7 +200,7 @@ body {
 
 /* ================= iPad normalization ================= */
 /* Ensure iPad portrait and landscape use the same base font-size */
-@media (min-width: 768px) and (max-width: 1026px) {
+@media (min-width: 768px) and (max-width: 1024px) {
   html {
     /* fixed base so orientation doesn't change readable size */
     font-size: 16px !important;
@@ -198,14 +215,14 @@ body {
     font-size: 1rem;
   }
 
-  /* Reduce text sizes slightly on iPad to improve fit and readability */
-  .ClientName_Container { font-size: 0.92rem; padding: 8px; }
-  .ClientName_Container .ClientName { font-size: 0.98rem; line-height: 1.02; }
+  /* Reduce text sizes slightly on iPad to improve fit and readability (one-step smaller) */
+  .ClientName_Container { font-size: 0.82rem; padding: 6px; }
+  .ClientName_Container .ClientName { font-size: 0.88rem; line-height: 1.02; }
 
   /* Force Date_install onto a single line on iPad: smaller font + no-wrap + ellipsis */
   .ClientName_Container .Date_install,
   .ClientName_Container .ClientNo {
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     line-height: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -214,17 +231,118 @@ body {
   }
 
   /* Ensure electrical box text also scales down a bit on iPad */
-  .ElectricalBill_Container { font-size: 0.92rem; }
-  .ElectricalBill_Container span { font-size: 0.85rem; }
-  /* Reduce main container inner padding on iPad so content can sit closer to left edge */
-  .Main_Container,
-  .Main_Container2,
-  .Realtime_Container,
+  .ElectricalBill_Container { font-size: 0.82rem; }
+  .ElectricalBill_Container span { font-size: 0.75rem; }
+
+  /* Make header date and temperature match the 'Momay' label size on iPad */
+  #weather, #weather span:first-child { font-size: 18px !important; }
+  #Date, #weather-temp { font-size: 18px !important; line-height: 1 !important; }
+
+  /* Align Date and temperature baseline with 'Momay' on iPad */
+  /* Use baseline alignment on the flex container and small vertical shift for precise baseline matching */
+  /* center header items and nudge them down slightly so top/bottom padding feels even */
+  #weather {
+    align-items: center !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  /* small downward nudge for precise visual centering */
+  #Date,
+  #weather-temp {
+    display: inline-block !important;
+    transform: translateY(3px) !important;
+    line-height: 1 !important;
+  }
+
+  /* Center text horizontally inside the client and electrical boxes on iPad */
   .ClientName_Container,
-  .ElectricalBill_Container,
-  .Floor_Container {
-    padding-left: 4% !important;
-    padding-right: 4% !important;
+  .ElectricalBill_Container {
+    align-items: flex-start !important; /* left-align flex children */
+    text-align: left !important;        /* left-align inline text */
+    margin-left: 0 !important;          /* ensure no negative shifts remain */
+    transform: none !important;
+    padding-left: 10px !important;      /* small left gutter */
+    padding-right: 12px !important;     /* keep right gutter */
+  }
+
+  /* Inner text elements left-aligned */
+  .ClientName_Container .ClientName,
+  .ClientName_Container .Date_install,
+  .ClientName_Container .ClientNo {
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  /* Center electrical box content horizontally and vertically on iPad */
+  .ElectricalBill_Container {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-left: 0 !important;
+    transform: none !important;
+  }
+
+  /* Make the values render in normal flow and centered */
+  #DailyBill,
+  .unit {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    display: block !important;
+    width: auto !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+  }
+
+  /* Stronger centering for any nested elements inside the electrical box */
+  .ElectricalBill_Container > *,
+  .ElectricalBill_Container * {
+    text-align: center !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Ensure inline elements wrap and occupy full width so they center correctly */
+  .ElectricalBill_Container span,
+  .ElectricalBill_Container strong,
+  .ElectricalBill_Container b,
+  .ElectricalBill_Container em,
+  .ElectricalBill_Container div {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+  /* Keep `#DailyBill` and `.unit` centered on iPad so labels (e.g. "THB") show centered */
+  #DailyBill {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    text-align: center !important;
+    width: auto !important;
+    margin: 0 auto !important;
+  }
+  .unit {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    text-align: center !important;
+    width: auto !important;
+    margin: 0 auto !important;
   }
 
 }
@@ -235,8 +353,7 @@ body {
   justify-content: center; /* กึ่งกลางแนวตั้ง */
   align-items: center;     /* กึ่งกลางแนวนอน */
   min-height: 100vh;
-  margin: 10px;
-  margin-top: 40px;
+  margin: 0; /* remove static top offset so flex centering works */
   padding: 0;
   position: relative;      /* สำหรับ pseudo-element */
   overflow-x: hidden;
@@ -266,6 +383,17 @@ body {
   .Floor_Container {
     padding-left: 4%;
     padding-right: 4%;
+  }
+
+  /* iPad: make Kwang circle numbers one step smaller than before */
+  .kwangcircle-container {
+    font-size: 13px !important;
+  }
+  .kwangcircle-container .daily-info span,
+  .kwangcircle-container .home-icon + .daily-info span,
+  #kwangPower, #kwangCapacity {
+    font-size: 13px !important;
+    line-height: 1 !important;
   }
 }
 
@@ -646,12 +774,14 @@ body::after {
 /* วันที่ซ้าย */
 #Date_icon {
   position: relative;
-  width: 357px;
-  height: 20px;
+  width: 100%;
+  max-width: 400px;
+  /* let content determine height and center vertically */
+  height: auto;
 
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center; /* vertically center header content */
   justify-content: flex-start;
   gap: 0px;
   flex-wrap: nowrap;
@@ -676,8 +806,8 @@ body::after {
     0 1px 0 rgba(255, 255, 255, 0.3),
     0 -1px 0 rgba(0, 0, 0, 0.1);
 
-  padding-top: 10px;
-  padding-left: 15px;
+  padding: 12px 0 6px 15px; /* balanced padding */
+  margin-top: 0 !important; /* allow flex centering to control vertical position */
   margin-left: -0px;
   margin-bottom: 10px;
 
@@ -689,7 +819,8 @@ body::after {
 
 /* ✅ ตัววิ่ง */
 #Date_icon .marquee {
-  display: inline-block;
+  display: flex;
+  align-items: center;
   white-space: nowrap;
   animation: marquee 12s linear infinite;
 }
@@ -710,6 +841,20 @@ body::after {
   justify-content: center; /* จัดกึ่งกลางแนวนอน */
   align-items: center;     /* ถ้าต้องการกึ่งกลางแนวตั้งด้วย */
   height: 100%;            /* กำหนดความสูงให้ Flexbox ทำงาน */
+}
+
+/* Align 'Momay' baseline with the date labels */
+#weather {
+  /* prefer baseline alignment for mixed-size inline children */
+  align-items: baseline !important;
+}
+#weather span,
+#weather > * {
+  display: inline-block !important;
+  line-height: 1 !important;
+  vertical-align: baseline !important;
+  transform: none !important;
+  padding-top: 0 !important;
 }
 .Meter {
   position: absolute;
@@ -1876,7 +2021,7 @@ font-size: 14px;
 
 
 .popupValue1 {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: bold;
   color: #2c1810;
   background: linear-gradient(
@@ -1888,21 +2033,21 @@ font-size: 14px;
   );
   border: 6px solid #74640a;
   border-radius: 10px;
-  padding: 8px 14px;
+  padding: 4px 10px;
   box-shadow:
     inset 0 0 5px rgba(0,0,0,0.15),
-    1px 1px 0 #000,
+    2px 2px 4px rgba(0,0,0,0.6),
     -4px 3px #3b3305,
     0 0 12px rgba(255, 230, 160, 0.55);
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.3),
-    0 -1px 0 rgba(0, 0, 0, 0.1);
+    1px 2px 4px rgba(0, 0, 0, 0.6);
   margin-top: 10px; /* เว้นระยะพอเหมาะ */
   text-align: center;
 }
 
 .popupValue2 {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: bold;
   color: #2c1810;
   background: linear-gradient(
@@ -1914,15 +2059,15 @@ font-size: 14px;
   );
   border: 6px solid #74640a;
   border-radius: 10px;
-  padding: 8px 14px;
+  padding: 4px 10px;
   box-shadow:
     inset 0 0 5px rgba(0,0,0,0.15),
-    1px 1px 0 #000,
+    2px 2px 4px rgba(0,0,0,0.6),
     -4px 3px #3b3305,
     0 0 12px rgba(255, 230, 160, 0.55);
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.3),
-    0 -1px 0 rgba(0, 0, 0, 0.1);
+    1px 2px 4px rgba(0, 0, 0, 0.6);
   margin-top: 10px; /* เว้นระยะเท่ากัน */
   text-align: center;
 }
@@ -1959,6 +2104,26 @@ font-size: 14px;
 #shareBtn:hover {
   background-color: #27ae60;
   transform: translateY(-2px);
+}
+.popupValue1, .popupValue2 { /* default already defined above */ }
+
+/* iPad: reduce Savings font-size by two steps and tighten padding */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Make Savings labels slightly smaller (one step down) on iPad */
+  .popupValue1,
+  .popupValue2 {
+    font-size: 16px !important; /* one step smaller than header/date */
+    padding: 8px 12px !important;
+    border-width: 6px !important;
+  }
+
+  .popupValue1 span,
+  .popupValue2 span,
+  #kwangBill,
+  #kwangMonth {
+    font-size: 16px !important;
+    line-height: 1 !important;
+  }
 }
 .Kwang_baner {
   position: absolute;
@@ -3061,7 +3226,7 @@ font-size: 14px;
 
 
 /* ✅ ขยายเฉพาะ iPad (แนวนอนและแนวตั้ง) */
-@media screen and (min-width: 768px) and (max-width: 1026px) {
+@media screen and (min-width: 768px) and (max-width: 1024px) {
   html {
     zoom: 1.8;                /* ✅ ใช้ zoom แทน transform */
   }
@@ -3162,13 +3327,47 @@ color: #000000;
   font-size: 20px;
   font-weight: bold;
   color: #2c1810;
-  background-color: rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: 8px 14px;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.15);
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 6px solid #74640a;
+  border-radius: 10px;
+  padding: 6px 12px;
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    2px 2px 4px rgba(0,0,0,0.6),
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    1px 2px 4px rgba(0, 0, 0, 0.6);
 }
 .popupValue1 {
   font-size: 20px;
+  font-weight: bold;
+  color: #2c1810;
+  background: linear-gradient(
+    180deg,
+    #f8f6f0 0%,
+    #fffef8 45%,
+    #fff8e8 55%,
+    #f5f0e5 100%
+  );
+  border: 6px solid #74640a;
+  border-radius: 10px;
+  padding: 6px 12px;
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    2px 2px 4px rgba(0,0,0,0.6),
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    1px 2px 4px rgba(0, 0, 0, 0.6);
 }
 #kwangPower{
     font-size: 20px;
@@ -4152,11 +4351,11 @@ color: #000000;
 }
 
 /* iPad portrait: make client text match .unit size */
-@media (min-width: 768px) and (max-width: 1026px) and (orientation:portrait) {
+@media (min-width: 768px) and (max-width: 1024px) and (orientation:portrait) {
   .Top_Container .ClientName,
   .Top_Container .ClientName_Container .Date_install,
   .Top_Container .ClientName_Container .ClientNo {
-    font-size: 14px !important;
+    font-size: 13px !important;
     line-height: 1.05 !important;
   }
 }
