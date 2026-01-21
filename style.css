@@ -345,6 +345,47 @@ body {
     margin: 0 auto !important;
   }
 
+  /* Increase sizes on iPad: make ClientName (99/99) and THB values larger by ~2 steps */
+  .ClientName_Container .ClientName {
+    font-size: 26px !important;
+    line-height: 1 !important;
+  }
+
+/* Final override: ensure ClientName matches DailyBill on iPad (placed at file end) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .Top_Container .ClientName,
+  .ClientName_Container .ClientName {
+    font-size: 26px !important;
+    line-height: 1 !important;
+    white-space: nowrap; /* avoid wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+  /* Top electrical box values */
+  #DailyBill {
+    font-size: 26px !important;
+    font-weight: 700 !important;
+  }
+  .unit {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+  /* Circle THB/unit inside daily popup */
+  #dailyDayBefore .daily-info span,
+  #dailyYesterday .daily-info span,
+  #kwangBill,
+  #kwangMonth {
+    font-size: 14px !important; /* match date size */
+    font-weight: 700 !important;
+  }
+
+  /* Make install/date/usernumber slightly bigger on iPad for readability */
+  .ClientName_Container .Date_install,
+  .ClientName_Container .ClientNo {
+    font-size: 13px !important;
+  }
+
 }
 body {
   font-family: 'Roboto', serif;
@@ -1708,7 +1749,12 @@ font-size: 14px;
   font-weight: bold;
   padding: 6px 12px;
   cursor: pointer;
-  box-shadow: 1px 1px 0 #000, -4px 3px #3b3305, 0 0 12px rgba(255, 230, 160, 0.55);
+  /* stronger black drop shadow + decorative highlights */
+  box-shadow:
+    0 8px 30px rgba(0,0,0,0.45),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
   text-shadow: 0 1px 0 rgba(255,255,255,0.3), 0 -1px 0 rgba(0,0,0,0.1);
   transition: all 0.3s ease;
 }
@@ -2123,6 +2169,24 @@ font-size: 14px;
   #kwangMonth {
     font-size: 16px !important;
     line-height: 1 !important;
+  }
+
+  /* Reduce main daily bill / change sizes on iPad for better fit */
+  /* This targets the inline Daily display and the popup diff box */
+  #DailyBill {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5) !important;
+  }
+  .unit {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+  }
+  #dailyDiffValue {
+    font-size: 14px !important;
+    padding: 6px 10px !important;
   }
 }
 .Kwang_baner {
@@ -3393,6 +3457,35 @@ color: #000000;
   margin-bottom: 10px; 
 }
 
+/* iPad-specific: make date pills smaller and closer together */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .daily-dates-arc {
+    gap: 56px !important; /* increased separation between date pills on iPad (slightly more) */
+  }
+  .daily-date-arc,
+  #dayBeforeDate,
+  #yesterdayDate {
+    font-size: 14px !important; /* smaller date text on iPad */
+    padding: 4px 8px !important; /* tighten pill padding */
+    border-radius: 6px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+  }
+  /* If the daily diff label sits nearby, make it a touch smaller too */
+  #dailyDiffValue {
+    font-size: 14px !important;
+  }
+  /* Make circle inner text match date size on iPad */
+  #dailyDayBefore, #dailyYesterday,
+  #dailyDayBefore .daily-info, #dailyYesterday .daily-info,
+  #dailyDayBefore span, #dailyYesterday span,
+  .kwangcircle-container, .kwangcircle-container .daily-info span,
+  .kwangcircle-container .home-icon + .daily-info span {
+    font-size: 14px !important;
+    line-height: 1 !important;
+  }
+}
+
 #dailyDiffValue {
   font-size: 22px;
   font-weight: bold;
@@ -3830,6 +3923,12 @@ color: #000000;
     max-width: 100%;
     overflow: hidden;
     z-index: 10;
+  }
+
+  /* Reduce 'House' label size on iPad by two steps for better balance */
+  .Bar_name {
+    font-size: 14px !important; /* was ~18px, reduce two steps */
+    line-height: 1 !important;
   }
 }
 .skeleton {
@@ -4357,6 +4456,38 @@ color: #000000;
   .Top_Container .ClientName_Container .ClientNo {
     font-size: 13px !important;
     line-height: 1.05 !important;
+  }
+}
+
+/* Final authoritative iPad override: ensure ClientName equals DailyBill (26px)
+   Placed last to beat earlier !important rules that set smaller sizes. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .Top_Container .ClientName,
+  .Top_Container .ClientName_Container .ClientName {
+    font-size: 20px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* iPad: reduce Meter h1 (100 A / 3 Phase) to avoid overpowering layout */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .Meter h1 {
+    font-size: 14px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+  }
+}
+
+/* Ensure both Meter titles match on iPad (Main_Container and Main_Container2) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .Meter h1,
+  .Meter2 h1 {
+    font-size: 14px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
   }
 }
 
