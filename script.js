@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function updateCheckinStatus() {
     try {
       const roomLabel = document.getElementById('Total_Bar_Label');
-      const roomName = roomLabel ? roomLabel.textContent : '';
+      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : '';
       if (!roomName) return;
       
       const response = await fetch(`/api/active-booking?room=${encodeURIComponent(roomName)}`);
@@ -289,18 +289,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (result.success && result.hasActiveBooking) {
         activeBookingData = result;
         
-        if (result.isCheckedIn) {
-          // Checked-in: show countdown
-          checkinRemainingSeconds = result.remainingSeconds;
-          updateCountdownDisplay();
-          if (!checkinCountdownInterval) {
-            startCheckinCountdown();
-          }
-        } else {
-          // Has booking but not checked in yet
-          if (realtimeCountdown) {
-            realtimeCountdown.textContent = result.booking.startTime + '-' + result.booking.endTime;
-          }
+        // Always show countdown regardless of check-in status
+        checkinRemainingSeconds = result.remainingSeconds;
+        updateCountdownDisplay();
+        if (!checkinCountdownInterval) {
+          startCheckinCountdown();
         }
       } else {
         // No active booking
