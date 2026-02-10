@@ -295,6 +295,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!checkinCountdownInterval) {
           startCheckinCountdown();
         }
+        // Light bulb ON
+        updateBulbStatus(true);
       } else {
         // No active booking
         activeBookingData = null;
@@ -305,6 +307,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           clearInterval(checkinCountdownInterval);
           checkinCountdownInterval = null;
         }
+        // Light bulb OFF
+        updateBulbStatus(false);
       }
     } catch (err) {
       console.error('Error fetching active booking:', err);
@@ -342,6 +346,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       String(h).padStart(2, '0') + ':' + 
       String(m).padStart(2, '0') + ':' + 
       String(s).padStart(2, '0');
+  }
+
+  // Bulb status indicator
+  function updateBulbStatus(isActive) {
+    const bulbIcon = document.getElementById('bulbIcon');
+    if (bulbIcon) {
+      bulbIcon.classList.toggle('on', isActive);
+      bulbIcon.classList.toggle('off', !isActive);
+    }
   }
 
   // Poll check-in status every 5 seconds

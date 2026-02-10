@@ -1605,6 +1605,49 @@ font-size: 14px;
 #marker2 { top: 65%; right: 215px; }
 #marker3 { bottom: 65%; right: 215px; }
 
+/* ================= Bulb Status Icon ================= */
+.bulb-status {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.bulb-icon {
+  transition: all 0.4s ease;
+  filter: drop-shadow(0 0 0px transparent);
+}
+
+.bulb-icon.off .bulb-glass {
+  fill: #d5cdb5;
+}
+
+.bulb-icon.on .bulb-glass {
+  fill: #FFD54F;
+  filter: drop-shadow(0 0 8px rgba(255, 213, 79, 0.9));
+}
+
+.bulb-icon.on {
+  animation: bulbGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes bulbGlow {
+  0%   { filter: drop-shadow(0 0 4px rgba(255, 213, 79, 0.5)); }
+  100% { filter: drop-shadow(0 0 12px rgba(255, 200, 50, 0.9)); }
+}
+
+.bulb-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #74640a;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .Realtime_kW {
   position: absolute;
   right: 8px;
