@@ -16,7 +16,7 @@
   <!-- iOS Safari full screen fix -->
   <meta name="apple-mobile-web-app-title" content="Momay">
   <!-- ใส่ CSS versioned แทนตัวเดิม -->
-  <link rel="stylesheet" href="style.css?v=2.8.3">
+  <link rel="stylesheet" href="style.css?v=2.12.1">
 </head>
 
 <body>
@@ -25,11 +25,11 @@
 <div id="Date_icon">
   <div class="marquee">
     <div id="weather">
-      <span style="font-weight:bold; color:#000000;">Momay</span>
-      <span id="weather-city"></span>
-      <span id="Date"></span> |
-      <span id="weather-temp"></span> |
-      <span id="weather-icon"></span> |
+      <span style="font-weight:bold; color:#000000; font-size:0.82em;">Collaborative Sensing Platform by Momay</span>
+      <span id="weather-city" style="font-size:0.82em;"></span>
+      <span id="Date" style="font-size:0.82em;"></span> |
+      <span id="weather-temp" style="font-size:0.82em;"></span> |
+      <span id="weather-icon" style="font-size:0.82em;"></span> |
     </div>
   </div>
 </div>
@@ -40,14 +40,30 @@
 
 <div class="Top_Container">
   <div class="ClientName_Container">
-    <div class="ClientName">99/99</div>
-    <div class="Date_install">Date Installed : 06-01-25</div>
-    <div class="ClientNo">Usernumber : No.004</div>
+    <div class="ClientName">สำนักหอสมุด ม.บูรพา</div>
+    <div class="Date_install">User Number : No.006</div>
+    <div class="ClientNo">Contract Number : -</div>
+    <div class="ClientNo">Date Installed : 11-02-25</div>
+    <div class="ClientNo">Contract Expiry : -</div>
   </div>
-<div class="ElectricalBill_Container">
-  <div id="DailyBill"></div>
-  <div class="unit"></div>
-</div>
+  <div class="top-right-col">
+    <div id="icons-frame">
+      <div id="Calendar_icon">
+        <img src="./images/calendar_icon.png" alt="Calendar">
+      </div>
+      <div id="Kwang_icon">
+        <img src="./images/Kwang_icon.png" alt="Kwang">
+      </div>
+      <div id="Bell_icon">
+        <img src="./images/Bell_icon.png" alt="Bell">
+        <span id="bellBadge">0</span>
+      </div>
+    </div>
+    <div class="ElectricalBill_Container">
+      <div id="DailyBill"></div>
+      <div class="unit"></div>
+    </div>
+  </div>
 </div>
   <!--maincon1 -->
   <!-- Swipeable Page View wrapper -->
@@ -56,36 +72,41 @@
       <div class="page active">
         <div class="Main_Container">
   <div class="Containerglow"></div>
-  <div id="Total_Bar_Label" class="total-bar-label">House<br>electrical Usage</div>
-  <div id="Total_Bar">
-    <canvas id="totalDonutCanvas"></canvas>
-    <div id="Total_Bar_Text">0%</div>
+  <div class="room-selector-wrap">
+    <div id="Total_Bar_Label" class="total-bar-label room-selectable">ห้อง101โถงชั้น1 <span class="room-arrow">▼</span></div>
+    <div id="roomDropdown" class="room-dropdown" style="display:none;">
+      <div class="room-option selected" data-room="ห้อง101โถงชั้น1">ห้อง101โถงชั้น1</div>
+      <div class="room-option" data-room="ห้อง200">ห้อง200</div>
+      <div class="room-option" data-room="ห้อง300">ห้อง300</div>
+    </div>
   </div>
   
-
   <div id="Main_Picinfo">
     <div id="Icons_group">
       
-      <div id="Calendar_icon">
-        <img src="./images/calendar_icon.png" alt="Calendar">
-      </div>
-      
-      <div id="Kwang_icon">
-        <img src="./images/Kwang_icon.png" alt="Kwang">
-      </div>
-      
-      <div id="Bell_icon">
-        <img src="./images/Bell_icon.png" alt="Bell">
-        <span id="bellBadge">0</span>
+      <div id="RoomBooking_icon">
+        <img src="./images/Booking _icon.png" alt="Room Booking">
       </div>
       
     </div>
   </div>
 
-  <div class="Meter">
-    <h1>100 A</h1>
-    <h1>3 Phase</h1>
+  <!-- Date Picker -->
+  <div id="PickDate">
+    <button id="prevDay" type="button">&lt;</button>
+    <span id="currentDay"></span>
+    <button id="nextDay" type="button">&gt;</button>
   </div>
+  
+  <!-- Chart in Main Container -->
+  <div class="MainChart_Container">
+    <div id="chartSpinner" class="chart-spinner">
+      <div class="spinner-ring"></div>
+      <span class="spinner-text">Loading...</span>
+    </div>
+    <canvas id="EnergyChart"></canvas>
+  </div>
+
    <div id="info_icon">
     <img src="./images/info.png" alt="info">
   </div>
@@ -123,10 +144,11 @@
         </div>
       </div>
     </div>
-    <!-- pagination dots -->
-    <div class="page-dots" aria-hidden="true">
-      <button id="dotLeft" class="dot prev">&lt;</button>
-      <button id="dotRight" class="dot next">&gt;</button>
+    <!-- pagination dots (room-based) -->
+    <div class="page-dots room-dots" aria-hidden="true">
+      <span class="dot active" data-room="ห้อง101โถงชั้น1"></span>
+      <span class="dot" data-room="ห้อง200"></span>
+      <span class="dot" data-room="ห้อง300"></span>
     </div>
   </div>
 
@@ -178,25 +200,180 @@
   </div>
 </div>
 
-<div class="Floor_Container">
-  <div class="floor-wrapper">
-    <h1 class="Bar_name">House</h1>
-    <div id="floor1" class="progress-container">
-      <div id="floor1_Text" class="progress-text"></div> <!-- ตัวเลขเปอร์เซ็นต์ -->
-      <div class="progress-bar" style="width: 40%"></div>
+<!-- Room Booking Popup -->
+<div id="roomBookingPopup" style="display:none;">
+  <div class="roomBookingContent">
+    <h3 id="roomBookingTitle">จองห้อง: ห้อง101โถงชั้น1</h3>
+    
+    <!-- Date picker for schedule -->
+    <div class="schedule-date-picker">
+      <button id="schedulePrevDay" type="button">&lt;</button>
+      <input type="date" id="bookingDate">
+      <button id="scheduleNextDay" type="button">&gt;</button>
+    </div>
+    
+    <!-- Booking Schedule Table -->
+    <div class="booking-schedule">
+      <div class="schedule-header">
+        <span class="schedule-time-header">เวลา</span>
+        <span class="schedule-room-header" id="scheduleRoomName">ห้อง101โถงชั้น1</span>
+      </div>
+      <div class="schedule-body" id="scheduleBody">
+        <!-- Time slots will be generated by JS -->
+      </div>
+    </div>
+    
+    <div class="booking-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>เวลาเริ่ม:</label>
+          <div class="custom-select" id="startTimeSelect">
+            <div class="select-selected">09:00</div>
+            <div class="select-items select-hide">
+              <div data-value="00:00">00:00</div>
+              <div data-value="00:30">00:30</div>
+              <div data-value="01:00">01:00</div>
+              <div data-value="01:30">01:30</div>
+              <div data-value="02:00">02:00</div>
+              <div data-value="02:30">02:30</div>
+              <div data-value="03:00">03:00</div>
+              <div data-value="03:30">03:30</div>
+              <div data-value="04:00">04:00</div>
+              <div data-value="04:30">04:30</div>
+              <div data-value="05:00">05:00</div>
+              <div data-value="05:30">05:30</div>
+              <div data-value="06:00">06:00</div>
+              <div data-value="06:30">06:30</div>
+              <div data-value="07:00">07:00</div>
+              <div data-value="07:30">07:30</div>
+              <div data-value="08:00">08:00</div>
+              <div data-value="08:30">08:30</div>
+              <div data-value="09:00" class="same-as-selected">09:00</div>
+              <div data-value="09:30">09:30</div>
+              <div data-value="10:00">10:00</div>
+              <div data-value="10:30">10:30</div>
+              <div data-value="11:00">11:00</div>
+              <div data-value="11:30">11:30</div>
+              <div data-value="12:00">12:00</div>
+              <div data-value="12:30">12:30</div>
+              <div data-value="13:00">13:00</div>
+              <div data-value="13:30">13:30</div>
+              <div data-value="14:00">14:00</div>
+              <div data-value="14:30">14:30</div>
+              <div data-value="15:00">15:00</div>
+              <div data-value="15:30">15:30</div>
+              <div data-value="16:00">16:00</div>
+              <div data-value="16:30">16:30</div>
+              <div data-value="17:00">17:00</div>
+              <div data-value="17:30">17:30</div>
+              <div data-value="18:00">18:00</div>
+              <div data-value="18:30">18:30</div>
+              <div data-value="19:00">19:00</div>
+              <div data-value="19:30">19:30</div>
+              <div data-value="20:00">20:00</div>
+              <div data-value="20:30">20:30</div>
+              <div data-value="21:00">21:00</div>
+              <div data-value="21:30">21:30</div>
+              <div data-value="22:00">22:00</div>
+              <div data-value="22:30">22:30</div>
+              <div data-value="23:00">23:00</div>
+              <div data-value="23:30">23:30</div>
+            </div>
+            <input type="hidden" id="bookingStartTime" value="09:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>เวลาสิ้นสุด:</label>
+          <div class="custom-select" id="endTimeSelect">
+            <div class="select-selected">17:00</div>
+            <div class="select-items select-hide">
+              <div data-value="00:30">00:30</div>
+              <div data-value="01:00">01:00</div>
+              <div data-value="01:30">01:30</div>
+              <div data-value="02:00">02:00</div>
+              <div data-value="02:30">02:30</div>
+              <div data-value="03:00">03:00</div>
+              <div data-value="03:30">03:30</div>
+              <div data-value="04:00">04:00</div>
+              <div data-value="04:30">04:30</div>
+              <div data-value="05:00">05:00</div>
+              <div data-value="05:30">05:30</div>
+              <div data-value="06:00">06:00</div>
+              <div data-value="06:30">06:30</div>
+              <div data-value="07:00">07:00</div>
+              <div data-value="07:30">07:30</div>
+              <div data-value="08:00">08:00</div>
+              <div data-value="08:30">08:30</div>
+              <div data-value="09:00">09:00</div>
+              <div data-value="09:30">09:30</div>
+              <div data-value="10:00">10:00</div>
+              <div data-value="10:30">10:30</div>
+              <div data-value="11:00">11:00</div>
+              <div data-value="11:30">11:30</div>
+              <div data-value="12:00">12:00</div>
+              <div data-value="12:30">12:30</div>
+              <div data-value="13:00">13:00</div>
+              <div data-value="13:30">13:30</div>
+              <div data-value="14:00">14:00</div>
+              <div data-value="14:30">14:30</div>
+              <div data-value="15:00">15:00</div>
+              <div data-value="15:30">15:30</div>
+              <div data-value="16:00">16:00</div>
+              <div data-value="16:30">16:30</div>
+              <div data-value="17:00" class="same-as-selected">17:00</div>
+              <div data-value="17:30">17:30</div>
+              <div data-value="18:00">18:00</div>
+              <div data-value="18:30">18:30</div>
+              <div data-value="19:00">19:00</div>
+              <div data-value="19:30">19:30</div>
+              <div data-value="20:00">20:00</div>
+              <div data-value="20:30">20:30</div>
+              <div data-value="21:00">21:00</div>
+              <div data-value="21:30">21:30</div>
+              <div data-value="22:00">22:00</div>
+              <div data-value="22:30">22:30</div>
+              <div data-value="23:00">23:00</div>
+              <div data-value="23:30">23:30</div>
+              <div data-value="24:00">24:00</div>
+            </div>
+            <input type="hidden" id="bookingEndTime" value="17:00">
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>ชื่อผู้จอง:</label>
+          <input type="text" id="bookerName" placeholder="กรอกชื่อผู้จอง">
+        </div>
+        <div class="form-group">
+          <label>วัตถุประสงค์:</label>
+          <input type="text" id="bookingPurpose" placeholder="กรอกวัตถุประสงค์">
+        </div>
+      </div>
+    </div>
+    <div class="booking-actions">
+      <button id="confirmBooking" class="booking-btn confirm">ยืนยันการจอง</button>
+      <button id="cancelBooking" class="booking-btn cancel">ยกเลิก</button>
     </div>
   </div>
-
-  <div class="floor-wrapper">
-    <h1 class="Bar_name">-</h1>
-    <div id="floor2" class="progress-container">
-      <div id="floor2_Text" class="progress-text"></div> <!-- ตัวเลขเปอร์เซ็นต์ -->
-      <div class="progress-bar" style="width: 20%"></div>
-    </div>
-  </div>
-
-  <div class="Realtime_kW"></div>
 </div>
+
+<!-- QR Code Popup -->
+<div id="qrCodePopup" style="display:none;">
+  <div class="qrCodeContent">
+    <h3>✅ จองห้องสำเร็จ!</h3>
+    <p id="qrBookingInfo"></p>
+    <div id="qrCodeContainer"></div>
+    <p class="qr-instruction">สแกน QR Code เพื่อเข้าห้อง</p>
+    <button id="closeQrPopup" class="booking-btn confirm">ปิด</button>
+  </div>
+</div>
+
+<div class="Floor_Container">
+  <div class="Realtime_kW" id="realtimeCountdown">--:--:--</div>
+</div>
+
+
 <!-- Overlay มีอยู่แล้ว -->
 <div id="overlay"></div>
 
@@ -258,14 +435,46 @@
 
 
 <div class="Realtime_Container">
-  <!-- Vintage Date Picker -->
-<div id="PickDate">
-  <button id="prevDay" type="button">&lt;</button>
-  <span id="currentDay"></span>
-  <button id="nextDay" type="button">&gt;</button>
-</div>
-  <!-- Chart.js Canvas -->
-  <canvas id="EnergyChart"></canvas>
+  <!-- Daily Bill Comparison: Today vs Yesterday -->
+  <div class="bill-compare-section">
+    <div class="bill-compare-row">
+      <div class="bill-compare-card">
+        <div class="bill-compare-date" id="billYesterdayDate">--</div>
+        <div class="bill-compare-circle">
+          <div class="bill-compare-data" id="billYesterdayData">-- Unit<br>-- THB.</div>
+        </div>
+      </div>
+      <div class="bill-compare-card">
+        <div class="bill-compare-date" id="billTodayDate">--</div>
+        <div class="bill-compare-circle">
+          <div class="bill-compare-data" id="billTodayData">-- Unit<br>-- THB.</div>
+        </div>
+      </div>
+    </div>
+    <div class="bill-compare-diff-wrap">
+      <div class="bill-compare-diff" id="billDiffValue">Daily Bill Change: --</div>
+    </div>
+  </div>
+
+  <hr class="energy-divider">
+
+  <!-- Energy Day/Night Chart -->
+  <div class="energy-chart-header">
+    <button class="energy-chart-nav" id="energyChartPrev" type="button">&lt;</button>
+    <span class="energy-chart-title" id="energyChartTitle">7 วันล่าสุด</span>
+    <button class="energy-chart-nav" id="energyChartNext" type="button">&gt;</button>
+  </div>
+  <div style="position:relative;">
+    <div id="energyChartSpinner" class="chart-spinner">
+      <div class="spinner-ring"></div>
+      <span class="spinner-text">Loading...</span>
+    </div>
+    <canvas id="energyDayNightChart"></canvas>
+  </div>
+  <div class="energy-chart-legend">
+    <span class="legend-item"><span class="legend-color" style="background:#f5a623;"></span>Day (THB)</span>
+    <span class="legend-item"><span class="legend-color" style="background:#4a6fa5;"></span>Night (THB)</span>
+  </div>
 </div>
 
 <div class="Bottom_info">
@@ -382,11 +591,12 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 <script src="pageview.js" defer></script>
-<script src="script.js?v=2.8.3" defer></script>
+<script src="script.js?v=2.8.8" defer></script>
 
 
 

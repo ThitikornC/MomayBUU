@@ -62,9 +62,11 @@ self.addEventListener('fetch', event => {
       if (cached) return cached;
       return fetch(event.request)
         .then(networkResp => {
+          // Clone response before using it
+          const responseToCache = networkResp.clone();
           if (networkResp && networkResp.ok) {
             caches.open(CACHE_NAME)
-              .then(cache => cache.put(event.request, networkResp.clone()))
+              .then(cache => cache.put(event.request, responseToCache))
               .catch(err => console.warn('❌ Cache put failed:', err));
           }
           return networkResp;

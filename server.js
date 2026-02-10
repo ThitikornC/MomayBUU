@@ -1,9 +1,33 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { MongoClient, ObjectId } = require('mongodb');
 
 const port = process.env.PORT || 8000;
 const root = path.resolve(__dirname);
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://nippit62:ohm0966477158@testing.hgxbz.mongodb.net/?retryWrites=true&w=majority';
+const DB_NAME = 'momay_buu';
+const COLLECTION_NAME = 'bookings';
+
+let db = null;
+
+async function connectDB() {
+  try {
+    const client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db(DB_NAME);
+    
+    // Create indexes for faster queries
+    await db.collection(COLLECTION_NAME).createIndex({ date: 1, room: 1 });
+    await db.collection(COLLECTION_NAME).createIndex({ bookingId: 1 }, { unique: true });
+    
+    console.log('Connected to MongoDB with indexes');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+  }
+}
 
 function getContentType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -21,7 +45,250 @@ function getContentType(filePath) {
   }
 }
 
-const server = http.createServer((req, res) => {
+// Parse JSON body
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+// Check for overlapping bookings
+async function checkOverlap(room, date, startTime, endTime, excludeId = null) {
+  const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+  const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+  
+  const query = { room, date };
+  if (excludeId) {
+    query._id = { $ne: new ObjectId(excludeId) };
+  }
+  
+  const existingBookings = await db.collection(COLLECTION_NAME).find(query).toArray();
+  
+  for (const booking of existingBookings) {
+    const existingStart = parseInt(booking.startTime.split(':')[0]) * 60 + parseInt(booking.startTime.split(':')[1]);
+    const existingEnd = parseInt(booking.endTime.split(':')[0]) * 60 + parseInt(booking.endTime.split(':')[1]);
+    
+    // Check overlap: (start1 < end2) && (end1 > start2)
+    if (startMinutes < existingEnd && endMinutes > existingStart) {
+      return {
+        overlap: true,
+        conflictWith: booking
+      };
+    }
+  }
+  
+  return { overlap: false };
+}
+
+// API Routes
+async function handleAPI(req, res) {
+  const url = req.url.split('?')[0];
+  const method = req.method;
+  
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
+  
+  if (method === 'OPTIONS') {
+    res.statusCode = 200;
+    res.end();
+    return true;
+  }
+  
+  // GET /api/bookings - Get all bookings or filter by date/room
+  if (url === '/api/bookings' && method === 'GET') {
+    try {
+      const urlParams = new URL(req.url, `http://localhost:${port}`);
+      const date = urlParams.searchParams.get('date');
+      const room = urlParams.searchParams.get('room');
+      
+      const query = {};
+      if (date) query.date = date;
+      if (room) query.room = room;
+      
+      const bookings = await db.collection(COLLECTION_NAME).find(query).toArray();
+      res.statusCode = 200;
+      res.end(JSON.stringify({ success: true, data: bookings }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+    return true;
+  }
+  
+  // POST /api/bookings - Create new booking
+  if (url === '/api/bookings' && method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const { room, date, startTime, endTime, bookerName, purpose } = body;
+      
+      if (!room || !date || !startTime || !endTime || !bookerName) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: 'Missing required fields' }));
+        return true;
+      }
+      
+      // Check for overlapping bookings
+      const overlapCheck = await checkOverlap(room, date, startTime, endTime);
+      if (overlapCheck.overlap) {
+        res.statusCode = 409;
+        res.end(JSON.stringify({ 
+          success: false, 
+          error: `เวลา ${overlapCheck.conflictWith.startTime} - ${overlapCheck.conflictWith.endTime} มีผู้จองแล้ว (${overlapCheck.conflictWith.bookerName})`,
+          conflictWith: overlapCheck.conflictWith
+        }));
+        return true;
+      }
+      
+      // Generate booking ID
+      const bookingId = `BK${Date.now().toString(36).toUpperCase()}`;
+      
+      // Random color for display
+      const colors = ["#4dd0e1", "#81c784", "#ffb74d", "#ba68c8", "#64b5f6"];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      const newBooking = {
+        bookingId,
+        room,
+        date,
+        startTime,
+        endTime,
+        bookerName,
+        purpose: purpose || '',
+        color,
+        createdAt: new Date().toISOString()
+      };
+      
+      const result = await db.collection(COLLECTION_NAME).insertOne(newBooking);
+      newBooking._id = result.insertedId;
+      
+      res.statusCode = 201;
+      res.end(JSON.stringify({ success: true, data: newBooking }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+    return true;
+  }
+  
+  // GET /api/active-booking - Get current active booking for a room
+  if (url.startsWith('/api/active-booking') && method === 'GET') {
+    try {
+      const urlParams = new URL(req.url, `http://localhost:${port}`);
+      const room = urlParams.searchParams.get('room');
+      
+      if (!room) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: 'Missing room parameter' }));
+        return true;
+      }
+      
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      // Find bookings for today and this room
+      const bookings = await db.collection(COLLECTION_NAME).find({
+        room: room,
+        date: today
+      }).toArray();
+      
+      // Find the active booking (current time is within booking window, with 15 min early allowance)
+      let activeBooking = null;
+      for (const booking of bookings) {
+        const [startH, startM] = booking.startTime.split(':').map(Number);
+        const [endH, endM] = booking.endTime.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+        
+        if (currentMinutes >= startMinutes - 15 && currentMinutes <= endMinutes) {
+          activeBooking = booking;
+          break;
+        }
+      }
+      
+      if (activeBooking) {
+        // Calculate remaining seconds using minutes (timezone-safe)
+        const [endH, endM] = activeBooking.endTime.split(':').map(Number);
+        const endMinutes = endH * 60 + endM;
+        const currentSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        const endSecs = endH * 3600 + endM * 60;
+        const remainingSeconds = Math.max(0, endSecs - currentSecs);
+        
+        res.statusCode = 200;
+        res.end(JSON.stringify({
+          success: true,
+          hasActiveBooking: true,
+          isCheckedIn: !!activeBooking.firstCheckIn,
+          firstCheckIn: activeBooking.firstCheckIn || null,
+          remainingSeconds: remainingSeconds,
+          booking: {
+            bookingId: activeBooking.bookingId,
+            room: activeBooking.room,
+            date: activeBooking.date,
+            startTime: activeBooking.startTime,
+            endTime: activeBooking.endTime,
+            bookerName: activeBooking.bookerName,
+            purpose: activeBooking.purpose
+          }
+        }));
+      } else {
+        res.statusCode = 200;
+        res.end(JSON.stringify({
+          success: true,
+          hasActiveBooking: false,
+          message: 'ไม่มีการจองในเวลานี้'
+        }));
+      }
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+    return true;
+  }
+  
+  // DELETE /api/bookings/:id - Delete booking
+  if (url.startsWith('/api/bookings/') && method === 'DELETE') {
+    try {
+      const id = url.split('/').pop();
+      const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
+      
+      if (result.deletedCount === 0) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ success: false, error: 'Booking not found' }));
+        return true;
+      }
+      
+      res.statusCode = 200;
+      res.end(JSON.stringify({ success: true, message: 'Booking deleted' }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+    return true;
+  }
+  
+  return false;
+}
+
+const server = http.createServer(async (req, res) => {
+  // Handle API routes first
+  if (req.url.startsWith('/api/')) {
+    await handleAPI(req, res);
+    return;
+  }
+  
+  // Static file serving
   const decoded = decodeURIComponent(req.url.split('?')[0]);
   let filePath = path.join(root, decoded);
   if (filePath.endsWith(path.sep)) filePath = path.join(filePath, 'index.html');
@@ -51,6 +318,9 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(port, () => {
-  console.log(`Static server running at http://localhost:${port}/`);
+// Connect to DB then start server
+connectDB().then(() => {
+  server.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}/`);
+  });
 });

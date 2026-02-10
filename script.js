@@ -155,6 +155,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   // API base URL (declare early so functions can use it immediately)
   const API_BASE = 'https://momaydocbn-production.up.railway.app';
 
+  // ================= Room Management =================
+  // Only ห้อง101โถงชั้น1 has real data; others are empty placeholders
+  const PRIMARY_ROOM = 'ห้อง101โถงชั้น1';
+  let currentRoom = PRIMARY_ROOM;
+
+  function isRoomWithData(roomName) {
+    return roomName === PRIMARY_ROOM;
+  }
+
+  // Chart instances
+  let totalDonutChart = null;
+
   function isCacheValid(key, duration) {
     return cache.lastFetch[key] && (Date.now() - cache.lastFetch[key] < duration);
   }
@@ -250,18 +262,352 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
-  // ================= Progress bars =================
-  const floor1Bar = document.querySelector('#floor1 .progress-bar');
+  // ================= Progress bars & Check-in Status =================
   const totalBar = document.querySelector('#Total_Bar .progress-bar');
   const glow = document.querySelector('.glow');
-  const realtimeKWEl = document.querySelector('.Realtime_kW');
   const mainContainer = document.querySelector('.Main_Container');
   const glowEl = document.querySelector('.glow');
   const totalBarText = document.getElementById('Total_Bar_Text');
-  const floor1Text = document.getElementById('floor1_Text');
+
+  // Countdown element
+  const realtimeCountdown = document.getElementById('realtimeCountdown');
+  
+  let checkinCountdownInterval = null;
+  let checkinRemainingSeconds = 0;
+  let activeBookingData = null;
+
+  // Fetch active booking status for the room
+  async function updateCheckinStatus() {
+    try {
+      const roomLabel = document.getElementById('Total_Bar_Label');
+      const roomName = roomLabel ? roomLabel.textContent : '';
+      if (!roomName) return;
+      
+      const response = await fetch(`/api/active-booking?room=${encodeURIComponent(roomName)}`);
+      const result = await response.json();
+      
+      if (result.success && result.hasActiveBooking) {
+        activeBookingData = result;
+        
+        if (result.isCheckedIn) {
+          // Checked-in: show countdown
+          checkinRemainingSeconds = result.remainingSeconds;
+          updateCountdownDisplay();
+          if (!checkinCountdownInterval) {
+            startCheckinCountdown();
+          }
+        } else {
+          // Has booking but not checked in yet
+          if (realtimeCountdown) {
+            realtimeCountdown.textContent = result.booking.startTime + '-' + result.booking.endTime;
+          }
+        }
+      } else {
+        // No active booking
+        activeBookingData = null;
+        if (realtimeCountdown) { realtimeCountdown.textContent = '--:--:--'; }
+        
+        // Stop countdown if running
+        if (checkinCountdownInterval) {
+          clearInterval(checkinCountdownInterval);
+          checkinCountdownInterval = null;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching active booking:', err);
+    }
+  }
+  
+  function startCheckinCountdown() {
+    updateCountdownDisplay();
+    checkinCountdownInterval = setInterval(() => {
+      checkinRemainingSeconds--;
+      if (checkinRemainingSeconds <= 0) {
+        checkinRemainingSeconds = 0;
+        clearInterval(checkinCountdownInterval);
+        checkinCountdownInterval = null;
+        
+        // Time's up - show check-out
+        if (checkinDot) { checkinDot.className = 'checkin-dot no-booking'; }
+        if (checkinLabel) { 
+          checkinLabel.className = 'checkin-label checked-out'; 
+          checkinLabel.textContent = '🔴 Check-out'; 
+        }
+        if (realtimeCountdown) { realtimeCountdown.textContent = '00:00:00'; }
+      } else {
+        updateCountdownDisplay();
+      }
+    }, 1000);
+  }
+  
+  function updateCountdownDisplay() {
+    if (!realtimeCountdown) return;
+    const h = Math.floor(checkinRemainingSeconds / 3600);
+    const m = Math.floor((checkinRemainingSeconds % 3600) / 60);
+    const s = checkinRemainingSeconds % 60;
+    realtimeCountdown.textContent = 
+      String(h).padStart(2, '0') + ':' + 
+      String(m).padStart(2, '0') + ':' + 
+      String(s).padStart(2, '0');
+  }
+
+  // Poll check-in status every 5 seconds
+  updateCheckinStatus();
+  setInterval(updateCheckinStatus, 5000);
+
+  // ================= Energy Day/Night Bar Chart =================
+  let energyChartInstance = null;
+  let energyChartEndDate = new Date(); // end date of 7-day range
+
+  function toDateStr(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function formatShortDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${parseInt(d)} ${shortMonths[parseInt(m)-1]}`;
+  }
+
+  function formatTitleDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${parseInt(d)} ${shortMonths[parseInt(m)-1]} ${y}`;
+  }
+
+  async function fetchEnergyChartData() {
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(energyChartEndDate);
+      d.setDate(d.getDate() - i);
+      dates.push(toDateStr(d));
+    }
+
+    // Update title
+    const titleEl = document.getElementById('energyChartTitle');
+    if (titleEl) {
+      titleEl.textContent = `${formatTitleDate(dates[0])} - ${formatTitleDate(dates[6])}`;
+    }
+
+    // Fetch all 7 days in parallel
+    const results = await Promise.all(
+      dates.map(async (date) => {
+        try {
+          const res = await fetch(`${API_BASE}/solar-size?date=${date}`);
+          const json = await res.json();
+          return { date, dayCost: json.dayCost ?? 0, nightCost: json.nightCost ?? 0 };
+        } catch {
+          return { date, dayCost: 0, nightCost: 0 };
+        }
+      })
+    );
+
+    return results;
+  }
+
+  async function renderEnergyChart() {
+    const canvas = document.getElementById('energyDayNightChart');
+    if (!canvas) return;
+
+    const energySpinner = document.getElementById('energyChartSpinner');
+
+    // For rooms without data, show empty chart
+    if (!isRoomWithData(currentRoom)) {
+      if (energySpinner) energySpinner.classList.remove('active');
+      if (energyChartInstance) {
+        energyChartInstance.data.datasets.forEach(ds => {
+          ds.data = new Array(ds.data.length).fill(0);
+        });
+        energyChartInstance.update('none');
+      }
+      return;
+    }
+
+    // Show loading spinner
+    if (energySpinner) energySpinner.classList.add('active');
+
+    const data = await fetchEnergyChartData();
+    const labels = data.map(d => formatShortDate(d.date));
+    const dayCosts = data.map(d => d.dayCost);
+    const nightCosts = data.map(d => d.nightCost);
+
+    if (energyChartInstance) {
+      energyChartInstance.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    energyChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'กลางวัน',
+            data: dayCosts,
+            backgroundColor: 'rgba(245, 166, 35, 0.85)',
+            borderColor: '#d4920a',
+            borderWidth: 1,
+            borderRadius: 3,
+            barPercentage: 0.7,
+            categoryPercentage: 0.65
+          },
+          {
+            label: 'กลางคืน',
+            data: nightCosts,
+            backgroundColor: 'rgba(74, 111, 165, 0.85)',
+            borderColor: '#35577a',
+            borderWidth: 1,
+            borderRadius: 3,
+            barPercentage: 0.7,
+            categoryPercentage: 0.65
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        layout: { padding: { left: 0, right: 10 } },
+        animation: { duration: 400 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleFont: { size: 11 },
+            bodyFont: { size: 11 },
+            callbacks: {
+              label: function(ctx) {
+                return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + ' THB';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#555', font: { size: 9, weight: '600' } }
+          },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            beginAtZero: true,
+            ticks: { 
+              color: '#555', 
+              font: { size: 9 },
+              callback: function(v) { return v.toFixed(0); }
+            },
+            title: {
+              display: true,
+              text: 'THB',
+              color: '#555',
+              font: { size: 9, weight: '700' }
+            }
+          }
+        }
+      }
+    });
+
+    // Hide loading spinner
+    if (energySpinner) energySpinner.classList.remove('active');
+  }
+
+  // Date navigation for energy chart
+  const energyChartPrev = document.getElementById('energyChartPrev');
+  const energyChartNext = document.getElementById('energyChartNext');
+
+  if (energyChartPrev) {
+    energyChartPrev.addEventListener('click', () => {
+      energyChartEndDate.setDate(energyChartEndDate.getDate() - 7);
+      renderEnergyChart();
+    });
+  }
+
+  if (energyChartNext) {
+    energyChartNext.addEventListener('click', () => {
+      energyChartEndDate.setDate(energyChartEndDate.getDate() + 7);
+      renderEnergyChart();
+    });
+  }
+
+  // Initial render
+  renderEnergyChart();
+
+  // ================= Bill Comparison (Today vs Yesterday) =================
+  async function fetchBillForDate(dateStr) {
+    try {
+      const res = await fetch(`${API_BASE}/daily-bill?date=${dateStr}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (typeof json === 'number') return { electricity_bill: json, total_energy_kwh: json / 4.4 };
+      if (json && typeof json.electricity_bill === 'number') return json;
+      if (json && typeof json.electricity_bill === 'string') return { ...json, electricity_bill: parseFloat(json.electricity_bill) || 0 };
+      return null;
+    } catch (e) {
+      console.error('fetchBillForDate error:', e);
+      return null;
+    }
+  }
+
+  function billDateLabel(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(d)}/${months[parseInt(m)-1]}/${y}`;
+  }
+
+  async function updateBillCompare() {
+    // Skip fetching for rooms without data
+    if (!isRoomWithData(currentRoom)) return;
+
+    const now = new Date();
+    const todayStr = toDateStr(now);
+    const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+    const yesterdayStr = toDateStr(yest);
+
+    const [todayData, yesterdayData] = await Promise.all([
+      fetchBillForDate(todayStr),
+      fetchBillForDate(yesterdayStr)
+    ]);
+
+    const todayDateEl = document.getElementById('billTodayDate');
+    const yesterdayDateEl = document.getElementById('billYesterdayDate');
+    const todayDataEl = document.getElementById('billTodayData');
+    const yesterdayDataEl = document.getElementById('billYesterdayData');
+    const diffEl = document.getElementById('billDiffValue');
+
+    if (yesterdayDateEl) yesterdayDateEl.textContent = billDateLabel(yesterdayStr);
+    if (todayDateEl) todayDateEl.textContent = billDateLabel(todayStr);
+
+    const todayBill = todayData ? (todayData.electricity_bill || 0) : 0;
+    const todayUnit = todayData ? (todayData.total_energy_kwh || todayBill / 4.4) : 0;
+    const yesterdayBill = yesterdayData ? (yesterdayData.electricity_bill || 0) : 0;
+    const yesterdayUnit = yesterdayData ? (yesterdayData.total_energy_kwh || yesterdayBill / 4.4) : 0;
+
+    if (yesterdayDataEl) yesterdayDataEl.innerHTML = `${yesterdayBill.toFixed(2)} THB.<br>${yesterdayUnit.toFixed(2)} Unit`;
+    if (todayDataEl) todayDataEl.innerHTML = `${todayBill.toFixed(2)} THB.<br>${todayUnit.toFixed(2)} Unit`;
+
+    if (diffEl) {
+      const diff = todayBill - yesterdayBill;
+      const arrowUp = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2L5 10h14L12 2z" fill="red"/></svg>`;
+      const arrowDown = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 22l7-8H5l7 8z" fill="green"/></svg>`;
+      const color = diff >= 0 ? 'red' : 'green';
+      const arrow = diff >= 0 ? arrowUp : arrowDown;
+      diffEl.innerHTML = `
+        <span>Daily Bill Change: </span>
+        <span style="color:${color}; font-weight:bold;">${Math.abs(diff).toFixed(2)}฿</span>
+        ${arrow}
+      `;
+    }
+  }
+
+  updateBillCompare();
+  setInterval(updateBillCompare, 60000);
 
   async function updateBarsAndKW() {
     try {
+      // Skip fetching for rooms without data
+      if (!isRoomWithData(currentRoom)) return;
+
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -298,15 +644,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function renderPowerData(latest) {
-    const floor1Percent = Math.min((latest / floor1_maxKW) * 100, 100);
-    if(floor1Bar){
-      floor1Bar.style.width = `${floor1Percent}%`;
-      floor1Bar.style.backgroundColor = floor1Percent <= 50 ? '#FBBF32' : '#b82500';
-    }
-    if(floor1Text){
-      floor1Text.textContent = `${Math.round(floor1Percent)}%`;
-    }
-
     const totalPercent = Math.min((latest / total_maxKW) * 100, 100)
 
     if (totalDonutChart) {
@@ -338,10 +675,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       glow.style.width = `${glowSize}%`;
       glow.style.height = `${glowSize}%`;
     }
-
-    if(realtimeKWEl){
-      realtimeKWEl.textContent = latest.toFixed(2) + ' kW';
-    }
   }
 
   initializeTotalDonut()
@@ -370,6 +703,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   // optionalDate: can be a Date object or a YYYY-MM-DD string. If omitted, uses today.
   async function fetchDailyBill(optionalDate) {
     try {
+      // Skip fetching for rooms without data
+      if (!isRoomWithData(currentRoom)) return;
+
       // Render cached bill immediately if available
       if (cache.dailyBill !== null && cache.dailyBill !== undefined) {
         renderDailyBill(cache.dailyBill);
@@ -569,6 +905,21 @@ function getMinuteLabels() {
 async function updateChartData(date){
   if (!chart) return;
 
+  const chartSpinner = document.getElementById('chartSpinner');
+
+  // For rooms without data, clear the chart
+  if (!isRoomWithData(currentRoom)) {
+    if (chartSpinner) chartSpinner.classList.remove('active');
+    chart.data.datasets.forEach(ds => {
+      ds.data = new Array(ds.data.length).fill(null);
+    });
+    chart.update('none');
+    return;
+  }
+
+  // Show loading spinner
+  if (chartSpinner) chartSpinner.classList.add('active');
+
   const values = await fetchDailyData(date);
 
   // สร้าง array 1440 จุด (1 นาทีต่อจุด) สำหรับ total และแต่ละเฟส A/B/C
@@ -663,6 +1014,10 @@ async function updateChartData(date){
   }
 
   chart.update('none'); // อัปเดตแบบไม่มี animation
+
+  // Hide loading spinner
+  const chartSpinnerEnd = document.getElementById('chartSpinner');
+  if (chartSpinnerEnd) chartSpinnerEnd.classList.remove('active');
 
   // Prefetch adjacent days to make quick navigation (<2s) for next/prev
   try { prefetchAdjacentDays(date, 2); } catch (e) { /* ignore */ }
@@ -1241,18 +1596,416 @@ initializeChart();
 
   initializeCalendar();
 
-  const calendarIcon = document.querySelector("#Calendar_icon img");
+  const calendarIcon = document.querySelector("#icons-frame #Calendar_icon");
+  const calendarIconImg = document.querySelector("#icons-frame #Calendar_icon img");
   const popup = document.getElementById("calendarPopup");
 
-  if (calendarIcon && popup) {
-    calendarIcon.addEventListener("click", () => {
+  if (popup) {
+    // Bind click on both the div and img for maximum compatibility
+    const openCalendar = () => {
       popup.classList.add("active");
       calendar?.updateSize();
+    };
+    if (calendarIcon) calendarIcon.addEventListener("click", openCalendar);
+    if (calendarIconImg) calendarIconImg.addEventListener("click", (e) => {
+      e.stopPropagation(); // prevent double-fire
+      openCalendar();
     });
     popup.addEventListener("click", e => {
       if (e.target === popup) popup.classList.remove("active");
     });
   }
+
+  // ================= Room Booking =================
+  const roomBookingIcon = document.querySelector("#RoomBooking_icon img");
+  const roomBookingPopup = document.getElementById("roomBookingPopup");
+  const roomBookingTitle = document.getElementById("roomBookingTitle");
+  const confirmBookingBtn = document.getElementById("confirmBooking");
+  const cancelBookingBtn = document.getElementById("cancelBooking");
+  const bookingOverlay = document.getElementById("overlay");
+  
+  // Bookings data cache
+  let bookingsDataByDate = {};
+  
+  // Fetch bookings from API
+  async function fetchBookings(date, room) {
+    try {
+      const params = new URLSearchParams();
+      if (date) params.append('date', date);
+      if (room) params.append('room', room);
+      
+      const response = await fetch(`/api/bookings?${params.toString()}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        // Group by date
+        result.data.forEach(booking => {
+          if (!bookingsDataByDate[booking.date]) {
+            bookingsDataByDate[booking.date] = [];
+          }
+          // Check if already exists
+          const exists = bookingsDataByDate[booking.date].find(b => b._id === booking._id);
+          if (!exists) {
+            bookingsDataByDate[booking.date].push({
+              _id: booking._id,
+              startTime: booking.startTime,
+              endTime: booking.endTime,
+              booker: booking.bookerName,
+              color: booking.color
+            });
+          }
+        });
+        return result.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      return [];
+    }
+  }
+  
+  // Generate schedule table for selected date
+  async function generateScheduleTable(selectedDate) {
+    const scheduleBody = document.getElementById("scheduleBody");
+    const scheduleRoomName = document.getElementById("scheduleRoomName");
+    const roomLabel = document.getElementById("Total_Bar_Label");
+    
+    if (!scheduleBody) return;
+    
+    // Set room name in header
+    const roomName = roomLabel ? roomLabel.textContent : '';
+    if (scheduleRoomName && roomLabel) {
+      scheduleRoomName.textContent = roomLabel.textContent;
+    }
+    
+    // Fetch bookings from API
+    await fetchBookings(selectedDate, roomName);
+    
+    // Get bookings for selected date
+    const bookingsData = bookingsDataByDate[selectedDate] || [];
+    
+    // Clear existing rows
+    scheduleBody.innerHTML = "";
+    
+    // Generate time slots from 00:00 to 24:00
+    const timeSlots = [];
+    for (let hour = 0; hour <= 23; hour++) {
+      timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+      timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+    
+    timeSlots.forEach(time => {
+      const row = document.createElement("div");
+      row.className = "schedule-row";
+      
+      const timeCell = document.createElement("div");
+      timeCell.className = "schedule-time";
+      timeCell.textContent = time;
+      
+      const slotCell = document.createElement("div");
+      slotCell.className = "schedule-slot";
+      
+      // Check if this time slot is booked
+      const booking = bookingsData.find(b => {
+        const startMinutes = parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1]);
+        const endMinutes = parseInt(b.endTime.split(':')[0]) * 60 + parseInt(b.endTime.split(':')[1]);
+        const slotMinutes = parseInt(time.split(':')[0]) * 60 + parseInt(time.split(':')[1]);
+        return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+      });
+      
+      if (booking) {
+        slotCell.classList.add("booked");
+        slotCell.style.backgroundColor = booking.color;
+        // Only show name at start time
+        if (time === booking.startTime) {
+          slotCell.classList.add("booked-start");
+          slotCell.textContent = booking.booker;
+        }
+      } else {
+        slotCell.classList.add("available");
+      }
+      
+      row.appendChild(timeCell);
+      row.appendChild(slotCell);
+      scheduleBody.appendChild(row);
+    });
+  }
+  
+  // Date navigation for schedule
+  const schedulePrevDay = document.getElementById("schedulePrevDay");
+  const scheduleNextDay = document.getElementById("scheduleNextDay");
+  const bookingDateInput = document.getElementById("bookingDate");
+  
+  if (schedulePrevDay) {
+    schedulePrevDay.addEventListener("click", () => {
+      if (bookingDateInput && bookingDateInput.value) {
+        const currentDate = new Date(bookingDateInput.value);
+        currentDate.setDate(currentDate.getDate() - 1);
+        bookingDateInput.value = currentDate.toISOString().split('T')[0];
+        generateScheduleTable(bookingDateInput.value);
+      }
+    });
+  }
+  
+  if (scheduleNextDay) {
+    scheduleNextDay.addEventListener("click", () => {
+      if (bookingDateInput && bookingDateInput.value) {
+        const currentDate = new Date(bookingDateInput.value);
+        currentDate.setDate(currentDate.getDate() + 1);
+        bookingDateInput.value = currentDate.toISOString().split('T')[0];
+        generateScheduleTable(bookingDateInput.value);
+      }
+    });
+  }
+  
+  if (bookingDateInput) {
+    bookingDateInput.addEventListener("change", () => {
+      generateScheduleTable(bookingDateInput.value);
+    });
+  }
+
+  if (roomBookingIcon && roomBookingPopup) {
+    roomBookingIcon.addEventListener("click", () => {
+      // Get room name from Total_Bar_Label
+      const roomLabel = document.getElementById("Total_Bar_Label");
+      const roomName = roomLabel ? roomLabel.textContent : "ไม่ระบุห้อง";
+      if (roomBookingTitle) {
+        roomBookingTitle.textContent = `จองห้อง: ${roomName}`;
+      }
+      // Set default date to today
+      const bookingDateInput = document.getElementById("bookingDate");
+      const todayDate = new Date().toISOString().split('T')[0];
+      if (bookingDateInput) {
+        bookingDateInput.value = todayDate;
+      }
+      // Generate schedule table for today
+      generateScheduleTable(todayDate);
+      
+      roomBookingPopup.style.display = "flex";
+      if (bookingOverlay) bookingOverlay.style.display = "block";
+    });
+  }
+
+  if (cancelBookingBtn) {
+    cancelBookingBtn.addEventListener("click", () => {
+      roomBookingPopup.style.display = "none";
+      if (bookingOverlay) bookingOverlay.style.display = "none";
+    });
+  }
+
+  if (confirmBookingBtn) {
+    confirmBookingBtn.addEventListener("click", async () => {
+      const bookingDate = document.getElementById("bookingDate")?.value;
+      const startTime = document.getElementById("bookingStartTime")?.value;
+      const endTime = document.getElementById("bookingEndTime")?.value;
+      const bookerName = document.getElementById("bookerName")?.value;
+      const purpose = document.getElementById("bookingPurpose")?.value;
+      const roomLabel = document.getElementById("Total_Bar_Label");
+      const roomName = roomLabel ? roomLabel.textContent : "ไม่ระบุห้อง";
+      
+      if (!bookingDate || !bookerName) {
+        alert("กรุณากรอกวันที่และชื่อผู้จอง");
+        return;
+      }
+      
+      if (!startTime || !endTime) {
+        alert("กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุด");
+        return;
+      }
+      
+      // Disable button while processing
+      confirmBookingBtn.disabled = true;
+      confirmBookingBtn.textContent = "กำลังจอง...";
+      
+      try {
+        // Send booking to API
+        const response = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            room: roomName,
+            date: bookingDate,
+            startTime: startTime,
+            endTime: endTime,
+            bookerName: bookerName,
+            purpose: purpose
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          // Show error - booking conflict
+          alert(`❌ ไม่สามารถจองได้\n${result.error}`);
+          confirmBookingBtn.disabled = false;
+          confirmBookingBtn.textContent = "ยืนยันการจอง";
+          return;
+        }
+        
+        // Booking successful
+        const booking = result.data;
+        
+        // Add to local cache
+        if (!bookingsDataByDate[bookingDate]) {
+          bookingsDataByDate[bookingDate] = [];
+        }
+        bookingsDataByDate[bookingDate].push({
+          _id: booking._id,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          booker: booking.bookerName,
+          color: booking.color
+        });
+        
+        // Create QR Code data - keep it short to avoid overflow
+        const qrData = `BK:${booking.bookingId}`;
+      
+        // Hide booking popup
+        roomBookingPopup.style.display = "none";
+      
+        // Show QR Code popup
+        const qrPopup = document.getElementById("qrCodePopup");
+        const qrContainer = document.getElementById("qrCodeContainer");
+        const qrInfo = document.getElementById("qrBookingInfo");
+      
+        if (qrPopup && qrContainer) {
+          // Clear previous QR
+          qrContainer.innerHTML = "";
+        
+          // Set booking info
+          if (qrInfo) {
+            qrInfo.innerHTML = `<strong>ห้อง:</strong> ${roomName}<br>
+              <strong>วันที่:</strong> ${bookingDate}<br>
+              <strong>เวลา:</strong> ${startTime} - ${endTime}<br>
+              <strong>ผู้จอง:</strong> ${bookerName}<br>
+              <strong>รหัสการจอง:</strong> ${booking.bookingId}`;
+          }
+        
+          // Generate QR Code using qrcodejs library
+          try {
+            if (typeof QRCode === 'undefined') {
+              console.error('QRCode library not loaded');
+              qrContainer.innerHTML = '<p style="color:red;">ไม่สามารถสร้าง QR Code ได้ (Library not loaded)</p>';
+            } else {
+              new QRCode(qrContainer, {
+                text: qrData,
+                width: 180,
+                height: 180,
+                colorDark: "#74640a",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+              });
+              
+              // Auto download entire QR popup as image (wait for QR to render)
+              setTimeout(async () => {
+                const qrContent = document.querySelector('.qrCodeContent');
+                if (qrContent && typeof html2canvas !== 'undefined') {
+                  try {
+                    const canvas = await html2canvas(qrContent, {
+                      backgroundColor: '#fffef5',
+                      scale: 2,
+                      useCORS: true
+                    });
+                    const link = document.createElement('a');
+                    link.download = `Booking_${booking.bookingId}_${roomName}_${bookingDate}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                  } catch (err) {
+                    console.error('html2canvas error:', err);
+                  }
+                }
+              }, 600);
+            }
+          } catch (error) {
+            console.error('QR Code error:', error);
+            qrContainer.innerHTML = '<p style="color:red;">ไม่สามารถสร้าง QR Code ได้</p>';
+          }
+        
+          qrPopup.style.display = "flex";
+        }
+        
+        // Reset form
+        document.getElementById("bookerName").value = "";
+        document.getElementById("bookingPurpose").value = "";
+        
+      } catch (error) {
+        console.error('Booking error:', error);
+        alert("เกิดข้อผิดพลาดในการจอง กรุณาลองใหม่อีกครั้ง");
+      } finally {
+        confirmBookingBtn.disabled = false;
+        confirmBookingBtn.textContent = "ยืนยันการจอง";
+      }
+    });
+  }
+  
+  // Close QR Popup
+  const closeQrBtn = document.getElementById("closeQrPopup");
+  if (closeQrBtn) {
+    closeQrBtn.addEventListener("click", () => {
+      const qrPopup = document.getElementById("qrCodePopup");
+      if (qrPopup) qrPopup.style.display = "none";
+      if (bookingOverlay) bookingOverlay.style.display = "none";
+    });
+  }
+
+  // ================= Custom Select Dropdown =================
+  function initCustomSelect() {
+    const customSelects = document.querySelectorAll(".custom-select");
+    
+    customSelects.forEach(selectContainer => {
+      const selected = selectContainer.querySelector(".select-selected");
+      const items = selectContainer.querySelector(".select-items");
+      const hiddenInput = selectContainer.querySelector("input[type='hidden']");
+      
+      if (!selected || !items) return;
+      
+      // Click on selected to show/hide items
+      selected.addEventListener("click", (e) => {
+        e.stopPropagation();
+        // Close all other dropdowns
+        document.querySelectorAll(".select-items").forEach(item => {
+          if (item !== items) item.classList.add("select-hide");
+        });
+        document.querySelectorAll(".select-selected").forEach(sel => {
+          if (sel !== selected) sel.classList.remove("select-arrow-active");
+        });
+        
+        items.classList.toggle("select-hide");
+        selected.classList.toggle("select-arrow-active");
+      });
+      
+      // Click on item to select it
+      items.querySelectorAll("div").forEach(item => {
+        item.addEventListener("click", () => {
+          const value = item.getAttribute("data-value");
+          selected.textContent = value;
+          if (hiddenInput) hiddenInput.value = value;
+          
+          // Update selected style
+          items.querySelectorAll("div").forEach(i => i.classList.remove("same-as-selected"));
+          item.classList.add("same-as-selected");
+          
+          items.classList.add("select-hide");
+          selected.classList.remove("select-arrow-active");
+        });
+      });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".select-items").forEach(item => {
+        item.classList.add("select-hide");
+      });
+      document.querySelectorAll(".select-selected").forEach(sel => {
+        sel.classList.remove("select-arrow-active");
+      });
+    });
+  }
+  
+  // Initialize custom select
+  initCustomSelect();
 
   // ================= Weather Sukhothai =================
   async function fetchCurrentWeatherSukhothai() {
@@ -2267,5 +3020,195 @@ if ('Notification' in window && Notification.permission === 'default') {
       }
     });
   }
+
+  // =================== Room Switching Function ===================
+  function switchRoom(roomName) {
+    currentRoom = roomName;
+
+    if (isRoomWithData(roomName)) {
+      // --- Room with data: reload everything ---
+      // 1. Reload main chart — clear cache for current date to force re-fetch
+      if (chartInitialized && chart) {
+        // Reset chart labels to full 1440 so updateChartData can rebuild properly
+        chart.data.labels = getMinuteLabels();
+        chart.data.datasets.forEach(ds => {
+          ds.data = new Array(1440).fill(null);
+        });
+        chart.update('none');
+        // Now fetch and render fresh data
+        updateChartData(currentDate);
+      }
+      // 2. Reload daily bill
+      cache.dailyBill = null;
+      cache.lastFetch['dailyBill'] = 0;
+      fetchDailyBill();
+      // 3. Reload bill comparison
+      updateBillCompare();
+      // 4. Reload energy day/night chart
+      renderEnergyChart();
+      // 5. Reload total donut (power data)
+      cache.powerData = null;
+      cache.lastFetch['active_power_total'] = 0;
+      updateBarsAndKW();
+    } else {
+      // --- Room without data: clear everything to empty ---
+      // 1. Clear main chart
+      if (chart && chart.data) {
+        chart.data.datasets.forEach(ds => {
+          ds.data = new Array(ds.data.length).fill(null);
+        });
+        chart.update('none');
+      }
+      // 2. Clear daily bill
+      const dailyBillElRoom = document.getElementById('DailyBill');
+      const unitElRoom = document.querySelector('.unit');
+      if (dailyBillElRoom) dailyBillElRoom.textContent = '0.00 THB';
+      if (unitElRoom) unitElRoom.textContent = '0.00 Unit';
+      // 3. Clear bill comparison
+      const billTodayData = document.getElementById('billTodayData');
+      const billYesterdayData = document.getElementById('billYesterdayData');
+      const billDiffValue = document.getElementById('billDiffValue');
+      if (billTodayData) billTodayData.innerHTML = '0.00 Unit<br>0.00 THB.';
+      if (billYesterdayData) billYesterdayData.innerHTML = '0.00 Unit<br>0.00 THB.';
+      if (billDiffValue) billDiffValue.innerHTML = '<span>Daily Bill Change: </span><span style="font-weight:bold;">0.00฿</span>';
+      // 4. Clear energy day/night chart
+      if (energyChartInstance) {
+        energyChartInstance.data.datasets.forEach(ds => {
+          ds.data = new Array(ds.data.length).fill(0);
+        });
+        energyChartInstance.update('none');
+      }
+      // 5. Clear total donut
+      if (totalDonutChart) {
+        totalDonutChart.data.datasets[0].data = [0.01, 99.99];
+        totalDonutChart.data.datasets[0].backgroundColor = ['#e0e0e0', '#f8f6f0'];
+        totalDonutChart.data.datasets[0].borderColor = ['#e0e0e0', '#f8f6f0'];
+        totalDonutChart.update('none');
+      }
+      // Clear glow effects
+      if (mainContainer) mainContainer.style.boxShadow = 'none';
+      if (glowEl) glowEl.style.boxShadow = 'none';
+      if (glow) {
+        glow.style.background = 'none';
+        glow.style.width = '100%';
+        glow.style.height = '100%';
+      }
+    }
+  }
+
+  // Expose for debugging
+  window.switchRoom = switchRoom;
+
+  // =================== Room Selector Dropdown ===================
+  const roomLabel = document.getElementById('Total_Bar_Label');
+  const roomDropdown = document.getElementById('roomDropdown');
+  const roomDots = document.querySelectorAll('.room-dots .dot[data-room]');
+
+  // Helper: update active dot to match room
+  function updateRoomDots(roomName) {
+    roomDots.forEach(d => {
+      d.classList.toggle('active', d.dataset.room === roomName);
+    });
+  }
+
+  // Helper: update dropdown selected state
+  function updateDropdownSelected(roomName) {
+    if (!roomDropdown) return;
+    roomDropdown.querySelectorAll('.room-option').forEach(o => {
+      o.classList.toggle('selected', o.dataset.room === roomName);
+    });
+  }
+
+  // Helper: update label
+  function updateRoomLabel(roomName) {
+    if (roomLabel) roomLabel.innerHTML = roomName + ' <span class="room-arrow">▼</span>';
+  }
+
+  // Helper: full room UI switch (label + dots + dropdown + data)
+  function selectRoom(roomName) {
+    updateRoomLabel(roomName);
+    updateRoomDots(roomName);
+    updateDropdownSelected(roomName);
+    // Update booking popup title if exists
+    const roomBookingTitle = document.getElementById('roomBookingTitle');
+    if (roomBookingTitle) roomBookingTitle.textContent = 'จองห้อง: ' + roomName;
+    // Update schedule room name
+    const scheduleRoomName = document.getElementById('scheduleRoomName');
+    if (scheduleRoomName) scheduleRoomName.textContent = roomName;
+    // Switch data
+    switchRoom(roomName);
+    // Refresh checkin
+    if (typeof updateCheckinStatus === 'function') updateCheckinStatus();
+  }
+
+  if (roomLabel && roomDropdown) {
+    // Toggle dropdown
+    roomLabel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = roomDropdown.style.display === 'block';
+      roomDropdown.style.display = isOpen ? 'none' : 'block';
+    });
+
+    // Select room from dropdown
+    roomDropdown.querySelectorAll('.room-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        roomDropdown.style.display = 'none';
+        selectRoom(opt.dataset.room);
+      });
+    });
+
+    // Close dropdown when clicking elsewhere
+    document.addEventListener('click', () => {
+      roomDropdown.style.display = 'none';
+    });
+  }
+
+  // Room dots click handler
+  roomDots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const roomName = dot.dataset.room;
+      selectRoom(roomName);
+    });
+  });
+
+  // Swipe left/right on page-track to change rooms
+  (function setupRoomSwipe() {
+    const track = document.querySelector('.page-track');
+    if (!track) return;
+    const roomList = ['ห้อง101โถงชั้น1', 'ห้อง200', 'ห้อง300'];
+    let startX = 0;
+    let dragging = false;
+    const threshold = 80;
+
+    function getCurrentRoomIndex() {
+      return roomList.indexOf(currentRoom);
+    }
+
+    track.addEventListener('pointerdown', (e) => { dragging = true; startX = e.clientX || 0; }, { passive: true });
+    track.addEventListener('pointerup', (e) => {
+      if (!dragging) return;
+      dragging = false;
+      const endX = e.clientX || startX;
+      const dx = endX - startX;
+      if (Math.abs(dx) > threshold) {
+        let idx = getCurrentRoomIndex();
+        if (dx < 0 && idx < roomList.length - 1) selectRoom(roomList[idx + 1]);
+        else if (dx > 0 && idx > 0) selectRoom(roomList[idx - 1]);
+      }
+    }, { passive: true });
+    track.addEventListener('touchstart', (e) => { dragging = true; startX = (e.touches && e.touches[0].clientX) || 0; }, { passive: true });
+    track.addEventListener('touchend', (e) => {
+      if (!dragging) return;
+      dragging = false;
+      const endX = (e.changedTouches && e.changedTouches[0].clientX) || startX;
+      const dx = endX - startX;
+      if (Math.abs(dx) > threshold) {
+        let idx = getCurrentRoomIndex();
+        if (dx < 0 && idx < roomList.length - 1) selectRoom(roomList[idx + 1]);
+        else if (dx > 0 && idx > 0) selectRoom(roomList[idx - 1]);
+      }
+    }, { passive: true });
+  })();
 
 });

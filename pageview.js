@@ -3,8 +3,17 @@
     console.log('pageview: DOMContentLoaded');
     const track = document.querySelector('.page-track');
     if(!track){ console.warn('pageview: .page-track not found'); return; }
-    // dots for direct indexing (optional) and arrows for prev/next
-    const dots = Array.from(document.querySelectorAll('.page-dots .dot[data-index]'));
+
+    // If room-dots are present, room switching is handled by script.js — skip page swipe
+    const roomDots = document.querySelectorAll('.room-dots .dot[data-room]');
+    if (roomDots && roomDots.length) {
+      console.log('pageview: room-dots detected, skipping page swipe');
+      return;
+    }
+
+    // dots for direct indexing (support both data-index and data-page)
+    let dots = Array.from(document.querySelectorAll('.page-dots .dot[data-index]'));
+    if (!dots.length) dots = Array.from(document.querySelectorAll('.page-dots .dot[data-page]'));
     const prevBtn = document.querySelector('.page-dots .prev');
     const nextBtn = document.querySelector('.page-dots .next');
     const pageEls = Array.from(track.querySelectorAll('.page'));
@@ -21,8 +30,11 @@
     pageEls.forEach((p, idx) => {
       p.classList.toggle('active', idx === index);
     });
-    // update indexed dots if present
-    if (dots && dots.length) dots.forEach(d=>d.classList.toggle('active', Number(d.dataset.index)===index));
+    // update indexed dots if present (support both data-index and data-page)
+    if (dots && dots.length) dots.forEach(d=>{
+      const dotIndex = Number(d.dataset.index ?? d.dataset.page);
+      d.classList.toggle('active', dotIndex === index);
+    });
     // update arrow disabled state
     if (prevBtn) prevBtn.disabled = (index === 0);
     if (nextBtn) nextBtn.disabled = (index === pages-1);
@@ -49,8 +61,8 @@
   track.addEventListener('touchstart', onPointerDown, {passive:true});
   track.addEventListener('touchend', onPointerUp, {passive:true});
 
-  // indexed dots clickable (if present)
-  if (dots && dots.length) dots.forEach(d=> d.addEventListener('click', ()=> setIndex(Number(d.dataset.index)) ));
+  // indexed dots clickable (if present, support both data-index and data-page)
+  if (dots && dots.length) dots.forEach(d=> d.addEventListener('click', ()=> setIndex(Number(d.dataset.index ?? d.dataset.page)) ));
 
   // arrow buttons
   if (prevBtn) prevBtn.addEventListener('click', ()=> setIndex(index - 1));
