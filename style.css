@@ -144,6 +144,10 @@ body {
     height: 38px;
     border-width: 4px;
     font-size: 10px;
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 2px 6px;          /* ตรงกับ #icons-frame */
   }
   /* Reduce heavy shadow on small screens */
   .Top_Container .ClientName_Container,
@@ -907,7 +911,7 @@ body::after {
   padding: 12px 0 6px 15px; /* balanced padding */
   margin-top: 0 !important; /* allow flex centering to control vertical position */
   margin-left: -0px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 
   transform: translateZ(0);
   transition: all 0.3s ease;
@@ -1037,8 +1041,8 @@ font-size: 14px;
     1px 1px 0 #000,
     -8px 6px #3b3305,
     0 0 20px rgba(255, 230, 160, 0.55);
-  margin-top: 20px;
-  margin-bottom: 10px;
+  margin-top: 4px;
+  margin-bottom: 6px;
   height: 55px;
   position: relative;
   z-index: 101;
@@ -4582,7 +4586,7 @@ color: #000000;
 }
 
 .ElectricalBill_Container {
-      width: 48%;
+  width: 100%;
   height: auto;
   font-size: 12px;
   box-sizing: border-box;
@@ -5137,7 +5141,7 @@ color: #000000;
 @media (max-width: 420px) {
   .Top_Container .ClientName_Container,
   .Top_Container .ElectricalBill_Container {
-    width: 48% !important;
+    width: 100% !important;
     box-sizing: border-box !important;
     margin-left: 0 !important;
     padding: 8px !important;
