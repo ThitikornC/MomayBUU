@@ -828,6 +828,8 @@ body::after {
     1px 1px 0 #000,
     -5px 5px #3b3305,
     0 0 20px rgba(255, 230, 160, 0.55);
+
+  margin-bottom: 10px;
 }
 
 
