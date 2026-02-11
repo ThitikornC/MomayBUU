@@ -159,7 +159,7 @@ async function handleAPI(req, res) {
       
       const newBooking = {
         bookingId,
-        room,
+        room: (room || '').replace(/\s*▼\s*/, '').trim(),  // strip UI dropdown symbol
         date,
         startTime,
         endTime,
@@ -197,15 +197,17 @@ async function handleAPI(req, res) {
       const today = now.toISOString().split('T')[0];
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       
-      // Find bookings for today and this room
+      // Find bookings for today and this room (strip ▼ for matching)
+      const cleanRoom = (room || '').replace(/\s*▼\s*/, '').trim();
       const bookings = await db.collection(COLLECTION_NAME).find({
-        room: room,
         date: today
       }).toArray();
+      // Filter by room name (handle ▼ suffix in stored data)
+      const roomBookings = bookings.filter(b => (b.room || '').replace(/\s*▼\s*/, '').trim() === cleanRoom);
       
       // Find the active booking (current time is within booking window, with 15 min early allowance)
       let activeBooking = null;
-      for (const booking of bookings) {
+      for (const booking of roomBookings) {
         const [startH, startM] = booking.startTime.split(':').map(Number);
         const [endH, endM] = booking.endTime.split(':').map(Number);
         const startMinutes = startH * 60 + startM;

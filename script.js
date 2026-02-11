@@ -290,7 +290,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         activeBookingData = result;
         
         // Always show countdown regardless of check-in status
-        checkinRemainingSeconds = result.remainingSeconds;
+        // ชั่วคราว: จำกัดเวลาเหลือสูงสุด 10 วินาที สำหรับการทดสอบ
+        checkinRemainingSeconds = Math.min(result.remainingSeconds, 10);
         updateCountdownDisplay();
         if (!checkinCountdownInterval) {
           startCheckinCountdown();
