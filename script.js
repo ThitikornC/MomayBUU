@@ -1773,9 +1773,9 @@ initializeChart();
 
   if (roomBookingIcon && roomBookingPopup) {
     roomBookingIcon.addEventListener("click", () => {
-      // Get room name from Total_Bar_Label
+      // Get room name from Total_Bar_Label (strip ▼ dropdown symbol)
       const roomLabel = document.getElementById("Total_Bar_Label");
-      const roomName = roomLabel ? roomLabel.textContent : "ไม่ระบุห้อง";
+      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
       if (roomBookingTitle) {
         roomBookingTitle.textContent = `จองห้อง: ${roomName}`;
       }
@@ -1808,7 +1808,7 @@ initializeChart();
       const bookerName = document.getElementById("bookerName")?.value;
       const purpose = document.getElementById("bookingPurpose")?.value;
       const roomLabel = document.getElementById("Total_Bar_Label");
-      const roomName = roomLabel ? roomLabel.textContent : "ไม่ระบุห้อง";
+      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
       
       if (!bookingDate || !bookerName) {
         alert("กรุณากรอกวันที่และชื่อผู้จอง");
