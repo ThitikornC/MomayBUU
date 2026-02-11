@@ -100,8 +100,13 @@ body {
     justify-content: center;
     max-width: calc(100% - 12px);
     box-sizing: border-box;
-    /* align bottoms so left box lines up with right column on small screens */
-    align-items: flex-end;
+    /* make children stretch to equal heights on small screens */
+    align-items: stretch;
+    /* ensure direct children fill available cross axis */
+    align-content: stretch;
+  }
+  .Top_Container > * {
+    align-self: stretch;
   }
   /* Scale down for mobile */
   .Top_Container .ClientName_Container {
@@ -109,8 +114,7 @@ body {
     min-width: 0;
     box-sizing: border-box;
     margin-left: 0;
-    /* nudge down slightly so left box aligns visually with right column */
-    margin-top: 20px;
+    /* keep vertical alignment consistent with right column */
     padding: 8px 10px;
     height: auto;
     min-height: 101px;
@@ -136,6 +140,11 @@ body {
   .top-right-col {
     width: 48%;
     min-width: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 101px; /* match left box */
   }
   #icons-frame {
     height: 42px;
@@ -5419,4 +5428,35 @@ color: #000000;
 /* Empty Realtime Container placeholder */
 .Realtime_Container {
   min-height: 100px;
+}
+
+/* Emergency final override for very small screens to ensure left and right
+   top boxes have equal visible area. Placed at file end so it wins. */
+@media (max-width: 420px) {
+  .Top_Container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: stretch !important; /* make children equal height */
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  .Top_Container > .ClientName_Container,
+  .Top_Container > .ElectricalBill_Container,
+  .Top_Container > .top-right-col {
+    flex: 0 0 48% !important;
+    max-width: 48% !important;
+    box-sizing: border-box !important;
+    padding: 8px !important;
+    margin: 0 !important;
+    min-height: 110px !important; /* match visibly */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
 }
