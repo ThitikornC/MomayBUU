@@ -100,8 +100,8 @@ body {
     justify-content: center;
     max-width: calc(100% - 12px);
     box-sizing: border-box;
-    /* stretch children so left and right columns match height on small screens */
-    align-items: stretch;
+    /* align bottoms so left box lines up with right column on small screens */
+    align-items: flex-end;
   }
   /* Scale down for mobile */
   .Top_Container .ClientName_Container {
@@ -109,10 +109,11 @@ body {
     min-width: 0;
     box-sizing: border-box;
     margin-left: 0;
-    /* make the left box taller to match right column and allow content breathing */
-    padding: 10px 12px;
-    height: auto; /* let flex stretch set the height */
-    min-height: 110px; /* ensure it is at least as tall as the right column */
+    /* nudge down slightly so left box aligns visually with right column */
+    margin-top: 20px;
+    padding: 8px 10px;
+    height: auto;
+    min-height: 101px;
     border-width: 4px;
     display: flex;
     flex-direction: column;
@@ -518,6 +519,16 @@ body::after {
   position: relative;
   transform: translateZ(0);
   transition: all 0.3s ease;
+}
+
+/* Strong mobile override placed after base rules to ensure it wins specificity/order */
+@media (max-width: 420px) {
+  .Top_Container .ClientName_Container {
+    margin-top: 10px !important; /* force downward shift on small screens */
+    height: auto !important;
+    min-height: 105px !important;
+    transform: translateY(5px) !important; /* ensure visual downward shift despite flex alignment */
+  }
 }
 
 /* Ensure all text inside the client box is left-aligned (override other rules) */
