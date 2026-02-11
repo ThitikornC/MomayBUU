@@ -100,6 +100,8 @@ body {
     justify-content: center;
     max-width: calc(100% - 12px);
     box-sizing: border-box;
+    /* stretch children so left and right columns match height on small screens */
+    align-items: stretch;
   }
   /* Scale down for mobile */
   .Top_Container .ClientName_Container {
@@ -107,20 +109,25 @@ body {
     min-width: 0;
     box-sizing: border-box;
     margin-left: 0;
-    padding: 6px 8px;
-    height: 95px;
+    /* make the left box taller to match right column and allow content breathing */
+    padding: 10px 12px;
+    height: auto; /* let flex stretch set the height */
+    min-height: 110px; /* ensure it is at least as tall as the right column */
     border-width: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   .Top_Container .ClientName_Container .ClientName {
-    font-size: 9px !important;
-    line-height: 1.1;
-    margin: 0;
+    font-size: 14px !important;
+    line-height: 1.15;
+    margin: 0 0 6px 0;
     white-space: normal;
   }
   .Top_Container .ClientName_Container .Date_install,
   .Top_Container .ClientName_Container .ClientNo {
-    font-size: 7px !important;
-    line-height: 1.15;
+    font-size: 12px !important;
+    line-height: 1.2;
     margin: 0;
     color: #222;
     position: static !important;
