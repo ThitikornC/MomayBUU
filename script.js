@@ -295,8 +295,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!checkinCountdownInterval) {
           startCheckinCountdown();
         }
-        // Light bulb ON
-        updateBulbStatus(true);
+        // Prefer actual MQTT-backed state when available
+        try {
+          const actual = await getActualBulbState(roomName);
+          if (actual !== null) {
+            updateBulbStatus(actual);
+          } else {
+            updateBulbStatus(true);
+          }
+        } catch (e) {
+          updateBulbStatus(true);
+        }
       } else {
         // No active booking
         activeBookingData = null;
@@ -307,8 +316,17 @@ document.addEventListener('DOMContentLoaded', async function() {
           clearInterval(checkinCountdownInterval);
           checkinCountdownInterval = null;
         }
-        // Light bulb OFF
-        updateBulbStatus(false);
+        // Prefer actual MQTT-backed state when available
+        try {
+          const actual = await getActualBulbState(roomName);
+          if (actual !== null) {
+            updateBulbStatus(actual);
+          } else {
+            updateBulbStatus(false);
+          }
+        } catch (e) {
+          updateBulbStatus(false);
+        }
       }
     } catch (err) {
       console.error('Error fetching active booking:', err);
@@ -355,6 +373,32 @@ document.addEventListener('DOMContentLoaded', async function() {
       bulbIcon.classList.toggle('on', isActive);
       bulbIcon.classList.toggle('off', !isActive);
     }
+  }
+
+  // Try to get MQTT-backed room state from Control server's /room-state endpoint.
+  // Returns: true = ON, false = OFF, null = unknown / not available
+  async function getActualBulbState(roomName) {
+    const candidates = [
+      '/room-state',
+      '/control/room-state',
+      API_BASE + '/room-state',
+      API_BASE + '/control/room-state'
+    ];
+
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url, { method: 'GET' });
+        if (!res.ok) continue;
+        const json = await res.json();
+        if (json && json.success && json.roomState) {
+          const state = json.roomState[roomName] || json.roomState[roomName.replace(/\s*▼\s*/, '').trim()];
+          if (typeof state === 'string') return state.toUpperCase() === 'ON';
+        }
+      } catch (e) {
+        // ignore and try next
+      }
+    }
+    return null;
   }
 
   // Poll check-in status every 5 seconds
