@@ -166,7 +166,6 @@ body {
     margin-right: 0;
     padding: 2px 6px;
   }
-  #RoomBooking_icon img { margin-top: 1px; }
   /* Reduce heavy shadow on small screens */
   .Top_Container .ClientName_Container,
   .Top_Container .ElectricalBill_Container,
@@ -248,8 +247,8 @@ body {
   .ElectricalBill_Container span { font-size: 0.75rem; }
 
   /* Make header date and temperature match the 'Momay' label size on iPad */
-  #weather, #weather span:first-child { font-size: 18px !important; }
-  #Date, #weather-temp { font-size: 18px !important; line-height: 1 !important; }
+  #weather, #weather span:first-child { font-size: 14px !important; }
+  #Date, #weather-temp { font-size: 14px !important; line-height: 1 !important; }
 
   /* Align Date and temperature baseline with 'Momay' on iPad */
   /* Use baseline alignment on the flex container and small vertical shift for precise baseline matching */
@@ -360,7 +359,7 @@ body {
 
   /* Increase sizes on iPad: make ClientName (99/99) and THB values larger by ~2 steps */
   .ClientName_Container .ClientName {
-    font-size: 26px !important;
+    font-size: 14px !important;
     line-height: 1 !important;
   }
 
@@ -368,7 +367,7 @@ body {
 @media (min-width: 768px) and (max-width: 1024px) {
   .Top_Container .ClientName,
   .ClientName_Container .ClientName {
-    font-size: 26px !important;
+    font-size: 14px !important;
     line-height: 1 !important;
     white-space: nowrap; /* avoid wrapping */
     overflow: hidden;
@@ -377,7 +376,7 @@ body {
 }
   /* Top electrical box values */
   #DailyBill {
-    font-size: 26px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
   }
   .unit {
@@ -396,7 +395,7 @@ body {
   /* Make install/date/usernumber slightly bigger on iPad for readability */
   .ClientName_Container .Date_install,
   .ClientName_Container .ClientNo {
-    font-size: 13px !important;
+    font-size: 14px !important;
   }
 
 }
@@ -2661,7 +2660,7 @@ font-size: 14px;
   /* Reduce main daily bill / change sizes on iPad for better fit */
   /* This targets the inline Daily display and the popup diff box */
   #DailyBill {
-    font-size: 20px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
     line-height: 1 !important;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.5) !important;
@@ -4384,26 +4383,26 @@ color: #000000;
 
 
   #calendar {
-  width: 1000px;       /* ล็อกความกว้าง */
-  height: 800px;       /* ล็อกความสูง */
-  margin: 20px auto;
-  background-size: cover;        /* ขยายเต็มพื้นที่ */
-  background-position: center;   /* จัดกึ่งกลาง */
-  background-repeat: no-repeat;  /* ไม่ทำซ้ำ */
-  background-image: url("./images/BG.png");
+  width: 95% !important;       /* ปรับให้พอดี viewport ที่ zoom 1.8x */
+  max-width: 540px !important;
+  height: auto !important;
+  max-height: 500px !important;
+  margin: 10px auto;
+  background: linear-gradient(to bottom, #ebd09e 0%, #251f03 100%) !important;
   border-radius: 16px;
-  padding: -0px;
+  padding: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   overflow: hidden;    /* ป้องกัน scroll เกิน */
 }
 
 /* ===== ส่วน header (ปุ่ม + title) ===== */
 .fc .fc-toolbar-title {
-  font-size: 1.5rem;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #000000;
-  width: 250px;
-  height: 25px;
+  width: auto;
+  max-width: 150px;
+  height: auto;
   border-radius: 6px;
   background-image: url("./images/noise.png");
   background-size: cover;
@@ -4413,11 +4412,12 @@ color: #000000;
   display: flex;               /* เพิ่ม flex */
   justify-content: center;     /* กึ่งกลางแนวนอน */
   align-items: center; 
-  margin: 5px;
+  margin: 3px;
+  padding: 2px 6px;
 }
 
 .fc .fc-toolbar-prev {
-  font-size: 1.5rem;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #090909;
 }
@@ -4426,8 +4426,9 @@ color: #000000;
   border: none;
   color: #fff;
   font-weight: bold;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
   transition: 0.2s;
 }
 
@@ -4466,9 +4467,9 @@ color: #000000;
 
 /* ===== กิจกรรม (events) ===== */
 .fc-event {
-  border-radius: 8px;
-  padding: 2px 0px;
-  font-size: 2rem;
+  border-radius: 4px;
+  padding: 1px 0px;
+  font-size: 0.6rem;
   font-weight: bold;
   border: none;
 }
@@ -4502,10 +4503,10 @@ color: #000000;
 
 /* ปรับเลขวัน ให้อยู่บนสุด */
 .fc-daygrid-day-number {
-  font-size: 1rem;
+  font-size: 0.7rem;
   font-weight: bold;
-  margin-bottom: 4px;
-  margin-right: 62px;
+  margin-bottom: 2px;
+  margin-right: 4px;
   color: #090a0a;
 }
 
@@ -4514,14 +4515,14 @@ color: #000000;
   margin-top: auto; /* ทำให้ event อยู่ด้านล่างเลขวัน */
 }
 .fc .fc-col-header-cell-cushion {
-  font-size: 1rem;           /* ขนาดตัวอักษร */
-  font-weight: bold;          /* ความหนา */
-  color: #fafbfc;             /* สีตัวอักษร */
-  font-family: 'Cinzel', serif; /* ฟอนต์ */
-  text-transform: uppercase;  /* แปลงเป็นตัวพิมพ์ใหญ่ */
-  background-size: cover;        /* ขยายเต็มพื้นที่ */
-  background-position: center;   /* จัดกึ่งกลาง */
-  background-repeat: no-repeat;  /* ไม่ทำซ้ำ */
+  font-size: 0.65rem;           /* ขนาดตัวอักษร */
+  font-weight: bold;
+  color: #fafbfc;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   background-image: url("./images/noise.png");
 }
 }
@@ -5320,12 +5321,12 @@ color: #000000;
   }
 }
 
-/* Final authoritative iPad override: ensure ClientName equals DailyBill (26px)
+/* Final authoritative iPad override: ensure all text matches 14px on iPad
    Placed last to beat earlier !important rules that set smaller sizes. */
 @media (min-width: 768px) and (max-width: 1024px) {
   .Top_Container .ClientName,
   .Top_Container .ClientName_Container .ClientName {
-    font-size: 10px !important;
+    font-size: 14px !important;
     line-height: 1 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -5357,7 +5358,7 @@ color: #000000;
   /* Client name / left box */
   .Top_Container .ClientName,
   .Top_Container .ClientName_Container .ClientName {
-    font-size: 10px !important;
+    font-size: 14px !important;
     line-height: 1 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -5367,13 +5368,13 @@ color: #000000;
   /* date / usernumber */
   .Top_Container .ClientName_Container .Date_install,
   .Top_Container .ClientName_Container .ClientNo {
-    font-size: 10px !important;
+    font-size: 14px !important;
     line-height: 1 !important;
   }
 
   /* top-right bill values */
   #DailyBill {
-    font-size: 26px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
     line-height: 1 !important;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.5) !important;

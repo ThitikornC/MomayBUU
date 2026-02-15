@@ -1579,7 +1579,7 @@ initializeChart();
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: "dayGridMonth",
       locale: "en",
-      height: 600,
+      height: 'auto',
       headerToolbar: { left: "prev", center: "title", right: "next" },
 
       // Custom content for events: always show bill on top and unit below
@@ -1732,9 +1732,10 @@ initializeChart();
     if (!scheduleBody) return;
     
     // Set room name in header
-    const roomName = roomLabel ? roomLabel.textContent : '';
-    if (scheduleRoomName && roomLabel) {
-      scheduleRoomName.textContent = roomLabel.textContent;
+    const selectedOption = document.querySelector('#roomDropdown .room-option.selected');
+    const roomName = selectedOption ? selectedOption.getAttribute('data-room') : (roomLabel ? roomLabel.childNodes[0].textContent.trim() : '');
+    if (scheduleRoomName) {
+      scheduleRoomName.textContent = roomName;
     }
     
     // Fetch bookings from API
@@ -1825,9 +1826,10 @@ initializeChart();
 
   if (roomBookingIcon && roomBookingPopup) {
     roomBookingIcon.addEventListener("click", () => {
-      // Get room name from Total_Bar_Label (strip ▼ dropdown symbol)
+      // Get room name from selected dropdown option
       const roomLabel = document.getElementById("Total_Bar_Label");
-      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
+      const selectedOption = document.querySelector('#roomDropdown .room-option.selected');
+      const roomName = selectedOption ? selectedOption.getAttribute('data-room') : (roomLabel ? roomLabel.childNodes[0].textContent.trim() : "ไม่ระบุห้อง");
       if (roomBookingTitle) {
         roomBookingTitle.textContent = `จองห้อง: ${roomName}`;
       }
