@@ -1731,18 +1731,10 @@ initializeChart();
     
     if (!scheduleBody) return;
     
-    // Set room name in header (only first text node, exclude dropdown children)
-    let roomName = '';
-    if (roomLabel) {
-      const firstText = Array.from(roomLabel.childNodes)
-        .filter(n => n.nodeType === Node.TEXT_NODE)
-        .map(n => n.textContent.trim())
-        .filter(t => t.length > 0)
-        .join('');
-      roomName = firstText || roomLabel.querySelector('.room-option.selected')?.textContent?.trim() || '';
-    }
-    if (scheduleRoomName) {
-      scheduleRoomName.textContent = roomName;
+    // Set room name in header
+    const roomName = roomLabel ? roomLabel.textContent : '';
+    if (scheduleRoomName && roomLabel) {
+      scheduleRoomName.textContent = roomLabel.textContent;
     }
     
     // Fetch bookings from API
@@ -1833,18 +1825,9 @@ initializeChart();
 
   if (roomBookingIcon && roomBookingPopup) {
     roomBookingIcon.addEventListener("click", () => {
-      // Get room name from Total_Bar_Label (only first text node, exclude dropdown children)
+      // Get room name from Total_Bar_Label (strip ▼ dropdown symbol)
       const roomLabel = document.getElementById("Total_Bar_Label");
-      let roomName = "ไม่ระบุห้อง";
-      if (roomLabel) {
-        // Get only direct text content (before dropdown/arrow children)
-        const firstText = Array.from(roomLabel.childNodes)
-          .filter(n => n.nodeType === Node.TEXT_NODE)
-          .map(n => n.textContent.trim())
-          .filter(t => t.length > 0)
-          .join('');
-        roomName = firstText || roomLabel.querySelector('.room-option.selected')?.textContent?.trim() || "ไม่ระบุห้อง";
-      }
+      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
       if (roomBookingTitle) {
         roomBookingTitle.textContent = `จองห้อง: ${roomName}`;
       }
@@ -1877,15 +1860,7 @@ initializeChart();
       const bookerName = document.getElementById("bookerName")?.value;
       const purpose = document.getElementById("bookingPurpose")?.value;
       const roomLabel = document.getElementById("Total_Bar_Label");
-      let roomName = "ไม่ระบุห้อง";
-      if (roomLabel) {
-        const firstText = Array.from(roomLabel.childNodes)
-          .filter(n => n.nodeType === Node.TEXT_NODE)
-          .map(n => n.textContent.trim())
-          .filter(t => t.length > 0)
-          .join('');
-        roomName = firstText || roomLabel.querySelector('.room-option.selected')?.textContent?.trim() || "ไม่ระบุห้อง";
-      }
+      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
       
       if (!bookingDate || !bookerName) {
         alert("กรุณากรอกวันที่และชื่อผู้จอง");

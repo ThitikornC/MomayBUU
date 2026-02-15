@@ -100,14 +100,11 @@ body {
     justify-content: center;
     max-width: calc(100% - 12px);
     box-sizing: border-box;
-    /* allow left box to be shorter than right on small screens */
-    align-items: flex-start;
-    align-content: flex-start;
+    /* make both columns equal height */
+    align-items: stretch;
+    align-content: stretch;
   }
   .Top_Container > * {
-    align-self: auto;
-  }
-  .Top_Container > .top-right-col {
     align-self: stretch;
   }
   /* Scale down for mobile — base sizing, final override at end of file wins */
@@ -141,15 +138,16 @@ body {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: stretch;
-    min-height: 130px; /* match left box */
+    justify-content: center;
+    gap: 4px;
+    min-height: 0;
   }
   #icons-frame {
-    flex: 1.2;
+    flex: 1;
     height: auto;
-    min-height: 55px;
-    margin-top: 10px;
-    margin-bottom: 6px;
+    min-height: 40px;
+    margin-top: 6px;
+    margin-bottom: 4px;
     padding: 2px 6px;
     border-width: 4px;
   }
@@ -160,13 +158,15 @@ body {
     flex: 1;
     width: 100%;
     height: auto;
+    min-height: 40px;
     border-width: 4px;
     font-size: 10px;
     box-sizing: border-box;
     margin-left: 0;
     margin-right: 0;
-    padding: 2px 6px;          /* ตรงกับ #icons-frame */
+    padding: 2px 6px;
   }
+  #RoomBooking_icon img { margin-top: 1px; }
   /* Reduce heavy shadow on small screens */
   .Top_Container .ClientName_Container,
   .Top_Container .ElectricalBill_Container,
@@ -539,7 +539,7 @@ body::after {
 
 
 .ElectricalBill_Container {
-  width: 180px;   /* ขนาดกรอบเดิม */
+  width: 100%;    /* เต็มความกว้างของ parent */
   height: 45px;   /* ลดครึ่งนึง */
   font-size: 12px;
   font-weight: 700;  /* หนาขึ้น */
@@ -577,7 +577,7 @@ body::after {
   justify-content: center;
   align-items: center;
   padding: 4px 10px;
-  margin-left: 2px;
+  margin-left: 0;
 
   /* Animation / Transition */
   position: relative;
@@ -1074,7 +1074,16 @@ font-size: 14px;
 .top-right-col {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch; /* make children equal width */
+}
+
+/* Force both boxes in right column to be same width */
+.top-right-col > #icons-frame,
+.top-right-col > .ElectricalBill_Container {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 
@@ -1100,8 +1109,8 @@ font-size: 14px;
   #RoomBooking_icon img {
     width: 60px;
     height: 50px;
-    margin-top: 140px;
-    margin-left: 80px;
+    margin-top: 138px;
+    margin-left: 70px;
     margin-right: 4px;
   }
 }
@@ -4616,6 +4625,12 @@ color: #000000;
 
 @media screen and (max-width: 375px) {
   html, body { overflow-x: hidden; }
+  #RoomBooking_icon {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    margin-top: 18px;
+  }
   #calendarPopup {
     display: none; /* ซ่อนก่อน */
     position: fixed;
@@ -5474,7 +5489,7 @@ color: #000000;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     justify-content: space-between !important;
-    align-items: flex-start !important; /* allow left box to be shorter */
+    align-items: stretch !important; /* make both columns equal height */
     gap: 8px !important;
     box-sizing: border-box !important;
     width: 100% !important;
@@ -5482,34 +5497,48 @@ color: #000000;
     padding-right: 6px !important;
   }
 
-  /* Left box – shorter */
+  /* Left box */
   .Top_Container > .ClientName_Container {
     flex: 0 0 48% !important;
     max-width: 48% !important;
     box-sizing: border-box !important;
-    padding: 8px !important;
+    padding: 0px 4px !important;
     margin: 0 !important;
-    margin-top: 10px !important;
     height: auto !important;
-    min-height: 105px !important;
-    align-self: flex-start !important;
+    min-height: 0 !important;
+    align-self: stretch !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
-    transform: translateY(5px) !important;
   }
 
-  /* Right column – keep taller */
-  .Top_Container > .ElectricalBill_Container,
+  /* Right column */
   .Top_Container > .top-right-col {
     flex: 0 0 48% !important;
     max-width: 48% !important;
     box-sizing: border-box !important;
-    padding: 8px !important;
+    padding: 2px !important;
     margin: 0 !important;
-    min-height: 110px !important;
+    min-height: 0 !important;
+    align-self: stretch !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
+    gap: 2px !important;
+  }
+
+  .Top_Container > .top-right-col > #icons-frame,
+  .Top_Container > .top-right-col > .ElectricalBill_Container {
+    flex: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 2px 4px !important;
+    box-shadow:
+      1px 1px 0 #000,
+      -4px 3px #3b3305,
+      0 0 10px rgba(255, 230, 160, 0.4) !important;
   }
 }
