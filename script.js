@@ -300,11 +300,14 @@ document.addEventListener('DOMContentLoaded', async function() {
           const actual = await getActualBulbState(roomName);
           if (actual !== null) {
             updateBulbStatus(actual);
+            updateAcStatus(actual);
           } else {
             updateBulbStatus(true);
+            updateAcStatus(true);
           }
         } catch (e) {
           updateBulbStatus(true);
+          updateAcStatus(true);
         }
       } else {
         // No active booking
@@ -321,11 +324,14 @@ document.addEventListener('DOMContentLoaded', async function() {
           const actual = await getActualBulbState(roomName);
           if (actual !== null) {
             updateBulbStatus(actual);
+            updateAcStatus(actual);
           } else {
             updateBulbStatus(false);
+            updateAcStatus(false);
           }
         } catch (e) {
           updateBulbStatus(false);
+          updateAcStatus(false);
         }
       }
     } catch (err) {
@@ -372,6 +378,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (bulbIcon) {
       bulbIcon.classList.toggle('on', isActive);
       bulbIcon.classList.toggle('off', !isActive);
+    }
+  }
+
+  // AC status indicator
+  function updateAcStatus(isActive) {
+    const acIcon = document.getElementById('acIcon');
+    if (acIcon) {
+      acIcon.classList.toggle('on', isActive);
+      acIcon.classList.toggle('off', !isActive);
     }
   }
 
@@ -1206,7 +1221,7 @@ function initializeChart() {
             display: false,
             text: 'Time (HH:MM)',
             color: '#2c1810',
-            font: { size: 12, weight: 'bold' }
+            font: { size: 10 }
           }
         },
         y: {
@@ -1214,7 +1229,7 @@ function initializeChart() {
           grid: { display: false },
           min: 0,
           ticks: { color: '#2c1810', font: { size: 10 } },
-          title: { display: true, text: 'Power (kW)', color: '#2c1810', font: { size: 14, weight: 'bold' } }
+          title: { display: true, text: 'Power (kW)', color: '#2c1810', font: { size: 10 } }
         }
       }
     }
@@ -1314,9 +1329,9 @@ function initializeChart() {
 
   // Responsive axis font sizing helper
   function getResponsiveSizes() {
-    if (typeof window === 'undefined') return { x: 14, y: 14, titleFont: '14px sans-serif' };
-    if (window.innerWidth <= 600) return { x: 9, y: 9, titleFont: '11px sans-serif' };
-    return { x: 10, y: 10, titleFont: '12px sans-serif' };
+    if (typeof window === 'undefined') return { x: 10, y: 10, titleFont: '10px sans-serif' };
+    if (window.innerWidth <= 600) return { x: 9, y: 9, titleFont: '9px sans-serif' };
+    return { x: 10, y: 10, titleFont: '10px sans-serif' };
   }
 
   function applyResponsiveAxisFontSizes(targetChart) {
@@ -1352,14 +1367,8 @@ function initializeChart() {
   // set custom x-axis title (nudge left a bit so it appears centered in container)
   // ปรับ offset สำหรับหน้าจอต่างๆ
   const screenWidth = window.innerWidth || 375;
-  let baseOffset = -80; // default
-  if (screenWidth <= 360) {
-    // Samsung S8 และหน้าจอเล็กกว่า: เลื่อนขวา 20% เพิ่มจาก -40
-    baseOffset = 32; // -40 + (360 * 0.2) = 32
-  } else if (screenWidth <= 375) {
-    baseOffset = -40;
-  }
-  chart.options.plugins.xAxisTitle = { text: 'Time (HH:MM)', offset: baseOffset, relativeOffsetPercent: 0.2, padding: 36, color: '#000', font: '14px sans-serif', align: 'center' };
+  let baseOffset = 0;
+  chart.options.plugins.xAxisTitle = { text: 'Time (HH:MM)', offset: baseOffset, relativeOffsetPercent: 0, padding: 36, color: '#000', font: '10px sans-serif', align: 'center' };
   updateChartData(currentDate);
 }
 
@@ -1722,10 +1731,18 @@ initializeChart();
     
     if (!scheduleBody) return;
     
-    // Set room name in header
-    const roomName = roomLabel ? roomLabel.textContent : '';
-    if (scheduleRoomName && roomLabel) {
-      scheduleRoomName.textContent = roomLabel.textContent;
+    // Set room name in header (only first text node, exclude dropdown children)
+    let roomName = '';
+    if (roomLabel) {
+      const firstText = Array.from(roomLabel.childNodes)
+        .filter(n => n.nodeType === Node.TEXT_NODE)
+        .map(n => n.textContent.trim())
+        .filter(t => t.length > 0)
+        .join('');
+      roomName = firstText || roomLabel.querySelector('.room-option.selected')?.textContent?.trim() || '';
+    }
+    if (scheduleRoomName) {
+      scheduleRoomName.textContent = roomName;
     }
     
     // Fetch bookings from API
@@ -1816,9 +1833,18 @@ initializeChart();
 
   if (roomBookingIcon && roomBookingPopup) {
     roomBookingIcon.addEventListener("click", () => {
-      // Get room name from Total_Bar_Label (strip ▼ dropdown symbol)
+      // Get room name from Total_Bar_Label (only first text node, exclude dropdown children)
       const roomLabel = document.getElementById("Total_Bar_Label");
-      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
+      let roomName = "ไม่ระบุห้อง";
+      if (roomLabel) {
+        // Get only direct text content (before dropdown/arrow children)
+        const firstText = Array.from(roomLabel.childNodes)
+          .filter(n => n.nodeType === Node.TEXT_NODE)
+          .map(n => n.textContent.trim())
+          .filter(t => t.length > 0)
+          .join('');
+        roomName = firstText || roomLabel.querySelector('.room-option.selected')?.textContent?.trim() || "ไม่ระบุห้อง";
+      }
       if (roomBookingTitle) {
         roomBookingTitle.textContent = `จองห้อง: ${roomName}`;
       }
@@ -1851,7 +1877,15 @@ initializeChart();
       const bookerName = document.getElementById("bookerName")?.value;
       const purpose = document.getElementById("bookingPurpose")?.value;
       const roomLabel = document.getElementById("Total_Bar_Label");
-      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
+      let roomName = "ไม่ระบุห้อง";
+      if (roomLabel) {
+        const firstText = Array.from(roomLabel.childNodes)
+          .filter(n => n.nodeType === Node.TEXT_NODE)
+          .map(n => n.textContent.trim())
+          .filter(t => t.length > 0)
+          .join('');
+        roomName = firstText || roomLabel.querySelector('.room-option.selected')?.textContent?.trim() || "ไม่ระบุห้อง";
+      }
       
       if (!bookingDate || !bookerName) {
         alert("กรุณากรอกวันที่และชื่อผู้จอง");
@@ -3169,9 +3203,29 @@ if ('Notification' in window && Notification.permission === 'default') {
     });
   }
 
-  // Helper: update label
+  // Helper: update label (keep dropdown inside intact)
   function updateRoomLabel(roomName) {
-    if (roomLabel) roomLabel.innerHTML = roomName + ' <span class="room-arrow">▼</span>';
+    if (!roomLabel) return;
+    // Only update text nodes and arrow, preserve dropdown element inside
+    const dropdown = roomLabel.querySelector('.room-dropdown');
+    const arrow = roomLabel.querySelector('.room-arrow');
+    // Clear everything except dropdown
+    roomLabel.childNodes.forEach(node => {
+      if (node !== dropdown && node !== arrow) {
+        node.remove();
+      }
+    });
+    // Re-insert text + arrow before dropdown
+    const textNode = document.createTextNode(roomName + ' ');
+    if (!arrow) {
+      const newArrow = document.createElement('span');
+      newArrow.className = 'room-arrow';
+      newArrow.textContent = '▼';
+      roomLabel.insertBefore(newArrow, dropdown);
+      roomLabel.insertBefore(textNode, newArrow);
+    } else {
+      roomLabel.insertBefore(textNode, arrow);
+    }
   }
 
   // Helper: full room UI switch (label + dots + dropdown + data)
@@ -3194,6 +3248,8 @@ if ('Notification' in window && Notification.permission === 'default') {
   if (roomLabel && roomDropdown) {
     // Toggle dropdown
     roomLabel.addEventListener('click', (e) => {
+      // ถ้าคลิกที่ dropdown option ภายใน label ไม่ต้อง toggle
+      if (e.target.closest('.room-dropdown')) return;
       e.stopPropagation();
       const isOpen = roomDropdown.style.display === 'block';
       roomDropdown.style.display = isOpen ? 'none' : 'block';

@@ -16,7 +16,7 @@
   <!-- iOS Safari full screen fix -->
   <meta name="apple-mobile-web-app-title" content="Momay">
   <!-- ใส่ CSS versioned แทนตัวเดิม -->
-  <link rel="stylesheet" href="style.css?v=2.12.1">
+  <link rel="stylesheet" href="style.css?v=2.13.3">
 </head>
 
 <body>
@@ -73,11 +73,12 @@
         <div class="Main_Container">
   <div class="Containerglow"></div>
   <div class="room-selector-wrap">
-    <div id="Total_Bar_Label" class="total-bar-label room-selectable">ห้อง101โถงชั้น1 <span class="room-arrow">▼</span></div>
-    <div id="roomDropdown" class="room-dropdown" style="display:none;">
-      <div class="room-option selected" data-room="ห้อง101โถงชั้น1">ห้อง101โถงชั้น1</div>
-      <div class="room-option" data-room="ห้อง200">ห้อง200</div>
-      <div class="room-option" data-room="ห้อง300">ห้อง300</div>
+    <div id="Total_Bar_Label" class="total-bar-label room-selectable">ห้อง101โถงชั้น1 <span class="room-arrow">▼</span>
+      <div id="roomDropdown" class="room-dropdown" style="display:none;">
+        <div class="room-option selected" data-room="ห้อง101โถงชั้น1">ห้อง101โถงชั้น1</div>
+        <div class="room-option" data-room="ห้อง200">ห้อง200</div>
+        <div class="room-option" data-room="ห้อง300">ห้อง300</div>
+      </div>
     </div>
   </div>
   
@@ -370,14 +371,31 @@
 </div>
 
 <div class="Floor_Container">
-  <div class="bulb-status" id="bulbStatus">
-    <svg id="bulbIcon" class="bulb-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48" width="52" height="52">
-      <ellipse cx="32" cy="20" rx="14" ry="16" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="bulb-glass"/>
-      <rect x="27" y="34" width="10" height="8" rx="2" fill="#b5a76c" stroke="#74640a" stroke-width="1.5"/>
-      <line x1="27" y1="37" x2="37" y2="37" stroke="#74640a" stroke-width="1"/>
-      <line x1="27" y1="40" x2="37" y2="40" stroke="#74640a" stroke-width="1"/>
-      <rect x="29" y="42" width="6" height="3" rx="1.5" fill="#74640a"/>
-    </svg>
+  <div class="floor-icons-group">
+    <div class="bulb-status" id="bulbStatus">
+      <svg id="bulbIcon" class="bulb-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48" width="52" height="52">
+        <ellipse cx="32" cy="20" rx="14" ry="16" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="bulb-glass"/>
+        <rect x="27" y="34" width="10" height="8" rx="2" fill="#b5a76c" stroke="#74640a" stroke-width="1.5"/>
+        <line x1="27" y1="37" x2="37" y2="37" stroke="#74640a" stroke-width="1"/>
+        <line x1="27" y1="40" x2="37" y2="40" stroke="#74640a" stroke-width="1"/>
+        <rect x="29" y="42" width="6" height="3" rx="1.5" fill="#74640a"/>
+      </svg>
+    </div>
+    <div class="ac-status" id="acStatus">
+      <svg id="acIcon" class="ac-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 52" width="52" height="52">
+        <!-- ตัวเครื่องแอร์ -->
+        <rect x="4" y="4" width="56" height="26" rx="4" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="ac-body"/>
+        <!-- ช่องลมด้านหน้า -->
+        <line x1="10" y1="20" x2="54" y2="20" stroke="#74640a" stroke-width="1.5"/>
+        <line x1="10" y1="24" x2="54" y2="24" stroke="#74640a" stroke-width="1"/>
+        <!-- ไฟ LED -->
+        <circle cx="13" cy="12" r="2.5" fill="#999" class="ac-led"/>
+        <!-- สายลมเย็น -->
+        <path d="M18 34 Q21 40 18 46" stroke="#74640a" stroke-width="1.5" fill="none" class="ac-wind" opacity="0"/>
+        <path d="M32 34 Q35 40 32 46" stroke="#74640a" stroke-width="1.5" fill="none" class="ac-wind" opacity="0"/>
+        <path d="M46 34 Q49 40 46 46" stroke="#74640a" stroke-width="1.5" fill="none" class="ac-wind" opacity="0"/>
+      </svg>
+    </div>
   </div>
   <div class="Realtime_kW" id="realtimeCountdown">--:--:--</div>
 </div>
@@ -605,7 +623,7 @@ if ('serviceWorker' in navigator) {
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 <script src="pageview.js" defer></script>
-<script src="script.js?v=2.8.8" defer></script>
+<script src="script.js?v=2.13.1" defer></script>
 
 
 

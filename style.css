@@ -100,24 +100,22 @@ body {
     justify-content: center;
     max-width: calc(100% - 12px);
     box-sizing: border-box;
-    /* make children stretch to equal heights on small screens */
-    align-items: stretch;
-    /* ensure direct children fill available cross axis */
-    align-content: stretch;
+    /* allow left box to be shorter than right on small screens */
+    align-items: flex-start;
+    align-content: flex-start;
   }
   .Top_Container > * {
+    align-self: auto;
+  }
+  .Top_Container > .top-right-col {
     align-self: stretch;
   }
-  /* Scale down for mobile */
+  /* Scale down for mobile — base sizing, final override at end of file wins */
   .Top_Container .ClientName_Container {
     width: 48%;
     min-width: 0;
     box-sizing: border-box;
     margin-left: 0;
-    /* keep vertical alignment consistent with right column */
-    padding: 8px 10px;
-    height: auto;
-    min-height: 101px;
     border-width: 4px;
     display: flex;
     flex-direction: column;
@@ -143,11 +141,13 @@ body {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    min-height: 101px; /* match left box */
+    justify-content: stretch;
+    min-height: 130px; /* match left box */
   }
   #icons-frame {
-    height: 42px;
+    flex: 1.2;
+    height: auto;
+    min-height: 55px;
     margin-top: 10px;
     margin-bottom: 6px;
     padding: 2px 6px;
@@ -157,8 +157,9 @@ body {
   #Kwang_icon img   { width: 34px; height: 34px; }
   #Bell_icon img    { width: 28px; height: 28px; }
   .ElectricalBill_Container {
+    flex: 1;
     width: 100%;
-    height: 38px;
+    height: auto;
     border-width: 4px;
     font-size: 10px;
     box-sizing: border-box;
@@ -518,11 +519,10 @@ body::after {
   /* Layout */
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: flex-start;
   padding: 8px 15px; 
-  /* shift entire client box further left */
-  margin-left: -8px;
+  margin-left: 0;
 
   /* Animation / Transition */
   position: relative;
@@ -530,15 +530,7 @@ body::after {
   transition: all 0.3s ease;
 }
 
-/* Strong mobile override placed after base rules to ensure it wins specificity/order */
-@media (max-width: 420px) {
-  .Top_Container .ClientName_Container {
-    margin-top: 10px !important; /* force downward shift on small screens */
-    height: auto !important;
-    min-height: 105px !important;
-    transform: translateY(5px) !important; /* ensure visual downward shift despite flex alignment */
-  }
-}
+/* mobile ClientName sizing — consolidated into final override at end of file */
 
 /* Ensure all text inside the client box is left-aligned (override other rules) */
 .ClientName_Container, .ClientName_Container * {
@@ -696,7 +688,7 @@ body::after {
 .total-bar-label {
   display: inline-block;
   padding: 6px 12px;
-  margin-top: 30px;
+  margin-top: 8px;
   border: 3px solid #74640a;
   border-radius: 8px;
   background: linear-gradient(180deg,#f8f6f0 0%,#fffef8 50%,#fff8e8 100%);
@@ -716,7 +708,7 @@ body::after {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
-  z-index: 50;
+  z-index: 1000;
   margin-top: 0px;
   margin-bottom: 50px;
   margin-right: 110px;
@@ -726,6 +718,7 @@ body::after {
   user-select: none;
   position: relative;
   padding-right: 20px;
+  z-index: 51;
 }
 .room-arrow {
   position: absolute;
@@ -739,22 +732,23 @@ body::after {
 .room-dropdown {
   position: absolute;
   top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 4px;
-  min-width: 180px;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  width: 100%;
+  min-width: 0;
   background: linear-gradient(180deg,#f8f6f0 0%,#fffef8 50%,#fff8e8 100%);
-  border: 3px solid #74640a;
-  border-radius: 8px;
+  border: 2px solid #74640a;
+  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 9999;
+  z-index: 999;
   max-height: 200px;
   overflow-y: auto;
   box-sizing: border-box;
 }
 .room-option {
-  padding: 8px 12px;
-  font-size: 11px;
+  padding: 5px 10px;
+  font-size: 10px;
   font-weight: bold;
   color: #74640a;
   cursor: pointer;
@@ -1095,19 +1089,19 @@ font-size: 14px;
 
 /* ปรับขนาดเฉพาะไอคอน */
 #RoomBooking_icon img {
-  width: 64px;
-  height: 35px;
-  margin-top: 130px; /* moved down ~2x */
-  margin-right: 12px;
-  margin-left: 85px;
+  width: 60px;
+  height: 30px;
+  margin-top: 140px; /* moved down ~2x */
+  margin-right: 0px;
+  margin-left: 75px;
   cursor: pointer;
 }
 @media (max-width: 420px) {
   #RoomBooking_icon img {
-    width: 50px;
-    height: 28px;
-    margin-top: 100px;
-    margin-left: 40px;
+    width: 60px;
+    height: 50px;
+    margin-top: 140px;
+    margin-left: 80px;
     margin-right: 4px;
   }
 }
@@ -1633,15 +1627,76 @@ font-size: 14px;
 #marker3 { bottom: 65%; right: 215px; }
 
 /* ================= Bulb Status Icon ================= */
-.bulb-status {
+
+.floor-icons-group {
   position: absolute;
-  left: 15px;
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.bulb-status {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
+}
+
+.ac-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-top: 11px;
+}
+
+.ac-icon {
+  transition: all 0.4s ease;
+  filter: drop-shadow(0 0 0px transparent);
+}
+
+.ac-icon.off .ac-body {
+  fill: #d5cdb5;
+}
+
+.ac-icon.off .ac-led {
+  fill: #999;
+}
+
+.ac-icon.off .ac-wind {
+  opacity: 0;
+}
+
+.ac-icon.on .ac-body {
+  fill: #B3E5FC;
+  filter: drop-shadow(0 0 6px rgba(79, 195, 247, 0.7));
+}
+
+.ac-icon.on .ac-led {
+  fill: #4FC3F7;
+}
+
+.ac-icon.on .ac-wind {
+  opacity: 1;
+  animation: acWindBlow 1.5s ease-in-out infinite;
+}
+
+.ac-icon.on {
+  animation: acGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes acGlow {
+  0%   { filter: drop-shadow(0 0 4px rgba(79, 195, 247, 0.4)); }
+  100% { filter: drop-shadow(0 0 10px rgba(79, 195, 247, 0.8)); }
+}
+
+@keyframes acWindBlow {
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50%      { opacity: 1; transform: translateY(3px); }
 }
 
 .bulb-icon {
@@ -4595,7 +4650,7 @@ color: #000000;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-left: -8px; /* ยกเลิกค่าติดลบ */
+  margin-left: 0;
   margin-top: 40px;
 }
 .Top_Container,
@@ -4621,6 +4676,7 @@ color: #000000;
   white-space: nowrap; 
   text-shadow: 2px 2px 4px rgba(0,0,0,0.6); 
   margin-left: 0;       /* เลื่อนไปซ้าย */
+  margin-top: 5px;
   margin-right: auto;   /* กึ่งกลางหรือขยับขวาได้ */
   position: relative;   /* หรือ absolute ถ้าต้องการวางทับ */
   top: 0;               /* ลบ top ที่ไม่จำเป็น */
@@ -4647,15 +4703,7 @@ color: #000000;
   font-weight: bold;
     text-shadow: 1px 2px 4px rgba(0,0,0,0.6); /* เพิ่มเงา */
 }
-.ClientName_Container{
-    width: 48%;
-  height: auto;
-  font-size: 12px;
-  box-sizing: border-box;
-  padding: 8px 10px;
-  padding-top: 5px;
-  margin-left: 0;
-}
+/* ClientName_Container base sizing — moved to media queries */
 
 .ElectricalBill_Container {
   width: 100%;
@@ -4973,8 +5021,8 @@ color: #000000;
 }
 
 .page-view {
-  width: 375px;
-  max-width: calc(100% - 16px);
+  width: calc(100% - 16px);
+  max-width: 375px;
   box-sizing: border-box;
   position: relative;
   overflow: visible; /* allow shadows to show */
@@ -5209,19 +5257,7 @@ color: #000000;
 #calendar .fc-event .fc-event-title, #calendar .fc-event .fc-event-time { font-size: 9px !important; }
 #popup-bill, #popup-unit { font-size: 10px !important; }
 
-/* Strong override for very narrow screens: force left/right boxes equal width */
-@media (max-width: 420px) {
-  .Top_Container .ClientName_Container,
-  .Top_Container .ElectricalBill_Container {
-    width: 100% !important;
-    box-sizing: border-box !important;
-    margin-left: 0 !important;
-    padding: 8px !important;
-    min-width: 0 !important;
-  }
-  /* Remove negative margins from any later rules */
-  .ClientName_Container, .ElectricalBill_Container { margin-left: 0 !important; }
-}
+/* mobile box width — consolidated into final override at end of file */
 
 /* SUPER STRONG OVERRIDES: force side-by-side on mobile/tablet */
 @media (max-width: 820px) {
@@ -5408,7 +5444,7 @@ color: #000000;
   max-width: 400px;
   height: 180px;
   margin: 15px auto 5px auto;
-  margin-left: -15px;
+  margin-left: -5px;
   padding: 10px;
   padding-left: 0;
   background: transparent;
@@ -5438,7 +5474,7 @@ color: #000000;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     justify-content: space-between !important;
-    align-items: stretch !important; /* make children equal height */
+    align-items: flex-start !important; /* allow left box to be shorter */
     gap: 8px !important;
     box-sizing: border-box !important;
     width: 100% !important;
@@ -5446,7 +5482,24 @@ color: #000000;
     padding-right: 6px !important;
   }
 
-  .Top_Container > .ClientName_Container,
+  /* Left box – shorter */
+  .Top_Container > .ClientName_Container {
+    flex: 0 0 48% !important;
+    max-width: 48% !important;
+    box-sizing: border-box !important;
+    padding: 8px !important;
+    margin: 0 !important;
+    margin-top: 10px !important;
+    height: auto !important;
+    min-height: 105px !important;
+    align-self: flex-start !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    transform: translateY(5px) !important;
+  }
+
+  /* Right column – keep taller */
   .Top_Container > .ElectricalBill_Container,
   .Top_Container > .top-right-col {
     flex: 0 0 48% !important;
@@ -5454,7 +5507,7 @@ color: #000000;
     box-sizing: border-box !important;
     padding: 8px !important;
     margin: 0 !important;
-    min-height: 110px !important; /* match visibly */
+    min-height: 110px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
