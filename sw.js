@@ -1,10 +1,10 @@
 // ================= Cache / Offline =================
-const CACHE_NAME = 'momay-cache-vB3';
+const CACHE_NAME = 'momay-cache-v2.13.6';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/style.css?v=2.8.3',
-  '/script.js?v=2.8.3',
+  '/style.css?v=2.13.6',
+  '/script.js?v=2.13.6',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
@@ -56,13 +56,41 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-first สำหรับ static files
+  // Cache-first สำหรับ static files (images, icons, fonts)
+  // Network-first สำหรับ HTML/CSS/JS เพื่อให้ได้ version ใหม่เสมอ
+  const isAppShell = /\.(html|css|js)(\?.*)?$/.test(requestUrl.pathname) || requestUrl.pathname === '/';
+
+  if (isAppShell) {
+    // Network-first: ลองโหลดจาก network ก่อน ถ้าได้ก็ update cache
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResp => {
+          if (networkResp && networkResp.ok) {
+            const responseToCache = networkResp.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(event.request, responseToCache))
+              .catch(err => console.warn('❌ Cache put failed:', err));
+          }
+          return networkResp;
+        })
+        .catch(() => {
+          // Offline: fallback ไป cache
+          return caches.match(event.request).then(cached => {
+            if (cached) return cached;
+            if (event.request.mode === 'navigate') return caches.match('/index.html');
+            return new Response('', { status: 504, statusText: 'offline' });
+          });
+        })
+    );
+    return;
+  }
+
+  // Cache-first สำหรับ assets อื่น (images, fonts, etc.)
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request)
         .then(networkResp => {
-          // Clone response before using it
           const responseToCache = networkResp.clone();
           if (networkResp && networkResp.ok) {
             caches.open(CACHE_NAME)
