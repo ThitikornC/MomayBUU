@@ -26,13 +26,20 @@ self.addEventListener('install', event => {
 
 // ---------------- Activate ----------------
 self.addEventListener('activate', event => {
-  console.log('Service Worker Activated');
+  console.log('Service Worker Activated — cleaning old caches');
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
+    caches.keys().then(keys => {
+      console.log('Existing caches:', keys);
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => {
+          console.log('🗑️ Deleting old cache:', key);
+          return caches.delete(key);
+        })
+      );
+    }).then(() => {
+      console.log('✅ clients.claim() — new SW now controls all tabs');
+      return self.clients.claim();
+    })
   );
 });
 
@@ -170,6 +177,14 @@ function urlBase64ToUint8Array(base64String) {
   const rawData = atob(base64);
   return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
 }
+
+// ---------------- Skip Waiting (force activate new SW) ----
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('⏩ SKIP_WAITING received — activating new SW now');
+    self.skipWaiting();
+  }
+});
 
 // ---------------- Daily Peak Notification ----------------
 self.addEventListener('message', event => {

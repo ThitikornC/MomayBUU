@@ -611,9 +611,34 @@ if ('serviceWorker' in navigator) {
     var swPath = (window.location.pathname.endsWith('/') ? '' : '../') + 'sw.js';
     // But if at root, use '/sw.js'
     if (window.location.pathname === '/' || window.location.pathname === '/index.html') swPath = '/sw.js';
-    navigator.serviceWorker.register(swPath)
-      .then(reg => console.log('ServiceWorker registered', reg))
-      .catch(err => console.error('SW register failed', err));
+
+    navigator.serviceWorker.register(swPath, { updateViaCache: 'none' })
+      .then(function(reg) {
+        console.log('ServiceWorker registered', reg);
+
+        // ตรวจจับ SW ตัวใหม่ที่กำลังติดตั้ง
+        reg.addEventListener('updatefound', function() {
+          var newWorker = reg.installing;
+          console.log('🔄 SW update found — installing…');
+          newWorker.addEventListener('statechange', function() {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // มี SW ตัวเก่าอยู่แล้ว → บอก SW ใหม่ให้ skipWaiting
+              console.log('⏩ New SW installed — sending SKIP_WAITING');
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      })
+      .catch(function(err) { console.error('SW register failed', err); });
+
+    // เมื่อ SW ตัวใหม่เข้ามาควบคุมแล้ว → reload หน้าอัตโนมัติ
+    var refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (refreshing) return;
+      refreshing = true;
+      console.log('♻️ New SW active — reloading page for latest version');
+      window.location.reload();
+    });
   });
 }
 </script>
