@@ -5332,6 +5332,12 @@ color: #000000;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
+
+  .Top_Container .ClientName_Container .Date_install,
+  .Top_Container .ClientName_Container .ClientNo {
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
 }
 
 /* iPad: move Booking button up */
