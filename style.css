@@ -5337,7 +5337,7 @@ color: #000000;
 /* iPad: move Booking button up */
 @media (min-width: 768px) and (max-width: 1024px) {
   #RoomBooking_icon img {
-    margin-top: 110px !important;
+    margin-top: 120px !important;
   }
 }
 
@@ -5415,6 +5415,130 @@ color: #000000;
   #kwangMonth {
     font-size: 16px !important;
     line-height: 1 !important;
+  }
+}
+
+/* ========== iPad: uniform 14px text for ALL elements ========== */
+@media (min-width: 768px) and (max-width: 1024px) {
+
+  /* Room selector (dropdown label) */
+  .total-bar-label,
+  #Total_Bar_Label,
+  #Total_Bar_Label2 {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Room dropdown options */
+  .room-option {
+    font-size: 14px !important;
+  }
+
+  /* Room arrow */
+  .room-arrow {
+    font-size: 10px !important;
+  }
+
+  /* Date Picker (PickDate) */
+  #PickDate,
+  #PickDate span,
+  #currentDay,
+  .Main_Container #currentDay {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Bill comparison dates (15/Feb/2026, 16/Feb/2026) */
+  .bill-compare-date {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Bill comparison circle data (66.79 THB, 15.18 Unit) */
+  .bill-compare-data {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Daily Bill Change label */
+  .bill-compare-diff {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Energy chart date range title (10 Feb 2026 - 16 Feb 2026) */
+  .energy-chart-title {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Chart legend (Day THB, Night THB) */
+  .legend-item {
+    font-size: 14px !important;
+  }
+
+  /* Energy chart nav buttons */
+  .energy-chart-nav {
+    font-size: 14px !important;
+  }
+
+  /* Popup stats */
+  .popup-stats > div {
+    font-size: 14px !important;
+  }
+
+  /* Popup values (savings) */
+  .popupValue1,
+  .popupValue2 {
+    font-size: 14px !important;
+  }
+  .popupValue1 span,
+  .popupValue2 span,
+  #kwangBill,
+  #kwangMonth {
+    font-size: 14px !important;
+  }
+
+  /* Kwang power / capacity */
+  #kwangPower,
+  #kwangCapacity {
+    font-size: 14px !important;
+  }
+
+  /* Daily dates arc */
+  #dayBeforeDate,
+  #yesterdayDate {
+    font-size: 14px !important;
+  }
+
+  /* Daily diff value */
+  #dailyDiffValue {
+    font-size: 14px !important;
+  }
+
+  /* Bar name */
+  .Bar_name {
+    font-size: 14px !important;
+  }
+
+  /* Weather marquee header */
+  .marquee span,
+  #weather span,
+  #weather-city,
+  #weather-temp,
+  #weather-icon,
+  #Date {
+    font-size: 14px !important;
+  }
+
+  /* Version */
+  .Bottom_info .Version {
+    font-size: 14px !important;
+  }
+
+  /* Chart spinner text */
+  .spinner-text {
+    font-size: 14px !important;
   }
 }
 
