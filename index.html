@@ -616,18 +616,38 @@ if ('serviceWorker' in navigator) {
       .then(function(reg) {
         console.log('ServiceWorker registered', reg);
 
+        // Safari fix: บังคับเช็ค SW update ทุกครั้งที่โหลดหน้า
+        reg.update().catch(function(e) { console.log('SW update check:', e); });
+
+        // เช็คซ้ำทุก 60 วินาที (Safari อาจไม่เช็คเอง)
+        setInterval(function() {
+          reg.update().catch(function(e) {});
+        }, 60000);
+
         // ตรวจจับ SW ตัวใหม่ที่กำลังติดตั้ง
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
           console.log('🔄 SW update found — installing…');
           newWorker.addEventListener('statechange', function() {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // มี SW ตัวเก่าอยู่แล้ว → บอก SW ใหม่ให้ skipWaiting
-              console.log('⏩ New SW installed — sending SKIP_WAITING');
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
+            if (newWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // มี SW ตัวเก่าอยู่แล้ว → บอก SW ใหม่ให้ skipWaiting
+                console.log('⏩ New SW installed — sending SKIP_WAITING');
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              } else {
+                // ครั้งแรก ไม่มี SW เก่า → reload เพื่อให้ SW ควบคุม
+                console.log('🆕 First SW install — reloading');
+                window.location.reload();
+              }
             }
           });
         });
+
+        // Safari fix: ถ้ามี waiting SW อยู่แล้วตอนโหลดหน้า (จากครั้งก่อน)
+        if (reg.waiting) {
+          console.log('⏩ Found waiting SW — sending SKIP_WAITING');
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
       })
       .catch(function(err) { console.error('SW register failed', err); });
 
@@ -638,6 +658,28 @@ if ('serviceWorker' in navigator) {
       refreshing = true;
       console.log('♻️ New SW active — reloading page for latest version');
       window.location.reload();
+    });
+
+    // Safari fallback: ถ้า controllerchange ไม่ fire ภายใน 3 วินาทีหลัง SKIP_WAITING
+    // ให้เช็คว่า controller เปลี่ยนไหม โดยดูจาก cache version
+    navigator.serviceWorker.ready.then(function(reg) {
+      caches.keys().then(function(keys) {
+        var currentCache = keys.find(function(k) { return k.startsWith('momay-cache-'); });
+        if (currentCache) {
+          window._swCacheVersion = currentCache;
+          // เช็คทุก 5 วินาทีว่า cache เปลี่ยนไหม
+          setInterval(function() {
+            caches.keys().then(function(newKeys) {
+              var newCache = newKeys.find(function(k) { return k.startsWith('momay-cache-'); });
+              if (newCache && newCache !== window._swCacheVersion && !refreshing) {
+                refreshing = true;
+                console.log('♻️ Safari fallback: cache changed, reloading');
+                window.location.reload();
+              }
+            });
+          }, 5000);
+        }
+      });
     });
   });
 }
