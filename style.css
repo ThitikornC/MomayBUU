@@ -5546,6 +5546,35 @@ color: #000000;
   .spinner-text {
     font-size: 14px !important;
   }
+
+  /* Move chart block up on iPad */
+  .Main_Container #PickDate {
+    margin-top: 10px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .MainChart_Container {
+    margin-top: 0px !important;
+    height: 200px !important;
+  }
+
+  /* Phase legend: keep inside chart, prevent overflow */
+  #phaseLegend {
+    font-size: 12px !important;
+    bottom: 8px !important;
+    right: 8px !important;
+    padding: 3px 6px !important;
+  }
+  #phaseLegend span:last-child {
+    font-size: 12px !important;
+  }
+
+  #phaseToggleBtn {
+    font-size: 12px !important;
+    bottom: 8px !important;
+    right: 8px !important;
+    padding: 4px 6px !important;
+  }
 }
 
 /* ================= Main Container Chart ================= */
