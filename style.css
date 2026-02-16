@@ -5549,8 +5549,8 @@ color: #000000;
 
   /* Move chart block up on iPad */
   .Main_Container #PickDate {
-    margin-top: 10px !important;
-    margin-bottom: 2px !important;
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
   }
 
   .MainChart_Container {
