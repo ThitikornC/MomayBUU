@@ -259,6 +259,153 @@ async function handleAPI(req, res) {
     return true;
   }
   
+  // POST /api/verify - Verify QR code for room access
+  if (url === '/api/verify' && method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      let { qrData } = body;
+
+      if (!qrData) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: 'ไม่พบข้อมูล QR Code' }));
+        return true;
+      }
+
+      let bookingId = qrData;
+      if (qrData.startsWith('BK:')) {
+        bookingId = qrData.substring(3);
+      }
+
+      const booking = await db.collection(COLLECTION_NAME).findOne({ bookingId });
+
+      if (!booking) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({
+          success: false,
+          access: false,
+          error: 'ไม่พบข้อมูลการจอง',
+          bookingId
+        }));
+        return true;
+      }
+
+      // Check if within booking time
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      let timeCheck = { valid: false, reason: 'unknown', message: '' };
+
+      if (booking.date !== today) {
+        const bookingDate = new Date(booking.date);
+        const todayDate = new Date(today);
+        if (bookingDate < todayDate) {
+          timeCheck = { valid: false, reason: 'expired', message: 'การจองนี้หมดอายุแล้ว' };
+        } else {
+          timeCheck = { valid: false, reason: 'not_today', message: `การจองนี้สำหรับวันที่ ${booking.date}` };
+        }
+      } else {
+        const [startHour, startMin] = booking.startTime.split(':').map(Number);
+        const [endHour, endMin] = booking.endTime.split(':').map(Number);
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const startMinutes = startHour * 60 + startMin;
+        const endMinutes = endHour * 60 + endMin;
+        const earlyAllowance = 15;
+
+        if (currentMinutes < startMinutes - earlyAllowance) {
+          const waitMinutes = startMinutes - earlyAllowance - currentMinutes;
+          timeCheck = { valid: false, reason: 'too_early', message: `ยังไม่ถึงเวลา กรุณารออีก ${waitMinutes} นาที` };
+        } else if (currentMinutes > endMinutes) {
+          timeCheck = { valid: false, reason: 'too_late', message: 'เลยเวลาการจองแล้ว' };
+        } else {
+          timeCheck = { valid: true, reason: 'ok', message: 'เข้าห้องได้' };
+        }
+      }
+
+      // Handle first check-in
+      let firstCheckIn = booking.firstCheckIn;
+      let isFirstCheckIn = false;
+      if (timeCheck.valid && !firstCheckIn) {
+        firstCheckIn = now.toISOString();
+        isFirstCheckIn = true;
+        await db.collection(COLLECTION_NAME).updateOne(
+          { bookingId: booking.bookingId },
+          { $set: { firstCheckIn: firstCheckIn } }
+        );
+      }
+
+      // Calculate remaining seconds
+      const [endH, endM] = booking.endTime.split(':').map(Number);
+      const currentSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const endSecs = endH * 3600 + endM * 60;
+      const remainingSeconds = Math.max(0, endSecs - currentSecs);
+
+      // Log access
+      await db.collection('access_logs').insertOne({
+        bookingId: booking.bookingId,
+        room: booking.room,
+        bookerName: booking.bookerName,
+        attemptTime: now.toISOString(),
+        accessGranted: timeCheck.valid,
+        reason: timeCheck.reason,
+        isFirstCheckIn: isFirstCheckIn
+      });
+
+      res.statusCode = 200;
+      res.end(JSON.stringify({
+        success: true,
+        access: timeCheck.valid,
+        message: timeCheck.message,
+        reason: timeCheck.reason,
+        isFirstCheckIn: isFirstCheckIn,
+        firstCheckIn: firstCheckIn,
+        remainingSeconds: remainingSeconds,
+        booking: {
+          bookingId: booking.bookingId,
+          room: booking.room,
+          date: booking.date,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          bookerName: booking.bookerName,
+          purpose: booking.purpose
+        }
+      }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+    return true;
+  }
+
+  // GET /api/logs - Access logs
+  if (url.startsWith('/api/logs') && method === 'GET') {
+    try {
+      const urlParams = new URL(req.url, `http://localhost:${port}`);
+      const date = urlParams.searchParams.get('date');
+      const room = urlParams.searchParams.get('room');
+
+      const query = {};
+      if (date) {
+        query.attemptTime = {
+          $gte: `${date}T00:00:00`,
+          $lte: `${date}T23:59:59`
+        };
+      }
+      if (room) query.room = room;
+
+      const logs = await db.collection('access_logs')
+        .find(query)
+        .sort({ attemptTime: -1 })
+        .limit(100)
+        .toArray();
+
+      res.statusCode = 200;
+      res.end(JSON.stringify({ success: true, data: logs }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+    return true;
+  }
+
   // DELETE /api/bookings/:id - Delete booking
   if (url.startsWith('/api/bookings/') && method === 'DELETE') {
     try {
