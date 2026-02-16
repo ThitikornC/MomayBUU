@@ -5334,6 +5334,13 @@ color: #000000;
   }
 }
 
+/* iPad: move Booking button up */
+@media (min-width: 768px) and (max-width: 1024px) {
+  #RoomBooking_icon img {
+    margin-top: 110px !important;
+  }
+}
+
 /* iPad: reduce Meter h1 (100 A / 3 Phase) to avoid overpowering layout */
 @media (min-width: 768px) and (max-width: 1024px) {
   .Meter h1 {
