@@ -289,9 +289,13 @@ async function handleAPI(req, res) {
         return true;
       }
 
-      // Check if within booking time
+      // Check if within booking time (use Bangkok timezone UTC+7)
       const now = new Date();
-      const today = now.toISOString().split('T')[0];
+      const bangkokNow = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+      const today = bangkokNow.toISOString().split('T')[0];
+      const bangkokHours = bangkokNow.getUTCHours();
+      const bangkokMinutes = bangkokNow.getUTCMinutes();
+      const bangkokSeconds = bangkokNow.getUTCSeconds();
       let timeCheck = { valid: false, reason: 'unknown', message: '' };
 
       if (booking.date !== today) {
@@ -305,7 +309,7 @@ async function handleAPI(req, res) {
       } else {
         const [startHour, startMin] = booking.startTime.split(':').map(Number);
         const [endHour, endMin] = booking.endTime.split(':').map(Number);
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentMinutes = bangkokHours * 60 + bangkokMinutes;
         const startMinutes = startHour * 60 + startMin;
         const endMinutes = endHour * 60 + endMin;
         const earlyAllowance = 15;
@@ -332,9 +336,9 @@ async function handleAPI(req, res) {
         );
       }
 
-      // Calculate remaining seconds
+      // Calculate remaining seconds (Bangkok time)
       const [endH, endM] = booking.endTime.split(':').map(Number);
-      const currentSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const currentSecs = bangkokHours * 3600 + bangkokMinutes * 60 + bangkokSeconds;
       const endSecs = endH * 3600 + endM * 60;
       const remainingSeconds = Math.max(0, endSecs - currentSecs);
 
