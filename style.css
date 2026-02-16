@@ -740,7 +740,7 @@ body::after {
   border: 2px solid #74640a;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 999;
+  z-index: 2000;
   max-height: 200px;
   overflow-y: auto;
   box-sizing: border-box;
@@ -5343,7 +5343,7 @@ color: #000000;
 /* iPad: move Booking button up */
 @media (min-width: 768px) and (max-width: 1024px) {
   #RoomBooking_icon img {
-    margin-top: 120px !important;
+    margin-top: 155px !important;
   }
 }
 
@@ -5622,6 +5622,7 @@ color: #000000;
 
 .MainChart_Container {
   position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 400px;
   height: 180px;
