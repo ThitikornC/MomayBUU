@@ -1861,8 +1861,8 @@ initializeChart();
       const endTime = document.getElementById("bookingEndTime")?.value;
       const bookerName = document.getElementById("bookerName")?.value;
       const purpose = document.getElementById("bookingPurpose")?.value;
-      const roomLabel = document.getElementById("Total_Bar_Label");
-      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : "ไม่ระบุห้อง";
+      const selectedOption = document.querySelector('#roomDropdown .room-option.selected');
+      const roomName = selectedOption ? selectedOption.getAttribute('data-room') : "ไม่ระบุห้อง";
       
       if (!bookingDate || !bookerName) {
         alert("กรุณากรอกวันที่และชื่อผู้จอง");
