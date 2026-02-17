@@ -275,6 +275,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   let checkinCountdownInterval = null;
   let checkinRemainingSeconds = 0;
   let activeBookingData = null;
+  let bookingEndTime = null; // เก็บ endTime ของ booking เพื่อคำนวณ countdown client-side
+
+  // คำนวณ remaining seconds จาก endTime ใน Bangkok timezone (client-side)
+  function calcRemainingFromEndTime(endTimeStr) {
+    if (!endTimeStr) return 0;
+    const [endH, endM] = endTimeStr.split(':').map(Number);
+    const now = new Date();
+    const bangkokNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+    const nowSecs = bangkokNow.getHours() * 3600 + bangkokNow.getMinutes() * 60 + bangkokNow.getSeconds();
+    const endSecs = endH * 3600 + endM * 60;
+    return Math.max(0, endSecs - nowSecs);
+  }
 
   // Fetch active booking status for the room
   async function updateCheckinStatus() {
@@ -288,8 +300,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (result.success && result.hasActiveBooking) {
         activeBookingData = result;
         
-        // Always show countdown regardless of check-in status
-        checkinRemainingSeconds = result.remainingSeconds;
+        // เก็บ endTime แล้วคำนวณ countdown จากเวลาจริงของ client
+        bookingEndTime = result.booking ? result.booking.endTime : null;
+        checkinRemainingSeconds = calcRemainingFromEndTime(bookingEndTime);
         updateCountdownDisplay();
         if (!checkinCountdownInterval) {
           startCheckinCountdown();
@@ -341,7 +354,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   function startCheckinCountdown() {
     updateCountdownDisplay();
     checkinCountdownInterval = setInterval(() => {
-      checkinRemainingSeconds--;
+      // คำนวณจาก endTime จริงทุกวินาที ไม่ใช่แค่ลดทีละ 1
+      if (bookingEndTime) {
+        checkinRemainingSeconds = calcRemainingFromEndTime(bookingEndTime);
+      } else {
+        checkinRemainingSeconds--;
+      }
       if (checkinRemainingSeconds <= 0) {
         checkinRemainingSeconds = 0;
         clearInterval(checkinCountdownInterval);

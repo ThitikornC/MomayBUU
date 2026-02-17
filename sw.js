@@ -1,10 +1,10 @@
 // ================= Cache / Offline =================
-const CACHE_NAME = 'momay-cache-v2.13.6';
+const CACHE_NAME = 'momay-cache-v2.14.4';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/style.css?v=2.13.6',
-  '/script.js?v=2.13.6',
+  '/style.css?v=2.14.3',
+  '/script.js?v=2.14.3',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
@@ -46,10 +46,18 @@ self.addEventListener('activate', event => {
 // ---------------- Fetch ----------------
 const API_PATHS = ['/daily-energy', '/solar-size', '/daily-bill'];
 self.addEventListener('fetch', event => {
-  console.log('Service Worker Fetch Event:', event.request.url);
   const requestUrl = new URL(event.request.url);
 
   if (event.request.method !== 'GET' || !['http:', 'https:'].includes(requestUrl.protocol)) return;
+
+  // ALL /api/ paths → network-only (never cache)
+  if (requestUrl.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => new Response(JSON.stringify({ error: 'offline' }), { headers: { 'Content-Type': 'application/json' } }))
+    );
+    return;
+  }
 
   if (API_PATHS.some(path => requestUrl.pathname.includes(path))) {
     // Network-first สำหรับ API
