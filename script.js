@@ -333,19 +333,16 @@ document.addEventListener('DOMContentLoaded', async function() {
           clearInterval(checkinCountdownInterval);
           checkinCountdownInterval = null;
         }
-        // Prefer actual MQTT-backed state when available
+        // ใช้สถานะจริงจาก MQTT — ถ้าอ่านไม่ได้ ให้คง state เดิม (ไม่ reset เป็น false)
         try {
           const actual = await getActualBulbState(roomName);
           if (actual !== null) {
             updateBulbStatus(actual);
             updateAcStatus(actual);
-          } else {
-            updateBulbStatus(false);
-            updateAcStatus(false);
           }
+          // ถ้า actual === null → ไม่แก้ icon (คง state ที่ user toggle ไว้)
         } catch (e) {
-          updateBulbStatus(false);
-          updateAcStatus(false);
+          // ไม่ทำอะไร — คง state เดิม
         }
       }
     } catch (err) {
@@ -392,12 +389,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   // Bulb status indicator
+  let deviceState = { bulb: false, ac: false }; // track current ON/OFF for toggle
+
   function updateBulbStatus(isActive) {
     const bulbIcon = document.getElementById('bulbIcon');
     if (bulbIcon) {
       bulbIcon.classList.toggle('on', isActive);
       bulbIcon.classList.toggle('off', !isActive);
     }
+    deviceState.bulb = isActive;
   }
 
   // AC status indicator
@@ -407,30 +407,75 @@ document.addEventListener('DOMContentLoaded', async function() {
       acIcon.classList.toggle('on', isActive);
       acIcon.classList.toggle('off', !isActive);
     }
+    deviceState.ac = isActive;
   }
+
+  // Toggle Sonoff device via server proxy
+  let toggleBusy = false;
+  window._toggleDevice = async function(type) {
+    if (toggleBusy) return;
+    toggleBusy = true;
+
+    const roomName = (currentRoom || '').replace(/\s*▼\s*/, '').trim();
+    if (!roomName) { toggleBusy = false; return; }
+
+    // ตรวจสอบสถานะปัจจุบัน แล้วสลับ
+    const currentOn = type === 'bulb' ? deviceState.bulb : deviceState.ac;
+    const newAction = currentOn ? 'OFF' : 'ON';
+
+    // Optimistic UI: สลับทันที
+    if (type === 'bulb') updateBulbStatus(!currentOn);
+    else updateAcStatus(!currentOn);
+
+    try {
+      const res = await fetch('/api/toggle-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room: roomName, action: newAction })
+      });
+      const json = await res.json();
+      if (!json.success) {
+        console.error('Toggle failed:', json.error);
+        // Revert UI
+        if (type === 'bulb') updateBulbStatus(currentOn);
+        else updateAcStatus(currentOn);
+      }
+    } catch (e) {
+      console.error('Toggle error:', e);
+      // Revert UI
+      if (type === 'bulb') updateBulbStatus(currentOn);
+      else updateAcStatus(currentOn);
+    } finally {
+      toggleBusy = false;
+    }
+  };
 
   // Try to get MQTT-backed room state from Control server's /room-state endpoint.
   // Returns: true = ON, false = OFF, null = unknown / not available
   async function getActualBulbState(roomName) {
-    const candidates = [
-      '/room-state',
-      '/control/room-state',
-      API_BASE + '/room-state',
-      API_BASE + '/control/room-state'
-    ];
-
-    for (const url of candidates) {
-      try {
-        const res = await fetch(url, { method: 'GET' });
-        if (!res.ok) continue;
+    try {
+      const res = await fetch('/api/room-state', { method: 'GET' });
+      if (res.ok) {
         const json = await res.json();
         if (json && json.success && json.roomState) {
-          const state = json.roomState[roomName] || json.roomState[roomName.replace(/\s*▼\s*/, '').trim()];
+          const cleanRoom = (roomName || '').replace(/\s*▼\s*/, '').trim();
+          const state = json.roomState[cleanRoom] || json.roomState[roomName];
           if (typeof state === 'string') return state.toUpperCase() === 'ON';
         }
-      } catch (e) {
-        // ignore and try next
       }
+    } catch (e) {
+      // fallback: try Control server directly
+      try {
+        const res2 = await fetch(API_BASE + '/room-state', { method: 'GET' });
+        if (res2.ok) {
+          const json2 = await res2.json();
+          if (json2 && json2.success && json2.roomState) {
+            const cleanRoom = (roomName || '').replace(/\s*▼\s*/, '').trim();
+            const state = json2.roomState[cleanRoom] || json2.roomState[roomName];
+            if (typeof state === 'string') return state.toUpperCase() === 'ON';
+          }
+        }
+      } catch (e2) { /* ignore */ }
     }
     return null;
   }

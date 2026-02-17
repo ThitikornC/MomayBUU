@@ -375,8 +375,8 @@
 
 <div class="Floor_Container" style="z-index:9000;position:relative;pointer-events:auto;">
   <div class="floor-icons-group" style="pointer-events:auto;z-index:9000;">
-    <div class="bulb-status" id="bulbStatus">
-      <svg id="bulbIcon" class="bulb-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48" width="52" height="52">
+    <div class="bulb-status" id="bulbStatus" style="cursor:pointer;" onclick="window._toggleDevice('bulb')">
+      <svg id="bulbIcon" class="bulb-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48" width="52" height="52" style="pointer-events:none;">
         <ellipse cx="32" cy="20" rx="14" ry="16" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="bulb-glass"/>
         <rect x="27" y="34" width="10" height="8" rx="2" fill="#b5a76c" stroke="#74640a" stroke-width="1.5"/>
         <line x1="27" y1="37" x2="37" y2="37" stroke="#74640a" stroke-width="1"/>
@@ -384,8 +384,8 @@
         <rect x="29" y="42" width="6" height="3" rx="1.5" fill="#74640a"/>
       </svg>
     </div>
-    <div class="ac-status" id="acStatus">
-      <svg id="acIcon" class="ac-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 52" width="52" height="52">
+    <div class="ac-status" id="acStatus" style="cursor:pointer;" onclick="window._toggleDevice('ac')">
+      <svg id="acIcon" class="ac-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 52" width="52" height="52" style="pointer-events:none;">
         <!-- ตัวเครื่องแอร์ -->
         <rect x="4" y="4" width="56" height="26" rx="4" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="ac-body"/>
         <!-- ช่องลมด้านหน้า -->
@@ -543,9 +543,8 @@
 
 <div class="Bottom_info">
 <div class="Version">V.2.16</div>
-<div id="_dbg" style="font-size:9px;color:#999;text-align:center;padding:2px;">tap debug</div>
-</div>
-
+</div>S
+S
 <div id="calendarPopup">
   <div id="calendar"></div>
 </div>

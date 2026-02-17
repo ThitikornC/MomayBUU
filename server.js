@@ -14,6 +14,9 @@ const COLLECTION_NAME = 'bookings';
 
 // CCTV WebSocket Relay
 const RELAY_KEY = process.env.RELAY_KEY || 'changeme';
+
+// Control server URL (for Sonoff toggle proxy)
+const CONTROL_URL = process.env.CONTROL_URL || 'https://controlbuu-production.up.railway.app';
 let relaySocket = null;
 const viewerClients = new Set();
 let latestFrame = null;  // เก็บ frame ล่าสุดให้ viewer ใหม่เห็นทันที
@@ -270,6 +273,73 @@ async function handleAPI(req, res) {
     return true;
   }
   
+  // POST /api/toggle-device — proxy to Control server to toggle Sonoff
+  if (url === '/api/toggle-device' && method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const { room, action } = body;
+      if (!room || !action) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: 'Missing room or action' }));
+        return true;
+      }
+
+      // Forward to Control server
+      const payload = JSON.stringify({ room, action });
+      const controlUrl = new URL('/toggle', CONTROL_URL);
+
+      const proxyRes = await new Promise((resolve, reject) => {
+        const proto = controlUrl.protocol === 'https:' ? require('https') : require('http');
+        const proxyReq = proto.request(controlUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+          timeout: 5000
+        }, (pRes) => {
+          let data = '';
+          pRes.on('data', c => data += c);
+          pRes.on('end', () => resolve({ status: pRes.statusCode, body: data }));
+        });
+        proxyReq.on('error', reject);
+        proxyReq.on('timeout', () => { proxyReq.destroy(); reject(new Error('Timeout')); });
+        proxyReq.write(payload);
+        proxyReq.end();
+      });
+
+      res.statusCode = proxyRes.status;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(proxyRes.body);
+    } catch (error) {
+      res.statusCode = 502;
+      res.end(JSON.stringify({ success: false, error: 'Control server unreachable: ' + error.message }));
+    }
+    return true;
+  }
+
+  // GET /api/room-state — proxy to Control server for device state
+  if (url === '/api/room-state' && method === 'GET') {
+    try {
+      const controlUrl = new URL('/room-state', CONTROL_URL);
+      const proto = controlUrl.protocol === 'https:' ? require('https') : require('http');
+      const proxyRes = await new Promise((resolve, reject) => {
+        const proxyReq = proto.request(controlUrl, { method: 'GET', timeout: 5000 }, (pRes) => {
+          let data = '';
+          pRes.on('data', c => data += c);
+          pRes.on('end', () => resolve({ status: pRes.statusCode, body: data }));
+        });
+        proxyReq.on('error', reject);
+        proxyReq.on('timeout', () => { proxyReq.destroy(); reject(new Error('Timeout')); });
+        proxyReq.end();
+      });
+      res.statusCode = proxyRes.status;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(proxyRes.body);
+    } catch (error) {
+      res.statusCode = 502;
+      res.end(JSON.stringify({ success: false, error: 'Control server unreachable' }));
+    }
+    return true;
+  }
+
   // POST /api/verify - Verify QR code for room access
   if (url === '/api/verify' && method === 'POST') {
     try {
