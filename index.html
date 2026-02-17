@@ -58,6 +58,9 @@
         <img src="./images/Bell_icon.png" alt="Bell">
         <span id="bellBadge">0</span>
       </div>
+      <div id="Graph__icon">
+        <img src="./images/Graph__icon.png" alt="Graph">
+      </div>
     </div>
     <div class="ElectricalBill_Container">
       <div id="DailyBill"></div>
@@ -471,9 +474,9 @@
           <div class="bill-compare-data" id="billYesterdayData">-- Unit<br>-- THB.</div>
         </div>
       </div>
-      <div class="bill-compare-card">
+      <div class="bill-compare-card" id="billTodayCard">
         <div class="bill-compare-date" id="billTodayDate">--</div>
-        <div class="bill-compare-circle">
+        <div class="bill-compare-circle bill-compare-circle--realtime">
           <div class="bill-compare-data" id="billTodayData">-- Unit<br>-- THB.</div>
         </div>
       </div>
@@ -684,6 +687,31 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- Graph Popup Overlay -->
+<div id="graphPopupOverlay" class="graph-popup-overlay" style="display:none;">
+  <div class="graph-popup-card">
+    <div class="graph-popup-header">
+      <span class="graph-popup-title">Total Consumption</span>
+      <button id="graphPopupClose" class="graph-popup-close" type="button">&times;</button>
+    </div>
+    <div class="graph-popup-datepicker">
+      <button id="graphPopupPrevDay" type="button">&lt;</button>
+      <span id="graphPopupCurrentDay"></span>
+      <button id="graphPopupNextDay" type="button">&gt;</button>
+    </div>
+    <div class="graph-popup-chart-wrap">
+      <div id="graphPopupSpinner" class="chart-spinner">
+        <div class="spinner-ring"></div>
+        <span class="spinner-text">Loading...</span>
+      </div>
+      <canvas id="graphPopupCanvas"></canvas>
+    </div>
+    <div class="graph-popup-footer">
+      <button id="graphPopupToggleBtn" type="button">Total power</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

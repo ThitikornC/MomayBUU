@@ -3294,4 +3294,187 @@ if ('Notification' in window && Notification.permission === 'default') {
     }, { passive: true });
   })();
 
+  // ================= Graph Popup (Total Consumption) =================
+  (function initGraphPopup() {
+    const graphIcon = document.querySelector('#icons-frame #Graph__icon');
+    if (!graphIcon) return;
+
+    const overlay = document.getElementById('graphPopupOverlay');
+    const closeBtn = document.getElementById('graphPopupClose');
+    const prevBtn = document.getElementById('graphPopupPrevDay');
+    const nextBtn = document.getElementById('graphPopupNextDay');
+    const dayLabel = document.getElementById('graphPopupCurrentDay');
+    const canvas = document.getElementById('graphPopupCanvas');
+    const spinner = document.getElementById('graphPopupSpinner');
+    const toggleBtn = document.getElementById('graphPopupToggleBtn');
+    if (!overlay || !canvas) return;
+
+    let popupDate = new Date();
+    let popupChart = null;
+    let showPhases = false;
+
+    function updateDateLabel() {
+      if (dayLabel) dayLabel.textContent = formatDateDisplay(popupDate);
+    }
+
+    async function renderPopupChart() {
+      if (spinner) spinner.classList.add('active');
+
+      const values = await fetchDailyData(popupDate);
+
+      const chartData = new Array(1440).fill(null);
+      const phaseA = new Array(1440).fill(null);
+      const phaseB = new Array(1440).fill(null);
+      const phaseC = new Array(1440).fill(null);
+      values.forEach(item => {
+        const t = new Date(item.timestamp);
+        const idx = t.getUTCHours() * 60 + t.getUTCMinutes();
+        if (idx >= 0 && idx < 1440) {
+          chartData[idx] = item.active_power_total ?? item.power ?? item.power_active ?? null;
+          phaseA[idx] = item.active_power_a !== undefined ? item.active_power_a : null;
+          phaseB[idx] = item.active_power_b !== undefined ? item.active_power_b : null;
+          phaseC[idx] = item.active_power_c !== undefined ? item.active_power_c : null;
+        }
+      });
+
+      // Compute max & avg
+      let maxVal = null, maxIdx = null, sum = 0, count = 0;
+      chartData.forEach((v, i) => {
+        if (v !== null) {
+          if (maxVal === null || v > maxVal) { maxVal = v; maxIdx = i; }
+          sum += v; count++;
+        }
+      });
+      const avgVal = count > 0 ? sum / count : null;
+
+      // Downsample
+      const MAX_POINTS = 360;
+      const factor = Math.ceil(1440 / MAX_POINTS);
+      const labels = getMinuteLabels();
+      const sLabels = [], sData = [], sMax = [], sAvg = [], sA = [], sB = [], sC = [];
+      for (let i = 0, si = 0; i < 1440; i += factor, si++) {
+        const wEnd = Math.min(i + factor - 1, 1439);
+        let lMax = null;
+        for (let j = i; j <= wEnd; j++) { const v = chartData[j]; if (v !== null && (lMax === null || v > lMax)) lMax = v; }
+        sData.push(lMax);
+        sMax.push((maxIdx !== null && maxIdx >= i && maxIdx <= wEnd) ? maxVal : null);
+        sAvg.push(avgVal);
+        let la = null, lb = null, lc = null;
+        for (let j = i; j <= wEnd; j++) {
+          if (phaseA[j] !== null && (la === null || phaseA[j] > la)) la = phaseA[j];
+          if (phaseB[j] !== null && (lb === null || phaseB[j] > lb)) lb = phaseB[j];
+          if (phaseC[j] !== null && (lc === null || phaseC[j] > lc)) lc = phaseC[j];
+        }
+        sA.push(la); sB.push(lb); sC.push(lc);
+        sLabels.push(labels[i]);
+      }
+
+      if (popupChart) { try { popupChart.destroy(); } catch (e) {} popupChart = null; }
+
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+      gradient.addColorStop(0, 'rgba(139,69,19,0.4)');
+      gradient.addColorStop(0.5, 'rgba(210,180,140,0.3)');
+      gradient.addColorStop(1, 'rgba(245,222,179,0.1)');
+
+      popupChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: sLabels,
+          datasets: [
+            { label: 'Power', data: sData, borderColor: '#8B4513', backgroundColor: gradient, fill: true, borderWidth: 0.5, tension: 0.3, pointRadius: 0, hidden: showPhases },
+            { label: 'Max', data: sMax, borderColor: '#ff9999', pointRadius: 5, pointBackgroundColor: '#ff9999', fill: false, showLine: false, hidden: showPhases },
+            { label: 'Average', data: sAvg, borderColor: '#000', borderDash: [5, 5], fill: false, pointRadius: 0, borderWidth: 1, hidden: showPhases },
+            { label: 'Phase A', data: sA, borderColor: '#ff0000', fill: false, pointRadius: 0, borderWidth: 1, hidden: !showPhases },
+            { label: 'Phase B', data: sB, borderColor: '#ffd700', fill: false, pointRadius: 0, borderWidth: 1, hidden: !showPhases },
+            { label: 'Phase C', data: sC, borderColor: '#1e90ff', fill: false, pointRadius: 0, borderWidth: 1, hidden: !showPhases }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          layout: { padding: { bottom: 20 } },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              type: 'category',
+              grid: { display: false },
+              ticks: {
+                autoSkip: false, maxRotation: 0, minRotation: 0, color: '#2c1810', font: { size: 9 },
+                callback: function(v) {
+                  const l = this.getLabelForValue(v);
+                  if (!l) return '';
+                  const [h, m] = l.split(':');
+                  const idx = Number(v);
+                  const len = this.chart?.data?.labels?.length ?? null;
+                  if (len !== null && idx === len - 1) return '24.00';
+                  if (m === '00' && (parseInt(h) % 3) === 0) return `${String(h).padStart(2,'0')}.00`;
+                  return '';
+                }
+              },
+              title: { display: true, text: 'Time (HH:MM)', color: '#2c1810', font: { size: 9 } }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { display: false },
+              min: 0,
+              ticks: { color: '#2c1810', font: { size: 9 } },
+              title: { display: true, text: 'Power (kW)', color: '#2c1810', font: { size: 9 } }
+            }
+          }
+        }
+      });
+
+      if (spinner) spinner.classList.remove('active');
+    }
+
+    function openPopup() {
+      popupDate = new Date(currentDate);
+      showPhases = false;
+      if (toggleBtn) toggleBtn.textContent = 'Total power';
+      updateDateLabel();
+      overlay.style.display = 'flex';
+      // Wait for the canvas to be visible before rendering chart
+      requestAnimationFrame(() => {
+        setTimeout(() => renderPopupChart(), 50);
+      });
+    }
+
+    function closePopup() {
+      overlay.style.display = 'none';
+      if (popupChart) { try { popupChart.destroy(); } catch (e) {} popupChart = null; }
+    }
+
+    // Event listeners
+    graphIcon.addEventListener('click', openPopup);
+    if (closeBtn) closeBtn.addEventListener('click', closePopup);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closePopup(); });
+
+    if (prevBtn) prevBtn.addEventListener('click', () => {
+      popupDate.setDate(popupDate.getDate() - 1);
+      updateDateLabel();
+      renderPopupChart();
+    });
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+      popupDate.setDate(popupDate.getDate() + 1);
+      updateDateLabel();
+      renderPopupChart();
+    });
+
+    if (toggleBtn) toggleBtn.addEventListener('click', () => {
+      showPhases = !showPhases;
+      toggleBtn.textContent = showPhases ? 'Phase balance' : 'Total power';
+      if (popupChart && popupChart.data && popupChart.data.datasets) {
+        popupChart.data.datasets[0].hidden = showPhases;
+        popupChart.data.datasets[1].hidden = showPhases;
+        popupChart.data.datasets[2].hidden = showPhases;
+        popupChart.data.datasets[3].hidden = !showPhases;
+        popupChart.data.datasets[4].hidden = !showPhases;
+        popupChart.data.datasets[5].hidden = !showPhases;
+        popupChart.update();
+      }
+    });
+  })();
+
 });

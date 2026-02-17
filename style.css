@@ -154,6 +154,7 @@ body {
   #Calendar_icon img { width: 24px; height: 24px; }
   #Kwang_icon img   { width: 34px; height: 34px; }
   #Bell_icon img    { width: 28px; height: 28px; }
+  #Graph__icon img  { width: 24px; height: 24px; }
   .ElectricalBill_Container {
     flex: 1;
     width: 100%;
@@ -1053,7 +1054,7 @@ font-size: 14px;
   align-items: center;
   justify-content: space-evenly;
   gap: 0;
-  padding: 2px 10px;
+  padding: 2px 6px;
   width: 100%;
   box-sizing: border-box;
   background: linear-gradient(180deg, #f8f6f0 0%, #fffef8 45%, #fff8e8 55%, #f5f0e5 100%);
@@ -1114,41 +1115,168 @@ font-size: 14px;
   }
 }
 
-#Calendar_icon {
+#Calendar_icon,
+#Kwang_icon,
+#Bell_icon,
+#Graph__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 #Calendar_icon img { 
   width: 32px; 
   height: 32px; 
   cursor: pointer;
 }
-
-#Kwang_icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-}
 #Kwang_icon img { 
   width: 46px; 
   height: 46px; 
   cursor: pointer;
-}
-
-#Bell_icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
 }
 #Bell_icon img { 
   width: 38px; 
   height: 38px; 
   cursor: pointer;
 }
+#Graph__icon img { 
+  width: 32px; 
+  height: 32px; 
+  cursor: pointer;
+}
+
+/* ================= Graph Popup ================= */
+.graph-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+.graph-popup-card {
+  width: 375px;
+  max-width: calc(100% - 16px);
+  background: linear-gradient(180deg, #f8f6f0 0%, #fffef8 45%, #fff8e8 55%, #f5f0e5 100%);
+  border: 6px solid #74640a;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4), -6px 6px #3b3305;
+  padding: 14px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.graph-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  position: relative;
+}
+.graph-popup-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3b3305;
+  text-align: center;
+}
+.graph-popup-close {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: #74640a;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+.graph-popup-datepicker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 8px;
+  font-family: 'Roboto', serif;
+}
+.graph-popup-datepicker button {
+  color: #2c1810;
+  font-weight: bold;
+  font-size: 14px;
+  background: linear-gradient(180deg, #f8f6f0 0%, #fffef8 45%, #fff8e8 55%, #f5f0e5 100%);
+  border: 6px solid #74640a;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.3),
+    0 -1px 0 rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.graph-popup-datepicker button:hover {
+  transform: scale(1.05);
+  box-shadow:
+    inset 0 0 8px rgba(0,0,0,0.2),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 15px rgba(255, 230, 160, 0.55);
+}
+.graph-popup-datepicker span {
+  color: #2c1810;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  background: linear-gradient(180deg, #f8f6f0 0%, #fffef8 45%, #fff8e8 55%, #f5f0e5 100%);
+  border: 6px solid #74640a;
+  border-radius: 10px;
+  padding: 4px 14px;
+  min-width: 160px;
+  box-shadow:
+    inset 0 0 5px rgba(0,0,0,0.15),
+    1px 1px 0 #000,
+    -4px 3px #3b3305,
+    0 0 12px rgba(255, 230, 160, 0.55);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.3),
+    0 -1px 0 rgba(0,0,0,0.1);
+}
+.graph-popup-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  margin-bottom: 6px;
+}
+.graph-popup-chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+.graph-popup-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.graph-popup-footer button {
+  background: #fffef8;
+  color: #3b3305;
+  border: 1px solid #74640a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 0 #3b3305;
+}
+
 /* Hover / Active */
 .Navbar div img:hover  { transform: scale(1.1); opacity: 0.9; }
 .Navbar div img:active { transform: scale(0.95); opacity: 0.8; }
@@ -1408,6 +1536,50 @@ font-size: 14px;
 
 .bill-compare-circle:hover {
   transform: scale(1.03);
+}
+
+/* Realtime pulse animation for today's circle */
+.bill-compare-circle--realtime {
+  animation: realtimePulse 2s ease-in-out infinite;
+  position: relative;
+}
+.bill-compare-circle--realtime::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(116, 100, 10, 0.4);
+  animation: realtimeRing 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes realtimePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      inset 0 0 5px rgba(0,0,0,0.15),
+      1px 1px 0 #000,
+      -3px 2px #3b3305,
+      0 0 10px rgba(255, 230, 160, 0.55);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow:
+      inset 0 0 5px rgba(0,0,0,0.15),
+      1px 1px 0 #000,
+      -3px 2px #3b3305,
+      0 0 20px rgba(255, 200, 50, 0.8),
+      0 0 35px rgba(245, 166, 35, 0.4);
+  }
+}
+@keyframes realtimeRing {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0;
+  }
 }
 
 .bill-compare-data {
@@ -1806,11 +1978,15 @@ font-size: 14px;
   user-select: none;
   color: #fff;
   z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
 }
 
 /* ตัว "<" และ ">" แยกออกมาให้ขยับเล็กน้อย */
 #PickDate span {
-  margin: 0 8px;
+  margin: 0 20px;
    z-index: 1001;
 }
 
@@ -2039,7 +2215,7 @@ font-size: 14px;
 #currentDay, #prevDay, #nextDay {
   color: #2c1810;       
   font-weight: bold;     
-  font-size: 14px;       /* ลดฟอนต์ลงครึ่งหนึ่ง */
+  font-size: 14px;
   text-align: center;
 
   /* Gradient แบบ Meter */
@@ -2064,13 +2240,23 @@ font-size: 14px;
     0 1px 0 rgba(255,255,255,0.3),
     0 -1px 0 rgba(0,0,0,0.1);
 
-  padding: 4px 10px;      /* ลด padding บน-ล่าง เหลือ 4px, ซ้าย-ขวา 10px */
+  padding: 4px 10px;
   cursor: pointer;
   pointer-events: auto;
   z-index: 1001;
   position: relative;
 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#prevDay, #nextDay {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #PickDate {
   position: relative;
