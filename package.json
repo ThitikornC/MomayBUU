@@ -6,7 +6,8 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "mongodb": "^7.1.0"
+    "mongodb": "^7.1.0",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "mkcert": "^3.2.0"

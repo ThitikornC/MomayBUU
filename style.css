@@ -808,6 +808,7 @@ body::after {
   position: relative;
   overflow: visible;
   padding: 15px;
+  z-index: 2000;
 
   /* Animation / Transition */
   transform: translateZ(0);
@@ -1890,6 +1891,8 @@ font-size: 14px;
   cursor: pointer;
   z-index: 10;
   position: relative;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: rgba(116, 100, 10, 0.3);
 }
 
 .cctv-icon {
@@ -1905,88 +1908,66 @@ font-size: 14px;
   50%      { fill: #ff0000; opacity: 0.3; }
 }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
 /* CCTV Popup */
-.cctv-popup-overlay {
+.cctv-popup-wrap {
+  display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 99999;
+  justify-content: center;
+  align-items: center;
+}
+.cctv-popup-wrap.active {
+  display: flex;
+}
+.cctv-popup-overlay-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.6);
-  z-index: 10000;
+  cursor: pointer;
+}
+.cctv-popup-card {
+  position: relative;
+  background: #fffef8;
+  border-radius: 18px;
+  border: 3px solid #74640a;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  width: 340px;
+  max-width: 90vw;
+  overflow: hidden;
+  z-index: 1;
+}
+.cctv-popup-header {
+  background: linear-gradient(135deg, #74640a, #a89030);
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cctv-popup-close {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.cctv-popup-card {
-  background: linear-gradient(135deg, #f5f0e1, #e8e0c8);
-  border-radius: 18px;
-  border: 3px solid #74640a;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-  width: 375px;
-  max-height: 90vh;
-  overflow: hidden;
-}
-
-.cctv-popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 2px solid #74640a;
-  background: linear-gradient(135deg, #b5a76c, #8c7a2e);
-}
-
-.cctv-popup-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-}
-
-.cctv-popup-close {
-  background: rgba(255,255,255,0.2);
-  border: 2px solid rgba(255,255,255,0.4);
-  color: #fff;
-  font-size: 22px;
   width: 34px;
   height: 34px;
   border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.4);
+  color: #fff;
+  font-size: 24px;
+  text-decoration: none;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  line-height: 1;
   transition: all 0.2s;
 }
-
 .cctv-popup-close:hover {
   background: rgba(255,0,0,0.5);
   border-color: #ff4444;
-}
-
-.cctv-popup-body {
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 220px;
-  position: relative;
-}
-
-.cctv-feed {
-  width: 100%;
-  border-radius: 10px;
-  border: 2px solid #74640a;
-  object-fit: cover;
-}
-
-.cctv-no-signal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #74640a;
-  font-size: 14px;
-  font-weight: bold;
 }
 
 .bulb-icon {
@@ -2650,7 +2631,7 @@ font-size: 14px;
     height: 100%;
     background: rgba(0,0,0,0.5);
     display: none; /* เริ่มต้นซ่อน */
-    z-index: 1000;
+    z-index: 10000;
   }
 
 /* popup กลางจอ */
@@ -2741,7 +2722,7 @@ font-size: 14px;
   gap: 15px;
   font-family: "Prompt", sans-serif;
   text-align: center;
-  z-index: 1001;
+  z-index: 10001;
   overflow: visible;
 }
 

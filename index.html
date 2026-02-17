@@ -16,7 +16,7 @@
   <!-- iOS Safari full screen fix -->
   <meta name="apple-mobile-web-app-title" content="Momay">
   <!-- ใส่ CSS versioned แทนตัวเดิม -->
-  <link rel="stylesheet" href="style.css?v=2.13.6">
+  <link rel="stylesheet" href="style.css?v=2.16.4">
 </head>
 
 <body>
@@ -373,8 +373,8 @@
   </div>
 </div>
 
-<div class="Floor_Container">
-  <div class="floor-icons-group">
+<div class="Floor_Container" style="z-index:9000;position:relative;pointer-events:auto;">
+  <div class="floor-icons-group" style="pointer-events:auto;z-index:9000;">
     <div class="bulb-status" id="bulbStatus">
       <svg id="bulbIcon" class="bulb-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48" width="52" height="52">
         <ellipse cx="32" cy="20" rx="14" ry="16" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="bulb-glass"/>
@@ -399,8 +399,8 @@
         <path d="M46 34 Q49 40 46 46" stroke="#74640a" stroke-width="1.5" fill="none" class="ac-wind" opacity="0"/>
       </svg>
     </div>
-    <button type="button" class="cctv-status" id="cctvStatus" style="background:none;border:none;padding:0;margin-top:10px;cursor:pointer;position:relative;z-index:999;-webkit-tap-highlight-color:rgba(0,0,0,0.1)">
-      <svg id="cctvIcon" class="cctv-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 60" width="52" height="52" style="pointer-events:none">
+    <div class="cctv-status" id="cctvStatus" style="pointer-events:auto;cursor:pointer;z-index:9999;position:relative;">
+      <svg id="cctvIcon" class="cctv-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 60" width="52" height="52" style="pointer-events:none;">
         <rect x="38" y="0" width="16" height="5" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
         <rect x="43" y="5" width="6" height="16" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
         <circle cx="46" cy="24" r="5" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
@@ -410,14 +410,36 @@
         </g>
         <circle cx="22" cy="30" r="1.5" fill="#cc0000" class="cctv-led"/>
       </svg>
-    </button>
+    </div>
   </div>
   <div class="Realtime_kW" id="realtimeCountdown">--:--:--</div>
 </div>
-
-
-<!-- Overlay มีอยู่แล้ว -->
-<div id="overlay"></div>
+<script>
+(function(){
+  var cc=document.getElementById('cctvStatus');
+  if(!cc)return;
+  function openCctv(e){
+    e.stopPropagation();
+    e.preventDefault();
+    // ปิด daily popup + overlay ก่อนเปิด CCTV
+    var ov=document.getElementById('overlay');
+    var dp=document.getElementById('dailyPopup');
+    if(ov)ov.style.display='none';
+    if(dp)dp.style.display='none';
+    // เปิด CCTV popup พร้อม stream
+    if(window._openCctv) window._openCctv();
+    else { var p=document.getElementById('cctvPopup'); if(p)p.style.display='flex'; }
+  }
+  cc.addEventListener('touchstart',openCctv,{passive:false,capture:false});
+  cc.addEventListener('click',openCctv,false);
+  /* DEBUG: tap anywhere shows what's there */
+  document.addEventListener('touchstart',function(ev){
+    var t=ev.target;
+    var dbg=document.getElementById('_dbg');
+    if(dbg)dbg.textContent=t.tagName+'.'+t.className.toString().substring(0,30)+(t.id?' #'+t.id:'');
+  },true);
+})();
+</script>
 
 <!-- Kwang Popup -->
 <div id="kwangPopup" style="display:none;">
@@ -520,7 +542,8 @@
 </div>
 
 <div class="Bottom_info">
-<div class="Version">V.11225</div>
+<div class="Version">V.2.16</div>
+<div id="_dbg" style="font-size:9px;color:#999;text-align:center;padding:2px;">tap debug</div>
 </div>
 
 <div id="calendarPopup">
@@ -724,18 +747,136 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<!-- CCTV Popup -->
-<div id="cctvPopupOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;justify-content:center;align-items:center">
-  <div style="background:#fffef8;border:3px solid #74640a;border-radius:18px;width:340px;max-width:90vw;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
-    <div style="background:linear-gradient(135deg,#74640a,#a89030);padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
-      <span style="color:#fff;font-weight:bold;font-size:16px">CCTV Camera</span>
-      <button id="cctvPopupClose" type="button" style="background:#fff3;border:none;color:#fff;font-size:24px;width:34px;height:34px;border-radius:50%;cursor:pointer;line-height:1">&times;</button>
+<!-- CCTV Popup — Live Video (JPEG over WebSocket) -->
+<div id="cctvPopup" onclick="if(event.target===this)window._closeCctv()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;justify-content:center;align-items:center;background:rgba(0,0,0,0.75);">
+  <div style="background:#1a1a1a;border-radius:18px;border:3px solid #74640a;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:380px;max-width:94vw;overflow:hidden;">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#74640a,#a89030);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="cctvLed" style="width:8px;height:8px;border-radius:50%;background:#666;"></div>
+        <span style="color:#fff;font-weight:bold;font-size:15px;">CCTV Live</span>
+        <span id="cctvStatusLabel" style="color:rgba(255,255,255,0.7);font-size:11px;">— รอเชื่อมต่อ</span>
+      </div>
+      <div onclick="window._closeCctv()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</div>
     </div>
-    <div style="padding:30px;text-align:center;color:#74640a;font-size:14px">
-      <p>CCTV Popup - ยังไม่มีฟีดกล้อง</p>
+    <!-- Video area -->
+    <div style="position:relative;background:#000;width:100%;aspect-ratio:4/3;">
+      <img id="cctvFrame" style="display:block;width:100%;height:100%;object-fit:contain;" alt="CCTV">
+      <div id="cctvOffline" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#888;font-size:13px;">
+        <svg viewBox="0 0 64 60" width="40" height="40" xmlns="http://www.w3.org/2000/svg" style="opacity:0.3;">
+          <rect x="38" y="0" width="16" height="5" fill="#888" stroke="#888" stroke-width="1"/>
+          <rect x="43" y="5" width="6" height="16" fill="#888" stroke="#888" stroke-width="1"/>
+          <circle cx="46" cy="24" r="5" fill="none" stroke="#888" stroke-width="1.5"/>
+          <g transform="rotate(-12, 46, 24)">
+            <rect x="14" y="19" width="32" height="14" rx="2" fill="none" stroke="#888" stroke-width="2"/>
+            <rect x="4" y="21" width="12" height="10" rx="2" fill="none" stroke="#888" stroke-width="1.5"/>
+          </g>
+        </svg>
+        <span>กำลังเชื่อมต่อกล้อง...</span>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center;background:#111;">
+      <span style="color:#666;font-size:11px;">สำนักหอสมุด ม.บูรพา</span>
+      <span id="cctvFps" style="color:#555;font-size:10px;"></span>
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  // ─── CCTV Stream URL — same origin as MomayBUU server ───
+  var wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  var CCTV_WS_URL = wsProto + '//' + location.host + '/ws/stream';
+
+  var ws = null;
+  var imgEl   = document.getElementById('cctvFrame');
+  var led     = document.getElementById('cctvLed');
+  var label   = document.getElementById('cctvStatusLabel');
+  var offline = document.getElementById('cctvOffline');
+  var fpsEl   = document.getElementById('cctvFps');
+  var frameCount = 0;
+  var fpsTimer = null;
+
+  function setStatus(state, text) {
+    label.textContent = text;
+    if (state === 'live') {
+      led.style.background = '#ff3b3b';
+      led.style.animation  = 'blink 1.5s infinite';
+      label.style.color    = '#ff6b6b';
+      offline.style.display= 'none';
+    } else {
+      led.style.background = state === 'connecting' ? '#ffaa00' : '#666';
+      led.style.animation  = state === 'connecting' ? 'blink 0.8s infinite' : '';
+      label.style.color    = 'rgba(255,255,255,0.7)';
+      offline.style.display= 'flex';
+      offline.querySelector('span').textContent = text;
+    }
+  }
+
+  function connect() {
+    if (ws) return;
+    setStatus('connecting', 'กำลังเชื่อมต่อ...');
+
+    ws = new WebSocket(CCTV_WS_URL);
+    ws.binaryType = 'arraybuffer';
+
+    ws.onopen = function() {
+      setStatus('connecting', 'เชื่อมต่อแล้ว — รอ stream...');
+      frameCount = 0;
+      fpsTimer = setInterval(function() {
+        if (fpsEl) fpsEl.textContent = frameCount > 0 ? frameCount + ' fps' : '';
+        frameCount = 0;
+      }, 1000);
+    };
+
+    ws.onmessage = function(ev) {
+      // Received JPEG frame as ArrayBuffer
+      var blob = new Blob([ev.data], { type: 'image/jpeg' });
+      var url = URL.createObjectURL(blob);
+      var oldUrl = imgEl.src;
+      imgEl.src = url;
+      if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+      frameCount++;
+      if (offline.style.display !== 'none') setStatus('live', '● LIVE');
+    };
+
+    ws.onclose = function() {
+      ws = null;
+      clearInterval(fpsTimer);
+      if (fpsEl) fpsEl.textContent = '';
+      setStatus('', 'ไม่มีสัญญาณ');
+    };
+
+    ws.onerror = function() {
+      setStatus('', 'เชื่อมต่อไม่ได้');
+    };
+  }
+
+  function disconnect() {
+    if (ws) { ws.close(); ws = null; }
+    clearInterval(fpsTimer);
+    if (fpsEl) fpsEl.textContent = '';
+    setStatus('', 'กำลังเชื่อมต่อกล้อง...');
+    // Clear image
+    if (imgEl.src && imgEl.src.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+    imgEl.removeAttribute('src');
+  }
+
+  window._openCctv = function() {
+    var popup = document.getElementById('cctvPopup');
+    if (popup) popup.style.display = 'flex';
+    connect();
+  };
+
+  window._closeCctv = function() {
+    var popup = document.getElementById('cctvPopup');
+    if (popup) popup.style.display = 'none';
+    disconnect();
+  };
+})();
+</script>
+
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -743,18 +884,6 @@ if ('serviceWorker' in navigator) {
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 <script src="pageview.js" defer></script>
-<script src="script.js?v=2.14.4" defer></script>
-<script>
-// CCTV — inline, runs after DOM elements above are parsed
-document.getElementById('cctvStatus').addEventListener('click', function() {
-  document.getElementById('cctvPopupOverlay').style.display = 'flex';
-});
-document.getElementById('cctvPopupClose').addEventListener('click', function() {
-  document.getElementById('cctvPopupOverlay').style.display = 'none';
-});
-document.getElementById('cctvPopupOverlay').addEventListener('click', function(e) {
-  if (e.target === this) this.style.display = 'none';
-});
-</script>
+<script src="script.js?v=2.16.4" defer></script>
 </body>
 </html>

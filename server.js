@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
+const { WebSocketServer, WebSocket } = require('ws');
 
 const port = process.env.PORT || 8000;
 const root = path.resolve(__dirname);
@@ -10,6 +11,12 @@ const root = path.resolve(__dirname);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://nippit62:ohm0966477158@testing.hgxbz.mongodb.net/?retryWrites=true&w=majority';
 const DB_NAME = 'momay_buu';
 const COLLECTION_NAME = 'bookings';
+
+// CCTV WebSocket Relay
+const RELAY_KEY = process.env.RELAY_KEY || 'changeme';
+let relaySocket = null;
+const viewerClients = new Set();
+let latestFrame = null;  // เก็บ frame ล่าสุดให้ viewer ใหม่เห็นทันที
 
 let db = null;
 
@@ -469,15 +476,92 @@ const server = http.createServer(async (req, res) => {
         res.end('Server error');
         return;
       }
-      res.setHeader('Content-Type', getContentType(filePath));
+      const ct = getContentType(filePath);
+      res.setHeader('Content-Type', ct);
+      // ไม่ให้ browser cache HTML/JS/CSS เพื่อให้ได้ไฟล์ใหม่ทุกครั้ง
+      if (ct.includes('html') || ct.includes('javascript') || ct.includes('css')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+      }
       res.end(data);
     });
   });
+});
+
+// ─── CCTV WebSocket Relay ───
+const wssRelay  = new WebSocketServer({ noServer: true });
+const wssViewer = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+  const url = new URL(req.url, `http://localhost:${port}`);
+
+  if (url.pathname === '/ws/relay') {
+    const key = url.searchParams.get('key');
+    if (key !== RELAY_KEY) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      console.log('[CCTV] Relay rejected — bad key');
+      return;
+    }
+    wssRelay.handleUpgrade(req, socket, head, ws => wssRelay.emit('connection', ws));
+  } else if (url.pathname === '/ws/stream') {
+    wssViewer.handleUpgrade(req, socket, head, ws => wssViewer.emit('connection', ws));
+  } else {
+    socket.destroy();
+  }
+});
+
+// Relay: receives JPEG frames from local relay.py
+wssRelay.on('connection', (ws) => {
+  if (relaySocket) {
+    try { relaySocket.close(); } catch(e) {}
+    console.log('[CCTV] Replaced existing relay');
+  }
+  relaySocket = ws;
+  console.log(`[CCTV] ✓ Relay connected — viewers: ${viewerClients.size}`);
+
+  ws.on('message', (data) => {
+    latestFrame = data;
+    for (const v of viewerClients) {
+      if (v.readyState === WebSocket.OPEN) {
+        v.send(data, { binary: true });
+      }
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('[CCTV] ✗ Relay disconnected');
+    if (relaySocket === ws) relaySocket = null;
+  });
+
+  ws.on('error', (err) => {
+    console.error('[CCTV] Relay error:', err.message);
+    if (relaySocket === ws) relaySocket = null;
+  });
+});
+
+// Viewer: browser connects to watch stream
+wssViewer.on('connection', (ws) => {
+  viewerClients.add(ws);
+  console.log(`[CCTV] + Viewer — total: ${viewerClients.size}`);
+
+  // ส่ง frame ล่าสุดให้เห็นภาพทันทีไม่ต้องรอ
+  if (latestFrame) {
+    try { ws.send(latestFrame, { binary: true }); } catch(e) {}
+  }
+
+  ws.on('close', () => {
+    viewerClients.delete(ws);
+    console.log(`[CCTV] - Viewer — total: ${viewerClients.size}`);
+  });
+  ws.on('error', () => viewerClients.delete(ws));
 });
 
 // Connect to DB then start server
 connectDB().then(() => {
   server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}/`);
+    console.log(`[CCTV] Relay: ws://localhost:${port}/ws/relay?key=***`);
+    console.log(`[CCTV] Stream: ws://localhost:${port}/ws/stream`);
   });
 });
