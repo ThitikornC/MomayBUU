@@ -748,19 +748,19 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <!-- CCTV Popup — Live Video (JPEG over WebSocket) -->
-<div id="cctvPopup" onclick="if(event.target===this)window._closeCctv()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;justify-content:center;align-items:center;background:rgba(0,0,0,0.75);">
-  <div style="background:#1a1a1a;border-radius:18px;border:3px solid #74640a;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:380px;max-width:94vw;overflow:hidden;">
+<div id="cctvPopup" onclick="if(event.target===this)window._closeCctv()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);">
+  <div style="background:linear-gradient(180deg,#f8f6f0 0%,#fffef8 45%,#fff8e8 55%,#f5f0e5 100%);border-radius:10px;border:6px solid #74640a;box-shadow:1px 1px 0 #000,-8px 6px #3b3305,0 0 20px rgba(255,230,160,0.55);width:420px;max-width:94vw;overflow:hidden;">
     <!-- Header -->
-    <div style="background:linear-gradient(135deg,#74640a,#a89030);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="background:linear-gradient(135deg,#74640a,#a89030);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;">
       <div style="display:flex;align-items:center;gap:8px;">
         <div id="cctvLed" style="width:8px;height:8px;border-radius:50%;background:#666;"></div>
-        <span style="color:#fff;font-weight:bold;font-size:15px;">CCTV Live</span>
+        <span style="color:#fff;font-weight:bold;font-size:14px;">ห้อง 1101</span>
         <span id="cctvStatusLabel" style="color:rgba(255,255,255,0.7);font-size:11px;">— รอเชื่อมต่อ</span>
       </div>
-      <div onclick="window._closeCctv()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</div>
+      <div onclick="window._closeCctv()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</div>
     </div>
     <!-- Video area -->
-    <div style="position:relative;background:#000;width:100%;aspect-ratio:4/3;">
+    <div style="position:relative;background:#000;width:100%;aspect-ratio:4/3;border-top:2px solid #74640a;border-bottom:2px solid #74640a;">
       <img id="cctvFrame" style="display:block;width:100%;height:100%;object-fit:contain;" alt="CCTV">
       <div id="cctvOffline" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#888;font-size:13px;">
         <svg viewBox="0 0 64 60" width="40" height="40" xmlns="http://www.w3.org/2000/svg" style="opacity:0.3;">
@@ -776,9 +776,9 @@ if ('serviceWorker' in navigator) {
       </div>
     </div>
     <!-- Footer -->
-    <div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center;background:#111;">
-      <span style="color:#666;font-size:11px;">สำนักหอสมุด ม.บูรพา</span>
-      <span id="cctvFps" style="color:#555;font-size:10px;"></span>
+    <div style="padding:6px 14px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(180deg,#f0ebe0,#e8e0d0);">
+      <span style="color:#74640a;font-size:11px;">สำนักหอสมุด ม.บูรพา</span>
+      <span id="cctvFps" style="color:#a89030;font-size:10px;"></span>
     </div>
   </div>
 </div>

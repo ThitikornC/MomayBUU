@@ -297,7 +297,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       const response = await fetch(`/api/active-booking?room=${encodeURIComponent(roomName)}`);
       const result = await response.json();
       
-      if (result.success && result.hasActiveBooking) {
+      if (result.success && result.hasActiveBooking && result.isCheckedIn) {
+        // มี booking ที่ check-in แล้ว — แสดง countdown + เปิดอุปกรณ์
         activeBookingData = result;
         
         // เก็บ endTime แล้วคำนวณ countdown จากเวลาจริงของ client
@@ -322,8 +323,9 @@ document.addEventListener('DOMContentLoaded', async function() {
           updateAcStatus(true);
         }
       } else {
-        // No active booking
+        // ไม่มี booking หรือยังไม่ได้ check-in — ไม่แสดง countdown
         activeBookingData = null;
+        bookingEndTime = null;
         if (realtimeCountdown) { realtimeCountdown.textContent = '--:--:--'; }
         
         // Stop countdown if running
