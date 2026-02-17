@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     deviceState.ac = isActive;
   }
 
-  // Toggle Sonoff device via server proxy
+  // Toggle Sonoff device via server proxy — wait for actual MQTT feedback
   let toggleBusy = false;
   window._toggleDevice = async function(type) {
     if (toggleBusy) return;
@@ -419,13 +419,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     const roomName = (currentRoom || '').replace(/\s*▼\s*/, '').trim();
     if (!roomName) { toggleBusy = false; return; }
 
-    // ตรวจสอบสถานะปัจจุบัน แล้วสลับ
+    // สถานะปัจจุบันจาก deviceState
     const currentOn = type === 'bulb' ? deviceState.bulb : deviceState.ac;
     const newAction = currentOn ? 'OFF' : 'ON';
 
-    // Optimistic UI: สลับทันที
-    if (type === 'bulb') updateBulbStatus(!currentOn);
-    else updateAcStatus(!currentOn);
+    // แสดง loading (กะพริบ icon)
+    const iconEl = document.getElementById(type === 'bulb' ? 'bulbIcon' : 'acIcon');
+    if (iconEl) iconEl.style.opacity = '0.4';
 
     try {
       const res = await fetch('/api/toggle-device', {
@@ -436,16 +436,43 @@ document.addEventListener('DOMContentLoaded', async function() {
       const json = await res.json();
       if (!json.success) {
         console.error('Toggle failed:', json.error);
-        // Revert UI
-        if (type === 'bulb') updateBulbStatus(currentOn);
-        else updateAcStatus(currentOn);
+        if (iconEl) iconEl.style.opacity = '1';
+        toggleBusy = false;
+        return;
+      }
+
+      // Poll /api/room-state เพื่อรอ Sonoff ตอบกลับจริง (สูงสุด 3 วินาที)
+      let confirmed = false;
+      for (let i = 0; i < 6; i++) {
+        await new Promise(r => setTimeout(r, 500)); // รอ 500ms แต่ละครั้ง
+        try {
+          const stateRes = await fetch('/api/room-state');
+          if (stateRes.ok) {
+            const stateJson = await stateRes.json();
+            if (stateJson && stateJson.success && stateJson.roomState) {
+              const state = stateJson.roomState[roomName];
+              if (typeof state === 'string') {
+                const isOn = state.toUpperCase() === 'ON';
+                if (type === 'bulb') updateBulbStatus(isOn);
+                else updateAcStatus(isOn);
+                confirmed = true;
+                break;
+              }
+            }
+          }
+        } catch (e2) { /* retry */ }
+      }
+
+      // ถ้า poll ไม่ได้ผลลัพธ์ ใช้ค่าที่ส่ง
+      if (!confirmed) {
+        const fallback = newAction === 'ON';
+        if (type === 'bulb') updateBulbStatus(fallback);
+        else updateAcStatus(fallback);
       }
     } catch (e) {
       console.error('Toggle error:', e);
-      // Revert UI
-      if (type === 'bulb') updateBulbStatus(currentOn);
-      else updateAcStatus(currentOn);
     } finally {
+      if (iconEl) iconEl.style.opacity = '1';
       toggleBusy = false;
     }
   };
