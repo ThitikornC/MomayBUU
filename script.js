@@ -453,21 +453,26 @@ document.addEventListener('DOMContentLoaded', async function() {
               const state = stateJson.roomState[roomName];
               if (typeof state === 'string') {
                 const isOn = state.toUpperCase() === 'ON';
-                if (type === 'bulb') updateBulbStatus(isOn);
-                else updateAcStatus(isOn);
-                confirmed = true;
-                break;
+                // เช็คว่าสถานะเปลี่ยนจริงหรือยัง
+                if (isOn !== currentOn) {
+                  // Sonoff ตอบกลับแล้ว สถานะเปลี่ยนตามที่สั่ง
+                  if (type === 'bulb') updateBulbStatus(isOn);
+                  else updateAcStatus(isOn);
+                  confirmed = true;
+                  break;
+                }
+                // ถ้าสถานะยังเหมือนเดิม → ยัง poll ต่อ (Sonoff อาจยังไม่ตอบ)
               }
             }
           }
         } catch (e2) { /* retry */ }
       }
 
-      // ถ้า poll ไม่ได้ผลลัพธ์ ใช้ค่าที่ส่ง
+      // ถ้า poll ครบแล้ว Sonoff ไม่ตอบ → คงสถานะเดิม (ไม่เปลี่ยนไอคอน)
       if (!confirmed) {
-        const fallback = newAction === 'ON';
-        if (type === 'bulb') updateBulbStatus(fallback);
-        else updateAcStatus(fallback);
+        console.warn('Sonoff did not respond — keeping previous state');
+        if (type === 'bulb') updateBulbStatus(currentOn);
+        else updateAcStatus(currentOn);
       }
     } catch (e) {
       console.error('Toggle error:', e);
