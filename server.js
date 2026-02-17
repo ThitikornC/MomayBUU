@@ -194,8 +194,13 @@ async function handleAPI(req, res) {
       }
       
       const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      // ใช้ Bangkok timezone (UTC+7)
+      const bangkokNow = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+      const today = bangkokNow.toISOString().split('T')[0];
+      const bangkokHours = bangkokNow.getUTCHours();
+      const bangkokMinutes = bangkokNow.getUTCMinutes();
+      const bangkokSeconds = bangkokNow.getUTCSeconds();
+      const currentMinutes = bangkokHours * 60 + bangkokMinutes;
       
       // Find bookings for today and this room (strip ▼ for matching)
       const cleanRoom = (room || '').replace(/\s*▼\s*/, '').trim();
@@ -220,10 +225,9 @@ async function handleAPI(req, res) {
       }
       
       if (activeBooking) {
-        // Calculate remaining seconds using minutes (timezone-safe)
+        // Calculate remaining seconds (Bangkok timezone)
         const [endH, endM] = activeBooking.endTime.split(':').map(Number);
-        const endMinutes = endH * 60 + endM;
-        const currentSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        const currentSecs = bangkokHours * 3600 + bangkokMinutes * 60 + bangkokSeconds;
         const endSecs = endH * 3600 + endM * 60;
         const remainingSeconds = Math.max(0, endSecs - currentSecs);
         

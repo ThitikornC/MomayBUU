@@ -279,8 +279,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Fetch active booking status for the room
   async function updateCheckinStatus() {
     try {
-      const roomLabel = document.getElementById('Total_Bar_Label');
-      const roomName = roomLabel ? roomLabel.textContent.replace(/\s*▼\s*/, '').trim() : '';
+      const roomName = currentRoom;
       if (!roomName) return;
       
       const response = await fetch(`/api/active-booking?room=${encodeURIComponent(roomName)}`);

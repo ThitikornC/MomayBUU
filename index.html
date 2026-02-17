@@ -399,6 +399,23 @@
         <path d="M46 34 Q49 40 46 46" stroke="#74640a" stroke-width="1.5" fill="none" class="ac-wind" opacity="0"/>
       </svg>
     </div>
+    <div class="cctv-status" id="cctvStatus" style="cursor:pointer">
+      <svg id="cctvIcon" class="cctv-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 60" width="52" height="52">
+        <!-- แผ่นยึดผนัง -->
+        <rect x="38" y="0" width="16" height="5" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
+        <!-- แขนยึด -->
+        <rect x="43" y="5" width="6" height="16" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
+        <!-- ข้อต่อ -->
+        <circle cx="46" cy="24" r="5" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
+        <!-- ตัวกล้อง+เลนส์ (เอียง) -->
+        <g transform="rotate(-12, 46, 24)">
+          <rect x="14" y="19" width="32" height="14" rx="2" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="cctv-body"/>
+          <rect x="4" y="21" width="12" height="10" rx="2" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
+        </g>
+        <!-- LED -->
+        <circle cx="22" cy="30" r="1.5" fill="#cc0000" class="cctv-led"/>
+      </svg>
+    </div>
   </div>
   <div class="Realtime_kW" id="realtimeCountdown">--:--:--</div>
 </div>
@@ -712,13 +729,81 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
+<!-- CCTV Popup -->
+<div id="cctvPopupOverlay" class="cctv-popup-overlay" style="display:none">
+  <div class="cctv-popup-card" onclick="event.stopPropagation()">
+    <div class="cctv-popup-header">
+      <span class="cctv-popup-title">CCTV Camera</span>
+      <button id="cctvPopupClose" class="cctv-popup-close" type="button">&times;</button>
+    </div>
+    <div class="cctv-popup-body">
+      <img id="cctvFeedImg" class="cctv-feed" src="" alt="CCTV Feed" />
+      <div class="cctv-no-signal" id="cctvNoSignal">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" stroke="#74640a" stroke-width="2" fill="none"/>
+          <line x1="8" y1="8" x2="40" y2="40" stroke="#cc0000" stroke-width="2.5"/>
+          <text x="24" y="28" text-anchor="middle" fill="#74640a" font-size="8" font-weight="bold">NO SIGNAL</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 <script src="pageview.js" defer></script>
-<script src="script.js?v=2.13.6" defer></script>
+<script src="script.js?v=2.14.1" defer></script>
+
+<script>
+// CCTV Popup — standalone เพื่อให้ทำงานได้แน่นอน
+document.addEventListener('DOMContentLoaded', function() {
+  var cctvBtn = document.getElementById('cctvStatus');
+  var overlay = document.getElementById('cctvPopupOverlay');
+  var closeBtn = document.getElementById('cctvPopupClose');
+  var feedImg = document.getElementById('cctvFeedImg');
+  var noSignal = document.getElementById('cctvNoSignal');
+
+  if (!cctvBtn || !overlay) return;
+
+  cctvBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    var cctvUrl = ''; // ใส่ URL กล้องจริงตรงนี้
+    if (cctvUrl) {
+      feedImg.src = cctvUrl;
+      feedImg.style.display = 'block';
+      noSignal.style.display = 'none';
+      feedImg.onerror = function() {
+        feedImg.style.display = 'none';
+        noSignal.style.display = 'flex';
+      };
+    } else {
+      feedImg.style.display = 'none';
+      noSignal.style.display = 'flex';
+    }
+  });
+
+  overlay.addEventListener('click', function() {
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  });
+
+  closeBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  });
+
+  // ป้องกัน click bubble จาก card
+  document.querySelector('.cctv-popup-card').addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+});
+</script>
 
 
 

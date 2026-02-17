@@ -1816,7 +1816,7 @@ font-size: 14px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
 }
 
 .bulb-status {
@@ -1831,7 +1831,7 @@ font-size: 14px;
   flex-direction: column;
   align-items: center;
   gap: 0;
-  margin-top: 11px;
+  margin-top: 12px;
 }
 
 .ac-icon {
@@ -1877,6 +1877,112 @@ font-size: 14px;
 @keyframes acWindBlow {
   0%, 100% { opacity: 0.4; transform: translateY(0); }
   50%      { opacity: 1; transform: translateY(3px); }
+}
+
+/* CCTV Camera Icon */
+.cctv-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-top: 10px;
+}
+
+.cctv-icon {
+  transition: all 0.4s ease;
+}
+
+.cctv-led {
+  animation: cctvBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes cctvBlink {
+  0%, 100% { fill: #cc0000; opacity: 1; }
+  50%      { fill: #ff0000; opacity: 0.3; }
+}
+
+/* CCTV Popup */
+.cctv-popup-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cctv-popup-card {
+  background: linear-gradient(135deg, #f5f0e1, #e8e0c8);
+  border-radius: 18px;
+  border: 3px solid #74640a;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  width: 375px;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.cctv-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 2px solid #74640a;
+  background: linear-gradient(135deg, #b5a76c, #8c7a2e);
+}
+
+.cctv-popup-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.cctv-popup-close {
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.4);
+  color: #fff;
+  font-size: 22px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.cctv-popup-close:hover {
+  background: rgba(255,0,0,0.5);
+  border-color: #ff4444;
+}
+
+.cctv-popup-body {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  position: relative;
+}
+
+.cctv-feed {
+  width: 100%;
+  border-radius: 10px;
+  border: 2px solid #74640a;
+  object-fit: cover;
+}
+
+.cctv-no-signal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #74640a;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .bulb-icon {
