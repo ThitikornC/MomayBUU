@@ -32,8 +32,8 @@ SERVER_URL   = os.getenv("SERVER_URL", "ws://localhost:8000/ws/relay")
 RELAY_KEY    = os.getenv("RELAY_KEY", "changeme")
 FRAME_WIDTH  = int(os.getenv("FRAME_WIDTH", "640"))
 FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT", "480"))
-TARGET_FPS   = int(os.getenv("FPS", "20"))
-JPEG_QUALITY = int(os.getenv("JPEG_QUALITY", "45"))  # lower = faster + less bandwidth
+TARGET_FPS   = int(os.getenv("FPS", "25"))
+JPEG_QUALITY = int(os.getenv("JPEG_QUALITY", "40"))  # lower = faster + less bandwidth
 
 RECONNECT_DELAY = 3  # seconds
 
@@ -180,7 +180,7 @@ async def relay_stream():
 
                 # Send with timeout — drop frame if WS is backed up
                 try:
-                    await asyncio.wait_for(ws.send(data), timeout=0.08)
+                    await asyncio.wait_for(ws.send(data), timeout=0.04)
                     sent += 1
                 except asyncio.TimeoutError:
                     skip += 1

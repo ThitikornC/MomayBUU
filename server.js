@@ -531,12 +531,29 @@ wssRelay.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('[CCTV] ✗ Relay disconnected');
-    if (relaySocket === ws) relaySocket = null;
+    if (relaySocket === ws) {
+      relaySocket = null;
+      latestFrame = null;
+      // แจ้ง viewers ทั้งหมดว่า relay หลุด
+      for (const v of viewerClients) {
+        if (v.readyState === WebSocket.OPEN) {
+          try { v.send('relay_offline'); } catch(e) {}
+        }
+      }
+    }
   });
 
   ws.on('error', (err) => {
     console.error('[CCTV] Relay error:', err.message);
-    if (relaySocket === ws) relaySocket = null;
+    if (relaySocket === ws) {
+      relaySocket = null;
+      latestFrame = null;
+      for (const v of viewerClients) {
+        if (v.readyState === WebSocket.OPEN) {
+          try { v.send('relay_offline'); } catch(e) {}
+        }
+      }
+    }
   });
 });
 

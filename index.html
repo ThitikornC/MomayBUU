@@ -797,6 +797,8 @@ if ('serviceWorker' in navigator) {
   var fpsEl   = document.getElementById('cctvFps');
   var frameCount = 0;
   var fpsTimer = null;
+  var lastFrameTime = 0;
+  var staleTimer = null;
 
   function setStatus(state, text) {
     label.textContent = text;
@@ -814,6 +816,24 @@ if ('serviceWorker' in navigator) {
     }
   }
 
+  function showOffline(msg) {
+    setStatus('', msg || 'ไม่มีสัญญาณ');
+    // ลบภาพเก่าออก ไม่ให้ค้าง
+    if (imgEl.src && imgEl.src.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+    imgEl.removeAttribute('src');
+    if (fpsEl) fpsEl.textContent = '';
+  }
+
+  // ตรวจ stale: ถ้าไม่มี frame ใหม่ 3 วินาที -> แสดง offline
+  function startStaleCheck() {
+    clearInterval(staleTimer);
+    staleTimer = setInterval(function() {
+      if (lastFrameTime > 0 && Date.now() - lastFrameTime > 3000) {
+        showOffline('สัญญาณขาดหาย');
+      }
+    }, 1500);
+  }
+
   function connect() {
     if (ws) return;
     setStatus('connecting', 'กำลังเชื่อมต่อ...');
@@ -824,19 +844,46 @@ if ('serviceWorker' in navigator) {
     ws.onopen = function() {
       setStatus('connecting', 'เชื่อมต่อแล้ว — รอ stream...');
       frameCount = 0;
+      lastFrameTime = 0;
       fpsTimer = setInterval(function() {
         if (fpsEl) fpsEl.textContent = frameCount > 0 ? frameCount + ' fps' : '';
         frameCount = 0;
       }, 1000);
+      startStaleCheck();
     };
 
     ws.onmessage = function(ev) {
-      // Received JPEG frame as ArrayBuffer
+      // ข้อความ text = relay_offline
+      if (typeof ev.data === 'string') {
+        if (ev.data === 'relay_offline') {
+          showOffline('กล้องไม่ได้เปิด');
+          lastFrameTime = 0;
+        }
+        return;
+      }
+      // Received JPEG frame as ArrayBuffer — ใช้ createImageBitmap ถ้ามี เพื่อ decode นอก main thread
+      lastFrameTime = Date.now();
       var blob = new Blob([ev.data], { type: 'image/jpeg' });
-      var url = URL.createObjectURL(blob);
-      var oldUrl = imgEl.src;
-      imgEl.src = url;
-      if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+      if (typeof createImageBitmap === 'function') {
+        createImageBitmap(blob).then(function(bmp) {
+          // วาดบน canvas-like img ผ่าน object URL (เร็วกว่า revoke ทีละ blob)
+          var url = URL.createObjectURL(blob);
+          var oldUrl = imgEl.src;
+          imgEl.src = url;
+          if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+        }).catch(function() {
+          // fallback
+          var url = URL.createObjectURL(blob);
+          var oldUrl = imgEl.src;
+          imgEl.src = url;
+          if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+        });
+      } else {
+        var url = URL.createObjectURL(blob);
+        var oldUrl = imgEl.src;
+        imgEl.src = url;
+        if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+      }
       frameCount++;
       if (offline.style.display !== 'none') setStatus('live', '● LIVE');
     };
@@ -844,19 +891,19 @@ if ('serviceWorker' in navigator) {
     ws.onclose = function() {
       ws = null;
       clearInterval(fpsTimer);
-      if (fpsEl) fpsEl.textContent = '';
-      setStatus('', 'ไม่มีสัญญาณ');
+      clearInterval(staleTimer);
+      showOffline('ไม่มีสัญญาณ');
     };
 
     ws.onerror = function() {
-      setStatus('', 'เชื่อมต่อไม่ได้');
+      showOffline('เชื่อมต่อไม่ได้');
     };
   }
 
   function disconnect() {
     if (ws) { ws.close(); ws = null; }
     clearInterval(fpsTimer);
-    if (fpsEl) fpsEl.textContent = '';
+    clearInterval(staleTimer);
     setStatus('', 'กำลังเชื่อมต่อกล้อง...');
     // Clear image
     if (imgEl.src && imgEl.src.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
