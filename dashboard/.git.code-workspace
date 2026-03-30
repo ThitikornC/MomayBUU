@@ -1,0 +1,43 @@
+{
+	"folders": [
+		{
+			"path": "../.git"
+		},
+		{
+			"path": "../.vscode"
+		},
+		{
+			"path": "../cctv"
+		},
+		{
+			"path": "../Control"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../icons"
+		},
+		{
+			"path": "../images"
+		},
+		{
+			"path": "../MomayDocBN"
+		},
+		{
+			"path": "../node_modules"
+		},
+		{
+			"path": "../qr-scanner"
+		},
+		{
+			"path": "../source"
+		},
+		{
+			"path": "../textures"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "dashboard"
+	}
+}

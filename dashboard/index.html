@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>MomayBUU Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">LOGO</div>
+    <h2>Momay BUU</h2>
+  </div>
+  <ul class="nav-menu">
+    <li class="nav-item active" data-section="overview">ภาพรวมข้อมูล</li>
+    <li class="nav-item" data-section="control">ควบคุม</li>
+    <li class="nav-item" data-section="announce">ประชาสัมพันธ์</li>
+  </ul>
+  <div class="sidebar-footer"></div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <button class="menu-toggle" id="menuToggle">&#9776;</button>
+    <h1 class="page-title" id="pageTitle">ภาพรวมข้อมูล</h1>
+    <div class="top-bar-right">
+      <span class="top-bar-label">กระดิ่งแจ้งเตือน</span>
+      <div class="notif-bell-wrapper">
+        <button class="notif-bell" id="notifBell" title="กระดิ่งแจ้งเตือน">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="notif-count" id="notifCount"></span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-header">
+            <h3>แจ้งเตือน</h3>
+            <button class="btn-refresh" id="refreshNotifications">รีเฟรช</button>
+          </div>
+          <div class="notification-list" id="notificationList">
+            <div class="notif-empty">กำลังโหลด...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- 1. ภาพรวมข้อมูล                                              -->
+  <!-- ============================================================ -->
+  <section class="section active" id="section-overview">
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="energy">ไฟฟ้า</button>
+      <button class="mode-tab" data-mode="booking">การใช้ห้อง</button>
+    </div>
+
+    <!-- ===== Energy Mode ===== -->
+    <div class="mode-panel active" id="mode-energy">
+      <div class="loading-overlay" id="energyLoading"><div class="loading-spinner"></div></div>
+
+      <div class="section-toolbar">
+        <div class="filter-group">
+          <select id="overviewEnergyScope">
+            <option value="all">ทุกห้อง</option>
+          </select>
+        </div>
+        <div class="date-picker-group">
+          <span class="filter-label">วันที่</span>
+          <button class="date-arrow-btn" id="energyDatePrev">&#9664;</button>
+          <input type="date" id="overviewEnergyDate">
+          <button class="date-arrow-btn" id="energyDateNext">&#9654;</button>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <button class="btn-download" id="btnDownloadEnergy">ดาวน์โหลดรายงาน</button>
+      </div>
+
+      <div class="card-grid card-grid-5">
+        <div class="summary-card card-bill">
+          <div class="card-body">
+            <div class="card-value" id="eBillToday">-</div>
+            <div class="card-label">ค่าไฟฟ้ารายวัน</div>
+            <div class="card-sub" id="eBillMonth">ค่าไฟฟ้ารายเดือน: -</div>
+          </div>
+        </div>
+        <div class="summary-card card-kwh">
+          <div class="card-body">
+            <div class="card-value" id="eKwhToday">-</div>
+            <div class="card-label">หน่วยไฟฟ้ารายวัน</div>
+            <div class="card-sub" id="eKwhMonth">หน่วยไฟฟ้ารายเดือน: -</div>
+          </div>
+        </div>
+        <div class="summary-card card-compare">
+          <div class="card-body">
+            <div class="card-value" id="eBillCompare">-</div>
+            <div class="card-label">เปรียบเทียบค่าไฟ</div>
+            <div class="card-sub" id="eBillCompareDetail">เมื่อวาน/วันนี้</div>
+          </div>
+        </div>
+        <div class="summary-card card-peak">
+          <div class="card-body">
+            <div class="card-value" id="ePeakToday">-</div>
+            <div class="card-label">กำลังไฟฟ้าสูงสุด</div>
+          </div>
+        </div>
+        <div class="summary-card card-solar">
+          <div class="card-body">
+            <div class="card-value" id="eSolarRec">-</div>
+            <div class="card-label">แนะนำโซล่าเซลล์</div>
+            <div class="card-sub" id="eSolarSaving">จำนวนเงินที่ช่วยลด: -</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="realtime-row">
+        <div class="chart-card realtime-chart">
+          <div class="chart-header"><h3>กราฟเรียลไทม์</h3></div>
+          <div class="chart-body"><canvas id="eRealtimeChart"></canvas></div>
+        </div>
+        <div class="chart-card realtime-floorplan">
+          <div class="chart-header">
+            <h3 id="floorplanTitle">แผนผังอาคาร</h3>
+            <span class="floorplan-floor-label" id="floorLabel">ชั้น 1</span>
+          </div>
+          <div class="chart-body floorplan-body">
+            <!-- Donut chart for all rooms -->
+            <div class="floorplan-panel" data-floor="donut">
+              <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:16px;">
+                <canvas id="eRoomDonutChart"></canvas>
+              </div>
+            </div>
+            <div class="floorplan-panel active" data-floor="1">
+              <div class="floorplan-wrap">
+                <img src="../floorplan/50812_0.jpg" alt="แผนผังชั้น 1" class="floorplan-img">
+                <div class="sensor-pin" style="left:62%;top:63%">
+                  <span class="pin-dot"></span>
+                </div>
+              </div>
+            </div>
+            <div class="floorplan-panel" data-floor="2">
+              <div class="floorplan-wrap">
+                <img src="../floorplan/50813_0.jpg" alt="แผนผังชั้น 2" class="floorplan-img">
+                <div class="sensor-pin" style="left:31%;top:62%">
+                  <span class="pin-dot"></span>
+                </div>
+              </div>
+            </div>
+            <div class="floorplan-panel" data-floor="3">
+              <div class="floorplan-wrap">
+                <img src="../floorplan/50814_0.jpg" alt="แผนผังชั้น 3" class="floorplan-img">
+                <div class="sensor-pin" style="left:32%;top:62%">
+                  <span class="pin-dot"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header"><h3>กราฟแท่งค่าไฟรายชั่วโมง</h3></div>
+          <div class="chart-body"><canvas id="eHourlyChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><h3>กราฟแท่งค่าไฟฟ้า กลางวันเทียบกลางคืน</h3></div>
+          <div class="chart-body"><canvas id="eDayNightChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Energy Calendar -->
+      <div class="chart-card wide">
+        <div class="chart-header"><h3>ปฏิทินค่าไฟฟ้ารายวัน</h3></div>
+        <div class="chart-body calendar-body">
+          <div id="energyCalendar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Booking / การใช้ห้อง Mode ===== -->
+    <div class="mode-panel" id="mode-booking">
+      <div class="loading-overlay" id="bookingLoading"><div class="loading-spinner"></div></div>
+
+      <div class="section-toolbar">
+        <div class="filter-group">
+          <select id="bookingBuilding">
+            <option value="">ชื่ออาคารเลือกได้</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select id="bookingFloor">
+            <option value="">ชื่อชั้นเลือกได้</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select id="overviewBookingRoom">
+            <option value="">ชื่อห้องเลือกได้</option>
+          </select>
+        </div>
+        <div class="date-picker-group">
+          <span class="filter-label">วันที่</span>
+          <button class="date-arrow-btn" id="bookingDatePrev">&#9664;</button>
+          <input type="date" id="overviewBookingDate">
+          <button class="date-arrow-btn" id="bookingDateNext">&#9654;</button>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <button class="btn-download" id="btnDownloadBooking">ดาวน์โหลดรายงาน</button>
+      </div>
+
+      <div class="card-grid card-grid-3">
+        <div class="summary-card card-bookings">
+          <div class="card-body">
+            <div class="card-value" id="bTotalToday">-</div>
+            <div class="card-label">จำนวนครั้งที่จองทั้งหมด<br>วันนี้</div>
+          </div>
+        </div>
+        <div class="summary-card card-active">
+          <div class="card-body">
+            <div class="card-value" id="bActiveNow">-</div>
+            <div class="card-label">จำนวนที่กำลังใช้<br>งานอยู่(เวลาปัจจุบัน)</div>
+          </div>
+        </div>
+        <div class="summary-card card-available">
+          <div class="card-body">
+            <div class="card-value" id="bAvailableNow">-</div>
+            <div class="card-label">จำนวนห้องว่าง<br>(เวลาปัจจุบัน)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header"><h3>ปฏิทินการจอง</h3></div>
+        <div class="chart-body calendar-body">
+          <div id="bookingCalendar"></div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header"><h3>กราฟแท่งจำนวนครั้งในการใช้ห้องต่อเดือน</h3></div>
+          <div class="chart-body"><canvas id="bMonthlyChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><h3>รายชื่อผู้จองห้องเรียงตามเวลารายวัน</h3></div>
+          <div class="chart-body booking-list-body" id="bookingListDaily">
+            <div class="notif-empty">กำลังโหลด...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 2. ควบคุม                                                     -->
+  <!-- ============================================================ -->
+  <section class="section" id="section-control">
+    <div class="control-grid" id="controlGrid">
+      <!-- Populated by JS: room cards with CCTV + light + AC -->
+    </div>
+  </section>
+
+  <!-- CCTV Popup — Live Video (JPEG over WebSocket) -->
+  <div id="cctvPopup" class="cctv-popup-overlay" style="display:none;">
+    <div class="cctv-popup-card">
+      <div class="cctv-popup-header">
+        <div class="cctv-popup-header-left">
+          <div id="cctvLed" class="cctv-led"></div>
+          <span class="cctv-popup-room" id="cctvPopupRoom">ห้อง 101</span>
+          <span class="cctv-popup-status" id="cctvStatusLabel">— รอเชื่อมต่อ</span>
+        </div>
+        <div class="cctv-popup-close" id="cctvCloseBtn">&times;</div>
+      </div>
+      <div class="cctv-popup-video">
+        <img id="cctvFrame" class="cctv-popup-img" alt="CCTV">
+        <div id="cctvOffline" class="cctv-popup-offline">
+          <svg viewBox="0 0 64 60" width="40" height="40" xmlns="http://www.w3.org/2000/svg" style="opacity:0.3;">
+            <rect x="38" y="0" width="16" height="5" fill="#888" stroke="#888" stroke-width="1"/>
+            <rect x="43" y="5" width="6" height="16" fill="#888" stroke="#888" stroke-width="1"/>
+            <circle cx="46" cy="24" r="5" fill="none" stroke="#888" stroke-width="1.5"/>
+            <g transform="rotate(-12, 46, 24)">
+              <rect x="14" y="19" width="32" height="14" rx="2" fill="none" stroke="#888" stroke-width="2"/>
+              <rect x="4" y="21" width="12" height="10" rx="2" fill="none" stroke="#888" stroke-width="1.5"/>
+            </g>
+          </svg>
+          <span>กำลังเชื่อมต่อกล้อง...</span>
+        </div>
+      </div>
+      <div class="cctv-popup-footer">
+        <span>สำนักหอสมุด ม.บูรพา</span>
+        <span id="cctvFps" class="cctv-fps"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 3. ประชาสัมพันธ์                                               -->
+  <!-- ============================================================ -->
+  <section class="section" id="section-announce">
+    <div class="chart-card">
+      <div class="chart-header"><h3>สร้างข้อความประชาสัมพันธ์</h3></div>
+      <div class="announce-form">
+        <div class="form-group">
+          <label>หัวข้อ</label>
+          <input type="text" id="annTitle" placeholder="เช่น: แจ้งปิดห้อง 101 วันที่..." maxlength="100">
+        </div>
+        <div class="form-group">
+          <label>เนื้อหา</label>
+          <textarea id="annBody" rows="4" placeholder="รายละเอียดเพิ่มเติม..." maxlength="500"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>แสดงจนถึงวันที่</label>
+            <input type="date" id="annExpiry">
+          </div>
+          <div class="form-group">
+            <label>ความสำคัญ</label>
+            <select id="annPriority">
+              <option value="info">ทั่วไป</option>
+              <option value="warning">สำคัญ</option>
+              <option value="urgent">เร่งด่วน</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-primary" id="annSubmit">เผยแพร่ไปยัง CS by Momay</button>
+        <div id="annStatus" class="form-status"></div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:16px;">
+      <div class="chart-header"><h3>ข้อความที่เผยแพร่แล้ว</h3></div>
+      <div class="announce-list" id="announceList">
+        <div class="notif-empty">ยังไม่มีข้อความ</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
