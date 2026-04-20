@@ -3,349 +3,300 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1a1a2e">
   <title>MomayBUU Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Hide dashboard until auth resolves (prevents flash of content) -->
+  <style>.dash-page { display: none; }</style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <script src="auth.js"></script>
 </head>
 <body>
 
-<!-- Sidebar -->
-<nav class="sidebar">
-  <div class="sidebar-header">
-    <div class="sidebar-logo">LOGO</div>
-    <h2>Momay BUU</h2>
-  </div>
-  <ul class="nav-menu">
-    <li class="nav-item active" data-section="overview">ภาพรวมข้อมูล</li>
-    <li class="nav-item" data-section="control">ควบคุม</li>
-    <li class="nav-item" data-section="announce">ประชาสัมพันธ์</li>
-  </ul>
-  <div class="sidebar-footer"></div>
-</nav>
+<!-- ==================== Auth Overlay ==================== -->
+<div id="authOverlay" class="auth-overlay" role="dialog" aria-modal="true" aria-label="ระบบเข้าสู่ระบบ">
+  <div class="auth-card">
 
-<!-- Main Content -->
-<main class="main-content">
+    <!-- Branding -->
+    <div class="auth-brand">
+      <div class="auth-brand-icon" aria-hidden="true">&#127979;</div>
+      <h1 class="auth-brand-title">มหาวิทยาลัยบูรพา</h1>
+      <p class="auth-brand-sub">Energy Dashboard System</p>
+    </div>
 
-  <!-- Top Bar -->
-  <header class="top-bar">
-    <button class="menu-toggle" id="menuToggle">&#9776;</button>
-    <h1 class="page-title" id="pageTitle">ภาพรวมข้อมูล</h1>
-    <div class="top-bar-right">
-      <span class="top-bar-label">กระดิ่งแจ้งเตือน</span>
-      <div class="notif-bell-wrapper">
-        <button class="notif-bell" id="notifBell" title="กระดิ่งแจ้งเตือน">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-          <span class="notif-count" id="notifCount"></span>
-        </button>
-        <div class="notif-dropdown" id="notifDropdown">
-          <div class="notif-dropdown-header">
-            <h3>แจ้งเตือน</h3>
-            <button class="btn-refresh" id="refreshNotifications">รีเฟรช</button>
+    <!-- Tabs -->
+    <div class="auth-tabs" role="tablist">
+      <button class="auth-tab active" data-tab="login"  role="tab" aria-selected="true">เข้าสู่ระบบ</button>
+      <button class="auth-tab"        data-tab="register" role="tab" aria-selected="false">สมัครสมาชิก</button>
+    </div>
+
+    <!-- ===== Login Panel ===== -->
+    <div id="panel-login" class="auth-panel active" role="tabpanel">
+      <div id="loginBanner" class="auth-banner auth-banner-error" hidden></div>
+      <form id="loginForm" novalidate autocomplete="on">
+
+        <div class="auth-field">
+          <label for="loginEmail">อีเมล</label>
+          <input type="email" id="loginEmail" name="email"
+                 autocomplete="email" placeholder="your@email.com"
+                 required maxlength="254">
+          <span id="loginEmailErr" class="auth-field-error" hidden></span>
+        </div>
+
+        <div class="auth-field">
+          <label for="loginPw">รหัสผ่าน</label>
+          <div class="auth-pw-wrap">
+            <input type="password" id="loginPw" name="password"
+                   autocomplete="current-password" placeholder="••••••••"
+                   required maxlength="128">
+            <button type="button" id="loginPwToggle" class="auth-pw-toggle"
+                    tabindex="-1" aria-label="แสดง/ซ่อนรหัสผ่าน">&#128065;</button>
           </div>
-          <div class="notification-list" id="notificationList">
-            <div class="notif-empty">กำลังโหลด...</div>
+          <span id="loginPwErr" class="auth-field-error" hidden></span>
+        </div>
+
+        <label class="auth-checkbox-label">
+          <input type="checkbox" id="loginRemember">
+          จดจำการเข้าสู่ระบบในอุปกรณ์นี้
+        </label>
+
+        <button type="submit" id="loginBtn" class="auth-btn-primary">เข้าสู่ระบบ</button>
+        <div style="text-align:center;margin-top:10px;">
+          <button type="button" id="forgotLink" class="auth-btn-link">ลืมรหัสผ่าน?</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ===== Register Panel ===== -->
+    <div id="panel-register" class="auth-panel" role="tabpanel">
+      <div id="registerBanner" class="auth-banner auth-banner-error" hidden></div>
+      <form id="registerForm" novalidate autocomplete="off">
+
+        <div class="auth-field">
+          <label for="registerName">ชื่อ-นามสกุล</label>
+          <input type="text" id="registerName" name="name"
+                 autocomplete="name" placeholder="ชื่อของคุณ"
+                 required maxlength="100">
+          <span id="registerNameErr" class="auth-field-error" hidden></span>
+        </div>
+
+        <div class="auth-field">
+          <label for="registerEmail">อีเมล</label>
+          <input type="email" id="registerEmail" name="email"
+                 autocomplete="email" placeholder="your@email.com"
+                 required maxlength="254">
+          <span id="registerEmailErr" class="auth-field-error" hidden></span>
+        </div>
+
+        <div class="auth-field">
+          <label for="registerPw">รหัสผ่าน</label>
+          <div class="auth-pw-wrap">
+            <input type="password" id="registerPw" name="password"
+                   autocomplete="new-password" placeholder="••••••••"
+                   required maxlength="128">
+            <button type="button" id="registerPwToggle" class="auth-pw-toggle"
+                    tabindex="-1" aria-label="แสดง/ซ่อนรหัสผ่าน">&#128065;</button>
+          </div>
+          <span id="registerPwErr" class="auth-field-error" hidden></span>
+          <div class="auth-pw-meter">
+            <div class="auth-pw-meter-track"><div id="pwBar" class="auth-pw-meter-bar"></div></div>
+            <span id="pwLabel" class="auth-pw-meter-label"></span>
           </div>
         </div>
+
+        <div class="auth-field">
+          <label for="registerPwConfirm">ยืนยันรหัสผ่าน</label>
+          <div class="auth-pw-wrap">
+            <input type="password" id="registerPwConfirm" name="confirmPassword"
+                   autocomplete="new-password" placeholder="••••••••"
+                   required maxlength="128">
+            <button type="button" id="registerPwConfirmToggle" class="auth-pw-toggle"
+                    tabindex="-1" aria-label="แสดง/ซ่อนรหัสผ่าน">&#128065;</button>
+          </div>
+          <span id="registerPwConfirmErr" class="auth-field-error" hidden></span>
+        </div>
+
+        <button type="submit" id="registerBtn" class="auth-btn-primary">สมัครสมาชิก</button>
+      </form>
+    </div>
+
+    <!-- ===== Forgot Password Panel ===== -->
+    <div id="panel-forgot" class="auth-panel" style="display:none" role="tabpanel">
+      <div class="auth-otp-info">
+        <div class="auth-otp-icon">&#128274;</div>
+        <p class="auth-otp-desc">กรอกอีเมลที่ลงทะเบียนไว้ เราจะส่งรหัส 6 หลักให้</p>
       </div>
+      <div id="forgotBanner" class="auth-banner auth-banner-error" hidden></div>
+      <form id="forgotForm" novalidate>
+        <div class="auth-field">
+          <label for="forgotEmail">อีเมล</label>
+          <input type="email" id="forgotEmail" name="email"
+                 autocomplete="email" placeholder="your@email.com"
+                 required maxlength="254">
+          <span id="forgotEmailErr" class="auth-field-error" hidden></span>
+        </div>
+        <button type="submit" id="forgotBtn" class="auth-btn-primary">ส่งรหัสยืนยัน</button>
+      </form>
+      <div class="auth-otp-footer">
+        <button type="button" id="forgotBackBtn" class="auth-btn-link">← กลับไปหน้าเข้าสู่ระบบ</button>
+      </div>
+    </div>
+
+    <!-- ===== Reset Password Panel ===== -->
+    <div id="panel-reset" class="auth-panel" style="display:none" role="tabpanel">
+      <div class="auth-otp-info">
+        <div class="auth-otp-icon">&#128273;</div>
+        <p class="auth-otp-desc">กรอกรหัส 6 หลักที่ส่งไปที่</p>
+        <p id="resetEmailDisplay" class="auth-otp-email"></p>
+      </div>
+      <div id="resetBanner" class="auth-banner auth-banner-error" hidden></div>
+      <form id="resetForm" novalidate>
+        <div class="auth-field">
+          <label for="resetCode">รหัสยืนยัน</label>
+          <input type="text" id="resetCode" name="code"
+                 inputmode="numeric" pattern="[0-9]{6}"
+                 placeholder="000000" maxlength="6"
+                 autocomplete="one-time-code" required
+                 style="letter-spacing:8px;font-size:1.4rem;text-align:center;">
+          <span id="resetCodeErr" class="auth-field-error" hidden></span>
+        </div>
+        <div class="auth-field">
+          <label for="resetPw">รหัสผ่านใหม่</label>
+          <div class="auth-pw-wrap">
+            <input type="password" id="resetPw" name="password"
+                   autocomplete="new-password" placeholder="••••••••"
+                   required maxlength="128">
+            <button type="button" id="resetPwToggle" class="auth-pw-toggle"
+                    tabindex="-1" aria-label="แสดง/ซ่อนรหัสผ่าน">&#128065;</button>
+          </div>
+          <span id="resetPwErr" class="auth-field-error" hidden></span>
+        </div>
+        <button type="submit" id="resetBtn" class="auth-btn-primary">ตั้งรหัสผ่านใหม่</button>
+      </form>
+      <div class="auth-otp-footer">
+        <button type="button" id="resetResendBtn" class="auth-btn-link" disabled>
+          ส่งรหัสใหม่ (<span id="resetCountdown">60</span>s)
+        </button>
+        <button type="button" id="resetBackBtn" class="auth-btn-link">← กลับไปหน้าเข้าสู่ระบบ</button>
+      </div>
+    </div>
+
+    <!-- ===== OTP Verify Panel ===== -->
+    <div id="panel-otp" class="auth-panel" style="display:none" role="tabpanel">
+      <div class="auth-otp-info">
+        <div class="auth-otp-icon">&#9993;</div>
+        <p class="auth-otp-desc">เราส่งรหัส 6 หลักไปที่</p>
+        <p id="otpEmailDisplay" class="auth-otp-email"></p>
+        <p class="auth-otp-desc" style="font-size:0.75rem;color:#999;">รหัสมีอายุ 10 นาที</p>
+      </div>
+      <div id="otpBanner" class="auth-banner auth-banner-error" hidden></div>
+      <form id="otpForm" novalidate>
+        <div class="auth-field">
+          <label for="otpCode">รหัสยืนยัน</label>
+          <input type="text" id="otpCode" name="code"
+                 inputmode="numeric" pattern="[0-9]{6}"
+                 placeholder="000000" maxlength="6"
+                 autocomplete="one-time-code" required
+                 style="letter-spacing:8px;font-size:1.4rem;text-align:center;">
+          <span id="otpCodeErr" class="auth-field-error" hidden></span>
+        </div>
+        <button type="submit" id="otpBtn" class="auth-btn-primary">ยืนยันอีเมล</button>
+      </form>
+      <div class="auth-otp-footer">
+        <button type="button" id="resendBtn" class="auth-btn-link" disabled>
+          ส่งรหัสใหม่ (<span id="resendCountdown">60</span>s)
+        </button>
+        <button type="button" id="otpBackBtn" class="auth-btn-link">← กลับไปหน้าเข้าสู่ระบบ</button>
+      </div>
+    </div>
+
+    <p class="auth-security-note">&#128274; bcrypt &bull; JWT &bull; TLS &bull; OWASP Compliant</p>
+  </div>
+</div>
+
+<div class="dash-page">
+
+  <!-- Header -->
+  <header class="dash-header">
+    <h1 class="dash-title">มหาวิทยาลัย บูรพา</h1>
+    <div class="dash-controls">
+      <div class="auth-user-widget" id="authUserWidget" style="display:none;">
+        <span class="auth-user-avatar" aria-hidden="true">&#128100;</span>
+        <span id="authUserName" class="auth-user-name">-</span>
+        <button id="logoutBtn" class="auth-logout-btn" type="button">ออกจากระบบ</button>
+      </div>
+      <span id="graphEndDateLabel" class="dash-date-static" title="วันสิ้นสุด">-</span>
     </div>
   </header>
 
-  <!-- ============================================================ -->
-  <!-- 1. ภาพรวมข้อมูล                                              -->
-  <!-- ============================================================ -->
-  <section class="section active" id="section-overview">
+  <div class="dash-divider"></div>
+  <div class="loading-overlay" id="energyLoading"><div class="loading-spinner"></div></div>
 
-    <div class="mode-tabs">
-      <button class="mode-tab active" data-mode="energy">ไฟฟ้า</button>
-      <button class="mode-tab" data-mode="booking">การใช้ห้อง</button>
-    </div>
-
-    <!-- ===== Energy Mode ===== -->
-    <div class="mode-panel active" id="mode-energy">
-      <div class="loading-overlay" id="energyLoading"><div class="loading-spinner"></div></div>
-
-      <div class="section-toolbar">
-        <div class="filter-group">
-          <select id="overviewEnergyScope">
-            <option value="all">ทุกห้อง</option>
-          </select>
+  <!-- Summary Cards -->
+  <section class="dash-summary">
+    <div class="dash-summary-card">
+      <div class="dsc-label">ค่าไฟฟ้ารายเดือน</div>
+      <div class="dsc-period" id="summaryMonthLabel">-</div>
+      <div class="dsc-value" id="summaryMonthBill">-</div>
+      <div class="dsc-compare">
+        <div class="dsc-compare-col">
+          <span class="dsc-compare-period" id="summaryPrevMonthLabel">-</span>
+          <span class="dsc-compare-val" id="summaryPrevMonthBill">-</span>
         </div>
-        <div class="date-picker-group">
-          <span class="filter-label">วันที่</span>
-          <button class="date-arrow-btn" id="energyDatePrev">&#9664;</button>
-          <input type="date" id="overviewEnergyDate">
-          <button class="date-arrow-btn" id="energyDateNext">&#9654;</button>
-        </div>
-        <div class="toolbar-spacer"></div>
-        <button class="btn-download" id="btnDownloadEnergy">ดาวน์โหลดรายงาน</button>
-      </div>
-
-      <div class="card-grid card-grid-5">
-        <div class="summary-card card-bill">
-          <div class="card-body">
-            <div class="card-value" id="eBillToday">-</div>
-            <div class="card-label">ค่าไฟฟ้ารายวัน</div>
-            <div class="card-sub" id="eBillMonth">ค่าไฟฟ้ารายเดือน: -</div>
-          </div>
-        </div>
-        <div class="summary-card card-kwh">
-          <div class="card-body">
-            <div class="card-value" id="eKwhToday">-</div>
-            <div class="card-label">หน่วยไฟฟ้ารายวัน</div>
-            <div class="card-sub" id="eKwhMonth">หน่วยไฟฟ้ารายเดือน: -</div>
-          </div>
-        </div>
-        <div class="summary-card card-compare">
-          <div class="card-body">
-            <div class="card-value" id="eBillCompare">-</div>
-            <div class="card-label">เปรียบเทียบค่าไฟ</div>
-            <div class="card-sub" id="eBillCompareDetail">เมื่อวาน/วันนี้</div>
-          </div>
-        </div>
-        <div class="summary-card card-peak">
-          <div class="card-body">
-            <div class="card-value" id="ePeakToday">-</div>
-            <div class="card-label">กำลังไฟฟ้าสูงสุด</div>
-          </div>
-        </div>
-        <div class="summary-card card-solar">
-          <div class="card-body">
-            <div class="card-value" id="eSolarRec">-</div>
-            <div class="card-label">แนะนำโซล่าเซลล์</div>
-            <div class="card-sub" id="eSolarSaving">จำนวนเงินที่ช่วยลด: -</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="realtime-row">
-        <div class="chart-card realtime-chart">
-          <div class="chart-header"><h3>กราฟเรียลไทม์</h3></div>
-          <div class="chart-body"><canvas id="eRealtimeChart"></canvas></div>
-        </div>
-        <div class="chart-card realtime-floorplan">
-          <div class="chart-header">
-            <h3 id="floorplanTitle">แผนผังอาคาร</h3>
-            <span class="floorplan-floor-label" id="floorLabel">ชั้น 1</span>
-          </div>
-          <div class="chart-body floorplan-body">
-            <!-- Donut chart for all rooms -->
-            <div class="floorplan-panel" data-floor="donut">
-              <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:16px;">
-                <canvas id="eRoomDonutChart"></canvas>
-              </div>
-            </div>
-            <div class="floorplan-panel active" data-floor="1">
-              <div class="floorplan-wrap">
-                <img src="../floorplan/50812_0.jpg" alt="แผนผังชั้น 1" class="floorplan-img">
-                <div class="sensor-pin" style="left:62%;top:63%">
-                  <span class="pin-dot"></span>
-                </div>
-              </div>
-            </div>
-            <div class="floorplan-panel" data-floor="2">
-              <div class="floorplan-wrap">
-                <img src="../floorplan/50813_0.jpg" alt="แผนผังชั้น 2" class="floorplan-img">
-                <div class="sensor-pin" style="left:31%;top:62%">
-                  <span class="pin-dot"></span>
-                </div>
-              </div>
-            </div>
-            <div class="floorplan-panel" data-floor="3">
-              <div class="floorplan-wrap">
-                <img src="../floorplan/50814_0.jpg" alt="แผนผังชั้น 3" class="floorplan-img">
-                <div class="sensor-pin" style="left:32%;top:62%">
-                  <span class="pin-dot"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="charts-row">
-        <div class="chart-card">
-          <div class="chart-header"><h3>กราฟแท่งค่าไฟรายชั่วโมง</h3></div>
-          <div class="chart-body"><canvas id="eHourlyChart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header"><h3>กราฟแท่งค่าไฟฟ้า กลางวันเทียบกลางคืน</h3></div>
-          <div class="chart-body"><canvas id="eDayNightChart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Energy Calendar -->
-      <div class="chart-card wide">
-        <div class="chart-header"><h3>ปฏิทินค่าไฟฟ้ารายวัน</h3></div>
-        <div class="chart-body calendar-body">
-          <div id="energyCalendar"></div>
+        <div class="dsc-compare-sep"></div>
+        <div class="dsc-compare-col">
+          <span class="dsc-compare-period" id="summaryThisMonthLabel">-</span>
+          <span class="dsc-compare-val" id="summaryThisMonthBill">-</span>
         </div>
       </div>
     </div>
-
-    <!-- ===== Booking / การใช้ห้อง Mode ===== -->
-    <div class="mode-panel" id="mode-booking">
-      <div class="loading-overlay" id="bookingLoading"><div class="loading-spinner"></div></div>
-
-      <div class="section-toolbar">
-        <div class="filter-group">
-          <select id="bookingBuilding">
-            <option value="">ชื่ออาคารเลือกได้</option>
-          </select>
+    <div class="dash-summary-sep"></div>
+    <div class="dash-summary-card">
+      <div class="dsc-label">จำนวนผู้ใช้งาน</div>
+      <div class="dsc-period" id="summaryUsersMonthLabel">-</div>
+      <div class="dsc-value" id="summaryMonthUsers">-</div>
+      <div class="dsc-compare">
+        <div class="dsc-compare-col">
+          <span class="dsc-compare-period" id="summaryPrevUsersMonthLabel">-</span>
+          <span class="dsc-compare-val" id="summaryPrevMonthUsers">-</span>
         </div>
-        <div class="filter-group">
-          <select id="bookingFloor">
-            <option value="">ชื่อชั้นเลือกได้</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <select id="overviewBookingRoom">
-            <option value="">ชื่อห้องเลือกได้</option>
-          </select>
-        </div>
-        <div class="date-picker-group">
-          <span class="filter-label">วันที่</span>
-          <button class="date-arrow-btn" id="bookingDatePrev">&#9664;</button>
-          <input type="date" id="overviewBookingDate">
-          <button class="date-arrow-btn" id="bookingDateNext">&#9654;</button>
-        </div>
-        <div class="toolbar-spacer"></div>
-        <button class="btn-download" id="btnDownloadBooking">ดาวน์โหลดรายงาน</button>
-      </div>
-
-      <div class="card-grid card-grid-3">
-        <div class="summary-card card-bookings">
-          <div class="card-body">
-            <div class="card-value" id="bTotalToday">-</div>
-            <div class="card-label">จำนวนครั้งที่จองทั้งหมด<br>วันนี้</div>
-          </div>
-        </div>
-        <div class="summary-card card-active">
-          <div class="card-body">
-            <div class="card-value" id="bActiveNow">-</div>
-            <div class="card-label">จำนวนที่กำลังใช้<br>งานอยู่(เวลาปัจจุบัน)</div>
-          </div>
-        </div>
-        <div class="summary-card card-available">
-          <div class="card-body">
-            <div class="card-value" id="bAvailableNow">-</div>
-            <div class="card-label">จำนวนห้องว่าง<br>(เวลาปัจจุบัน)</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-header"><h3>ปฏิทินการจอง</h3></div>
-        <div class="chart-body calendar-body">
-          <div id="bookingCalendar"></div>
-        </div>
-      </div>
-
-      <div class="charts-row">
-        <div class="chart-card">
-          <div class="chart-header"><h3>กราฟแท่งจำนวนครั้งในการใช้ห้องต่อเดือน</h3></div>
-          <div class="chart-body"><canvas id="bMonthlyChart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header"><h3>รายชื่อผู้จองห้องเรียงตามเวลารายวัน</h3></div>
-          <div class="chart-body booking-list-body" id="bookingListDaily">
-            <div class="notif-empty">กำลังโหลด...</div>
-          </div>
+        <div class="dsc-compare-sep"></div>
+        <div class="dsc-compare-col">
+          <span class="dsc-compare-period" id="summaryThisUsersMonthLabel">-</span>
+          <span class="dsc-compare-val" id="summaryThisMonthUsers">-</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============================================================ -->
-  <!-- 2. ควบคุม                                                     -->
-  <!-- ============================================================ -->
-  <section class="section" id="section-control">
-    <div class="control-grid" id="controlGrid">
-      <!-- Populated by JS: room cards with CCTV + light + AC -->
+  <div class="dash-divider"></div>
+
+  <!-- Charts -->
+  <section class="dash-charts">
+    <div class="dash-chart-box">
+      <h3 class="dash-chart-title">เปรียบเทียบค่าไฟฟ้า</h3>
+      <canvas id="electricityChart"></canvas>
+    </div>
+    <div class="dash-chart-box">
+      <h3 class="dash-chart-title">เปรียบเทียบจำนวนผู้ใช้งาน</h3>
+      <canvas id="usersChart"></canvas>
     </div>
   </section>
 
-  <!-- CCTV Popup — Live Video (JPEG over WebSocket) -->
-  <div id="cctvPopup" class="cctv-popup-overlay" style="display:none;">
-    <div class="cctv-popup-card">
-      <div class="cctv-popup-header">
-        <div class="cctv-popup-header-left">
-          <div id="cctvLed" class="cctv-led"></div>
-          <span class="cctv-popup-room" id="cctvPopupRoom">ห้อง 101</span>
-          <span class="cctv-popup-status" id="cctvStatusLabel">— รอเชื่อมต่อ</span>
-        </div>
-        <div class="cctv-popup-close" id="cctvCloseBtn">&times;</div>
-      </div>
-      <div class="cctv-popup-video">
-        <img id="cctvFrame" class="cctv-popup-img" alt="CCTV">
-        <div id="cctvOffline" class="cctv-popup-offline">
-          <svg viewBox="0 0 64 60" width="40" height="40" xmlns="http://www.w3.org/2000/svg" style="opacity:0.3;">
-            <rect x="38" y="0" width="16" height="5" fill="#888" stroke="#888" stroke-width="1"/>
-            <rect x="43" y="5" width="6" height="16" fill="#888" stroke="#888" stroke-width="1"/>
-            <circle cx="46" cy="24" r="5" fill="none" stroke="#888" stroke-width="1.5"/>
-            <g transform="rotate(-12, 46, 24)">
-              <rect x="14" y="19" width="32" height="14" rx="2" fill="none" stroke="#888" stroke-width="2"/>
-              <rect x="4" y="21" width="12" height="10" rx="2" fill="none" stroke="#888" stroke-width="1.5"/>
-            </g>
-          </svg>
-          <span>กำลังเชื่อมต่อกล้อง...</span>
-        </div>
-      </div>
-      <div class="cctv-popup-footer">
-        <span>สำนักหอสมุด ม.บูรพา</span>
-        <span id="cctvFps" class="cctv-fps"></span>
-      </div>
-    </div>
-  </div>
+  <div class="dash-divider"></div>
 
-  <!-- ============================================================ -->
-  <!-- 3. ประชาสัมพันธ์                                               -->
-  <!-- ============================================================ -->
-  <section class="section" id="section-announce">
-    <div class="chart-card">
-      <div class="chart-header"><h3>สร้างข้อความประชาสัมพันธ์</h3></div>
-      <div class="announce-form">
-        <div class="form-group">
-          <label>หัวข้อ</label>
-          <input type="text" id="annTitle" placeholder="เช่น: แจ้งปิดห้อง 101 วันที่..." maxlength="100">
-        </div>
-        <div class="form-group">
-          <label>เนื้อหา</label>
-          <textarea id="annBody" rows="4" placeholder="รายละเอียดเพิ่มเติม..." maxlength="500"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>แสดงจนถึงวันที่</label>
-            <input type="date" id="annExpiry">
-          </div>
-          <div class="form-group">
-            <label>ความสำคัญ</label>
-            <select id="annPriority">
-              <option value="info">ทั่วไป</option>
-              <option value="warning">สำคัญ</option>
-              <option value="urgent">เร่งด่วน</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn-primary" id="annSubmit">เผยแพร่ไปยัง CS by Momay</button>
-        <div id="annStatus" class="form-status"></div>
-      </div>
-    </div>
-
-    <div class="chart-card" style="margin-top:16px;">
-      <div class="chart-header"><h3>ข้อความที่เผยแพร่แล้ว</h3></div>
-      <div class="announce-list" id="announceList">
-        <div class="notif-empty">ยังไม่มีข้อความ</div>
-      </div>
-    </div>
+  <!-- Cost per person -->
+  <section class="dash-cost">
+    <div class="dash-divider dash-divider-short"></div>
+    <h3 class="dash-cost-title">ต้นทุนค่าไฟฟ้า</h3>
+    <div class="dash-cost-grid" id="costPerUserGrid"></div>
   </section>
 
-</main>
+</div>
 
 <script src="script.js"></script>
+<!-- auth.js is already loaded in <head> -->
 </body>
 </html>

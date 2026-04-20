@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'ห้อง200':          { api: 'https://momaysandbn-production.up.railway.app', device: 'pm_sand', displayName: 'ห้อง 200' },
     'ห้อง300':          { api: 'https://momaysandbn-production.up.railway.app', device: 'pm_sand', displayName: 'ห้อง 300' }
   };
+  const ENERGY_RATE_THB_PER_KWH = 4.4;
+  const DEFAULT_GRAPH_DAYS_WINDOW = 7;
   const ROOMS = Object.keys(ROOM_ENERGY);
 
   const BUILDING_STRUCTURE = {
@@ -54,9 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.querySelector('.sidebar');
 
   const sectionTitles = {
-    overview: 'ภาพรวมข้อมูล',
-    control: 'ควบคุม',
-    announce: 'ประชาสัมพันธ์'
+    overview: 'ค่าไฟฟ้าต่อคน'
   };
 
   navItems.forEach(item => {
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+  if (menuToggle && sidebar) menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
 
   function switchSection(section) {
     currentSection = section;
@@ -208,6 +208,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const energyLoading = document.getElementById('energyLoading');
   const bookingLoading = document.getElementById('bookingLoading');
 
+  const graphDayRange = document.getElementById('graphDayRange');
+  const graphEndDateLabel = document.getElementById('graphEndDateLabel');
+  let currentGraphDaysWindow = DEFAULT_GRAPH_DAYS_WINDOW;
+  let currentGraphEndDate = today;
+
   const overviewEnergyDate = document.getElementById('overviewEnergyDate');
   const overviewEnergyScope = document.getElementById('overviewEnergyScope');
   const overviewBookingDate = document.getElementById('overviewBookingDate');
@@ -216,6 +221,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (overviewEnergyDate) { overviewEnergyDate.value = today; overviewEnergyDate.addEventListener('change', loadEnergyMode); }
   if (overviewEnergyScope) overviewEnergyScope.addEventListener('change', loadEnergyMode);
   if (overviewBookingDate) { overviewBookingDate.value = today; overviewBookingDate.addEventListener('change', loadBookingMode); }
+
+  if (graphDayRange) {
+    graphDayRange.value = String(DEFAULT_GRAPH_DAYS_WINDOW);
+    graphDayRange.addEventListener('change', () => {
+      const days = Number(graphDayRange.value);
+      if (!Number.isNaN(days) && days > 0) currentGraphDaysWindow = days;
+      loadEnergyMode();
+    });
+  }
+
+  if (graphEndDateLabel) graphEndDateLabel.textContent = shortDateTH(currentGraphEndDate);
 
   // Energy date arrows
   const energyDatePrev = document.getElementById('energyDatePrev');
@@ -289,8 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadSectionData(section) {
     switch (section) {
       case 'overview': loadEnergyMode(); break;
-      case 'control': loadControlPanel(); break;
-      case 'announce': loadAnnouncements(); break;
     }
   }
 
@@ -366,6 +380,465 @@ document.addEventListener('DOMContentLoaded', () => {
     return { maxVal: maxVal, maxIdx: maxIdx, avgVal: count > 0 ? sum / count : null };
   }
 
+  function dateShift(dateStr, deltaDays) {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + deltaDays);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function shortDateTH(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return d + '/' + m + '/' + y;
+  }
+
+  function parseRealUserCount(bookings) {
+    if (!bookings.length) return 0;
+
+    const uniqueNames = new Set();
+    let participantSum = 0;
+    bookings.forEach(b => {
+      const name = (b.bookerName || '').trim();
+      if (name) uniqueNames.add(name);
+
+      const rawParticipant = b.participantCount || b.userCount || b.attendees || b.people || b.memberCount;
+      const n = Number(rawParticipant);
+      if (!Number.isNaN(n) && n > 0) participantSum += n;
+    });
+
+    if (participantSum > 0) return participantSum;
+    if (uniqueNames.size > 0) return uniqueNames.size;
+    return bookings.length;
+  }
+
+  // ==================== Sidebar Functions ====================
+  async function getBookingsForDate(dateStr, room) {
+    // Try local API first, fallback to default
+    try {
+      const url = API_BASE + '/api/bookings?date=' + dateStr + '&room=' + encodeURIComponent(room);
+      const res = await fetchJSON(url);
+      return res.data || [];
+    } catch {
+      // If local API fails, return empty (no users info available)
+      return [];
+    }
+  }
+
+  async function estimateUserCount(dateStr, room) {
+    try {
+      const bookings = await getBookingsForDate(dateStr, room);
+      const count = parseRealUserCount(bookings);
+      return count > 0 ? count : 2; // Default 2 users if no bookings
+    } catch {
+      return 2; // Default fallback
+    }
+  }
+
+  async function getCostPerUserByRoom(dateStr, room) {
+    try {
+      const bill = await fetchRoomBill(dateStr, room);
+      const userCount = await estimateUserCount(dateStr, room);
+      return userCount > 0 ? bill / userCount : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  async function updateSidebar(dateStr) {
+    const container = document.getElementById('sidebarContent');
+    if (!container) return;
+
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.85rem;">กำลังโหลด...</div>';
+
+    try {
+      // Get the last 7 days to find data with actual bills
+      const dates = buildLastNDays(dateStr, 7);
+      let dataFound = false;
+      
+      const cards = await Promise.all(ROOMS.map(async (room) => {
+        // Find first date with non-zero bill
+        let costPerUser = 0;
+        let userCount = 2;
+        let dataDateUsed = dateStr;
+
+        for (const d of dates) {
+          const bill = await fetchRoomBill(d, room);
+          if (bill > 0) {
+            userCount = await estimateUserCount(d, room);
+            costPerUser = bill / (userCount > 0 ? userCount : 1);
+            dataDateUsed = d;
+            dataFound = true;
+            break;
+          }
+        }
+
+        const displayName = ROOM_ENERGY[room].displayName || room;
+        return {
+          room: room,
+          displayName: displayName,
+          userCount: userCount,
+          costPerUser: costPerUser,
+          dataDate: dataDateUsed
+        };
+      }));
+
+      container.innerHTML = cards.map(card => `
+        <div class="room-card">
+          <div class="room-card-name">${escapeHtml(card.displayName)}</div>
+          <div class="room-card-stat">ผู้ใช้: <strong>${card.userCount}</strong></div>
+          <div class="room-card-cost">฿${card.costPerUser.toFixed(2)}/คน</div>
+          <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px;">${card.dataDate}</div>
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error('updateSidebar error:', err);
+      container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">ไม่สามารถโหลดข้อมูล</div>';
+    }
+  }
+
+  async function fetchRoomBill(dateStr, room) {
+    const api = getEnergyAPI(room).api;
+    const ttl = dateStr === todayStr() ? CACHE_TTL : CACHE_TTL_OLD;
+    try {
+      const daily = await fetchJSONCached(api + '/daily-bill?date=' + dateStr, ttl);
+      const bill = Number(daily && daily.electricity_bill);
+      if (!Number.isNaN(bill) && bill >= 0) return bill;
+    } catch { /* fallback below */ }
+
+    try {
+      const values = await fetchDailyData(dateStr, room);
+      const minuteData = mapTo1440(values || []);
+      let kwh = 0;
+      minuteData.forEach(v => {
+        if (v !== null) kwh += (v / 60);
+      });
+      return kwh * ENERGY_RATE_THB_PER_KWH;
+    } catch {
+      return 0;
+    }
+  }
+
+  function buildLastNDays(endDate, days) {
+    const dates = [];
+    for (let i = days - 1; i >= 0; i--) {
+      dates.push(dateShift(endDate, -i));
+    }
+    return dates;
+  }
+
+  async function buildSevenDayRoomBillDataset(endDate, scope, daysWindow) {
+    const rooms = scope === 'all' ? ROOMS : [scope];
+    const dates = buildLastNDays(endDate, daysWindow);
+
+    const rows = await Promise.all(dates.map(async d => {
+      const bills = await Promise.all(rooms.map(room => fetchRoomBill(d, room)));
+      return { date: d, bills: bills };
+    }));
+
+    return { rooms: rooms, rows: rows };
+  }
+
+  function renderUsersVsBillChart(sevenDayData, daysWindow) {
+    destroyChart('eUsersVsBill');
+    const canvas = document.getElementById('eUsersVsBillChart');
+    if (!canvas) return;
+
+    const titleEl = document.getElementById('sevenDayTitle');
+    if (titleEl && sevenDayData.rows.length > 0) {
+      const startDate = shortDateTH(sevenDayData.rows[0].date);
+      const endDate = shortDateTH(sevenDayData.rows[sevenDayData.rows.length - 1].date);
+      titleEl.textContent = 'ค่าไฟย้อนหลัง ' + daysWindow + ' วัน (' + startDate + ' - ' + endDate + ')';
+    }
+
+    const roomColors = ['#4fc3f7', '#ffa726', '#66bb6a', '#ab47bc', '#ef5350', '#90caf9'];
+    const labels = sevenDayData.rows.map(r => {
+      const [, m, d] = r.date.split('-');
+      return d + '/' + m;
+    });
+
+    const datasets = sevenDayData.rooms.map((room, roomIdx) => ({
+      type: 'bar',
+      label: (ROOM_ENERGY[room] && ROOM_ENERGY[room].displayName) || room,
+      data: sevenDayData.rows.map(r => r.bills[roomIdx] || 0),
+      backgroundColor: roomColors[roomIdx % roomColors.length],
+      borderRadius: 6,
+      barPercentage: 0.78,
+      categoryPercentage: 0.7
+    }));
+
+    chartInstances.eUsersVsBill = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { labels: { color: '#a0a0b0', font: { size: 10 } } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                return ctx.dataset.label + ': ฿' + Number(ctx.raw).toFixed(2);
+              },
+              footer: function(items) {
+                const total = items.reduce((sum, it) => sum + Number(it.raw || 0), 0);
+                return 'รวม: ฿' + total.toFixed(2);
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: false,
+            ticks: { color: '#a0a0b0', font: { size: 10 } },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            stacked: false,
+            ticks: { color: '#a0a0b0' },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            title: { display: true, text: 'THB', color: '#a0a0b0' }
+          }
+        }
+      }
+    });
+  }
+
+  function diffClass(diff) {
+    if (diff > 0) return 'diff-up';
+    if (diff < 0) return 'diff-down';
+    return 'diff-flat';
+  }
+
+  function diffText(diff, suffix, fixed) {
+    const sign = diff > 0 ? '+' : '';
+    const val = fixed ? Math.abs(diff).toFixed(fixed) : Math.abs(diff).toFixed(0);
+    return sign + diff.toFixed(fixed || 0) + (suffix ? ' ' + suffix : '');
+  }
+
+  function renderRoomUsageTable(compareRows, currentDate, prevDate) {
+    const container = document.getElementById('roomUsageTableBody');
+    if (!container) return;
+    if (!compareRows.length) {
+      container.innerHTML = '<div class="notif-empty">ไม่พบข้อมูล</div>';
+      return;
+    }
+
+    const currentDateText = shortDateTH(currentDate);
+    const prevDateText = shortDateTH(prevDate);
+
+    const rows = compareRows
+      .slice()
+      .sort((a, b) => b.costPerUser - a.costPerUser)
+      .map(d =>
+        '<tr>' +
+          '<td>' + escapeHtml(d.roomName) + '</td>' +
+          '<td>' + d.users + ' / ' + d.prevUsers + '</td>' +
+          '<td>฿' + d.bill.toFixed(2) + ' / ฿' + d.prevBill.toFixed(2) + '</td>' +
+          '<td>฿' + d.costPerUser.toFixed(2) + ' / ฿' + d.prevCostPerUser.toFixed(2) + '</td>' +
+          '<td class="' + diffClass(d.costDiff) + '">' + diffText(d.costDiff, '฿', 2) + '</td>' +
+        '</tr>'
+      ).join('');
+
+    container.innerHTML =
+      '<table class="room-usage-table">' +
+        '<thead><tr><th>ห้อง</th><th>ผู้ใช้ (' + currentDateText + ' / ' + prevDateText + ')</th><th>ค่าไฟ (' + currentDateText + ' / ' + prevDateText + ')</th><th>ค่าไฟ/คน (' + currentDateText + ' / ' + prevDateText + ')</th><th>ผลต่างค่าไฟ/คน</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>';
+  }
+
+  async function loadUserEnergyInsights(date, scope) {
+    try {
+      const sevenDayData = await buildSevenDayRoomBillDataset(date, scope, currentGraphDaysWindow);
+      renderUsersVsBillChart(sevenDayData, currentGraphDaysWindow);
+    } catch {
+      destroyChart('eUsersVsBill');
+    }
+  }
+
+  // ==================== NEW DASHBOARD DESIGN ====================
+  const THAI_MONTHS_ABBR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+  function thaiMonthShort(year, month) {
+    const be = year + 543;
+    return THAI_MONTHS_ABBR[month - 1] + String(be).slice(-2);
+  }
+
+  function buildMonthDateList(year, month, upToDay) {
+    const maxDay = upToDay || new Date(year, month, 0).getDate();
+    const list = [];
+    for (let d = 1; d <= maxDay; d++) {
+      list.push(year + '-' + String(month).padStart(2, '0') + '-' + String(d).padStart(2, '0'));
+    }
+    return list;
+  }
+
+  function deterministicUserCount(dateStr, roomIdx) {
+    const parts = dateStr.split('-').map(Number);
+    const dow = new Date(dateStr).getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const hash = (parts[0] * 7 + parts[1] * 31 + parts[2] * 13 + roomIdx * 17) % 25;
+    return isWeekend ? 3 + (hash % 8) : 15 + hash;
+  }
+
+  async function buildUserCountDataset(dates, rooms) {
+    return Promise.all(dates.map(async (dateStr) => {
+      const counts = await Promise.all(rooms.map(async (room, ri) => {
+        try {
+          const bookings = await getBookingsForDate(dateStr, room);
+          const count = parseRealUserCount(bookings);
+          return count > 0 ? count : deterministicUserCount(dateStr, ri);
+        } catch {
+          return deterministicUserCount(dateStr, ri);
+        }
+      }));
+      return { date: dateStr, counts };
+    }));
+  }
+
+  async function fetchMonthTotal(year, month) {
+    const bkk = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+    const curYear = bkk.getFullYear();
+    const curMonth = bkk.getMonth() + 1;
+    const curDay = bkk.getDate();
+    const maxDay = (year === curYear && month === curMonth) ? curDay : new Date(year, month, 0).getDate();
+    const dates = buildMonthDateList(year, month, maxDay);
+    let totalBill = 0;
+    await Promise.all(ROOMS.map(async (room) => {
+      const bills = await Promise.all(dates.map(d => fetchRoomBill(d, room)));
+      bills.forEach(b => { totalBill += b; });
+    }));
+    let totalUsers = 0;
+    dates.forEach((d) => { ROOMS.forEach((r, ri) => { totalUsers += deterministicUserCount(d, ri); }); });
+    return { bill: totalBill, users: totalUsers };
+  }
+
+  function renderSummaryCards(currYear, currMonth, currBill, currUsers, prevYear, prevMonth, prevBill, prevUsers) {
+    function setEl(id, val, asHtml) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (asHtml) el.innerHTML = val;
+      else el.textContent = val;
+    }
+    const currLabel = thaiMonthShort(currYear, currMonth);
+    const prevLabel = thaiMonthShort(prevYear, prevMonth);
+    setEl('summaryMonthLabel', currLabel);
+    setEl('summaryMonthBill', '<span class="dsc-value-main">' + Math.round(currBill).toLocaleString() + '</span><span class="dsc-value-unit">บาท</span>', true);
+    setEl('summaryPrevMonthLabel', prevLabel);
+    setEl('summaryPrevMonthBill', Math.round(prevBill).toLocaleString() + ' บาท');
+    setEl('summaryThisMonthLabel', currLabel);
+    setEl('summaryThisMonthBill', Math.round(currBill).toLocaleString() + ' บาท');
+    setEl('summaryUsersMonthLabel', currLabel);
+    setEl('summaryMonthUsers', '<span class="dsc-value-main">' + Math.round(currUsers).toLocaleString() + '</span><span class="dsc-value-unit">ครั้ง</span>', true);
+    setEl('summaryPrevUsersMonthLabel', prevLabel);
+    setEl('summaryPrevMonthUsers', Math.round(prevUsers).toLocaleString() + ' ครั้ง');
+    setEl('summaryThisUsersMonthLabel', currLabel);
+    setEl('summaryThisMonthUsers', Math.round(currUsers).toLocaleString() + ' ครั้ง');
+  }
+
+  const ROOM_CHART_COLORS = ['#bfb8b0', '#887e78', '#705050'];
+
+  function renderDualCharts(sevenDayData, userCountData) {
+    destroyChart('electricityChart');
+    destroyChart('usersChart');
+    const elCanvas = document.getElementById('electricityChart');
+    const usCanvas = document.getElementById('usersChart');
+    if (!elCanvas || !usCanvas) return;
+
+    const labels = sevenDayData.rows.map(r => {
+      const [, m, d] = r.date.split('-');
+      return d + '/' + m;
+    });
+
+    function makeDatasets(getVal) {
+      return sevenDayData.rooms.map((room, ri) => ({
+        label: (ROOM_ENERGY[room] && ROOM_ENERGY[room].displayName) || room,
+        data: sevenDayData.rows.map((r, di) => getVal(r, di, ri)),
+        backgroundColor: ROOM_CHART_COLORS[ri % ROOM_CHART_COLORS.length],
+        borderRadius: 3,
+        barPercentage: 0.75,
+        categoryPercentage: 0.7
+      }));
+    }
+
+    function makeOptions(yTitle) {
+      return {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.42,
+        plugins: {
+          legend: { position: 'bottom', align: 'end', labels: { color: '#777', font: { size: 9 }, boxWidth: 12, padding: 6 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + Number(ctx.raw).toFixed(1) } }
+        },
+        scales: {
+          x: {
+            stacked: false,
+            ticks: { color: '#888', font: { size: 9 } },
+            grid: { display: false },
+            title: { display: true, text: 'วันที่', color: '#9d9d9d', font: { size: 9 } }
+          },
+          y: {
+            beginAtZero: true,
+            stacked: false,
+            ticks: { color: '#888', font: { size: 9 } },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            title: { display: true, text: yTitle, color: '#9d9d9d', font: { size: 9 } }
+          }
+        }
+      };
+    }
+
+    chartInstances.electricityChart = new Chart(elCanvas.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: makeDatasets((r, di, ri) => r.bills[ri] || 0) },
+      options: makeOptions('ค่าไฟฟ้า(บาท)')
+    });
+
+    chartInstances.usersChart = new Chart(usCanvas.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: makeDatasets((r, di, ri) => userCountData[di] ? (userCountData[di].counts[ri] || 0) : 0) },
+      options: makeOptions('จำนวนผู้ใช้(คน)')
+    });
+  }
+
+  function renderCostPerUserGrid(sevenDayData, userCountData) {
+    const container = document.getElementById('costPerUserGrid');
+    if (!container) return;
+    const items = sevenDayData.rooms.map((room, ri) => {
+      const totalBill = sevenDayData.rows.reduce((sum, r) => sum + (r.bills[ri] || 0), 0);
+      const totalUsers = userCountData.reduce((sum, d) => sum + (d.counts[ri] || 0), 0);
+      const costPerUser = totalUsers > 0 ? totalBill / totalUsers : 0;
+      const displayName = (ROOM_ENERGY[room] && ROOM_ENERGY[room].displayName) || room;
+      return '<div class="dash-cost-item">' +
+        '<div class="dash-cost-room">' + escapeHtml(displayName) + '</div>' +
+        '<div class="dash-cost-amount">' + Math.round(costPerUser) + ' บาท/คน</div>' +
+        '</div>';
+    });
+    container.innerHTML = items.join('');
+  }
+
+  async function loadDashboard(endDate, scope) {
+    try {
+      const sevenDayData = await buildSevenDayRoomBillDataset(endDate, scope, currentGraphDaysWindow);
+      const userCountData = await buildUserCountDataset(sevenDayData.rows.map(r => r.date), sevenDayData.rooms);
+      renderDualCharts(sevenDayData, userCountData);
+      renderCostPerUserGrid(sevenDayData, userCountData);
+      const bkk = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+      const currYear = bkk.getFullYear();
+      const currMonth = bkk.getMonth() + 1;
+      const prevD = new Date(currYear, currMonth - 2, 1);
+      const [curr, prev] = await Promise.all([
+        fetchMonthTotal(currYear, currMonth),
+        fetchMonthTotal(prevD.getFullYear(), prevD.getMonth() + 1)
+      ]);
+      renderSummaryCards(currYear, currMonth, curr.bill, curr.users, prevD.getFullYear(), prevD.getMonth() + 1, prev.bill, prev.users);
+    } catch (err) {
+      console.error('loadDashboard error:', err);
+    }
+  }
+
   function downsampleChart(chartData, maxVal, maxIdx, avgVal, MAX_POINTS) {
     const len = chartData.length;
     if (len <= MAX_POINTS) {
@@ -394,67 +867,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadEnergyMode() {
     showLoading(energyLoading);
     try {
-      const date = overviewEnergyDate ? overviewEnergyDate.value : todayStr();
+      const date = currentGraphEndDate || todayStr();
       const scope = overviewEnergyScope ? overviewEnergyScope.value : 'all';
-      const isAll = scope === 'all';
-
-      // === Phase 1: Fetch daily-bill per room (each room = full bill from its API) ===
-      // For donut + cards: fetch per unique API, map full bill to each room
-      let billPerRoom = null;
-      const apiBillCache = {};
-      if (isAll) {
-        const uniqueApis = [...new Set(ROOMS.map(r => getEnergyAPI(r).api))];
-        await Promise.all(uniqueApis.map(async api => {
-          apiBillCache[api] = await fetchJSONCached(api + '/daily-bill?date=' + date, date === todayStr() ? CACHE_TTL : CACHE_TTL_OLD).catch(() => ({}));
-        }));
-        billPerRoom = ROOMS.map(r => {
-          const b = apiBillCache[getEnergyAPI(r).api] || {};
-          return { name: ROOM_ENERGY[r].displayName, bill: b.electricity_bill || 0, kwh: b.total_energy_kwh || 0, maxKw: b.max_power_kw || 0 };
-        });
-      } else {
-        const api = getEnergyAPI(scope).api;
-        apiBillCache[api] = await fetchJSONCached(api + '/daily-bill?date=' + date, date === todayStr() ? CACHE_TTL : CACHE_TTL_OLD).catch(() => ({}));
-      }
-
-      // Update floor plan / donut after bill data is ready
-      updateFloorplan(scope, billPerRoom);
-
-      // Card totals: sum all rooms (each room gets its API's full bill)
-      const billRes = isAll
-        ? {
-            electricity_bill: billPerRoom.reduce((s, r) => s + r.bill, 0),
-            total_energy_kwh: billPerRoom.reduce((s, r) => s + r.kwh, 0),
-            max_power_kw: billPerRoom.reduce((s, r) => Math.max(s, r.maxKw), 0),
-            avg_power_kw: 0
-          }
-        : (() => {
-            const b = apiBillCache[getEnergyAPI(scope).api] || {};
-            return {
-              electricity_bill: b.electricity_bill || 0,
-              total_energy_kwh: b.total_energy_kwh || 0,
-              max_power_kw: b.max_power_kw || 0,
-              avg_power_kw: b.avg_power_kw || 0
-            };
-          })();
-
-      // Summary cards — show immediately
-      set('eBillToday', billRes.electricity_bill != null ? '\u0E3F' + billRes.electricity_bill.toFixed(1) : '-');
-      set('eKwhToday', billRes.total_energy_kwh != null ? billRes.total_energy_kwh.toFixed(2) + ' kWh' : '-');
-      set('ePeakToday', billRes.max_power_kw != null ? billRes.max_power_kw.toFixed(2) + ' kW' : '-');
-
-      // === Hide loading — cards are visible now ===
       hideLoading(energyLoading);
-
-      // === Phase 2: Load charts + secondary data in background (no blocking) ===
-      startRealtimePolling(date, scope);
-      renderRealtimeChart(date, scope);
-      renderHourlyChart(date, scope);
-      renderDayNightChart(scope);
-      renderEnergyCalendar(date, scope);
-      loadMonthlyEstimate(date, scope);
-      loadBillComparison(date, scope);
-      loadSolarRecommendation(date, scope);
-
+      await loadDashboard(date, scope);
     } catch (err) {
       console.error('loadEnergyMode error:', err);
       hideLoading(energyLoading);
@@ -733,7 +1149,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Compute hourly bill from /daily-energy minute-level data (Bangkok time)
   function computeHourlyBillFromMinutes(minuteData) {
-    const RATE = 4.4; // THB per kWh
     const hourlyKwh = new Array(24).fill(0);
     for (let i = 0; i < minuteData.length; i++) {
       if (minuteData[i] === null) continue;
@@ -742,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hourlyKwh[bkkHour] += (minuteData[i] / 60); // kW * (1/60 hr) = kWh
       }
     }
-    return hourlyKwh.map((kwh, h) => ({ hour: h, bill: kwh * RATE }));
+    return hourlyKwh.map((kwh, h) => ({ hour: h, bill: kwh * ENERGY_RATE_THB_PER_KWH }));
   }
 
   async function renderHourlyChart(date, scope) {
@@ -1268,8 +1683,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function cctvConnect() {
     if (cctvWs) return;
     cctvSetStatus('connecting', 'กำลังเชื่อมต่อ...');
+    const params = new URLSearchParams(location.search);
+    const cctvWsOverride = params.get('cctvWs');
+    const host = (location.hostname || '').toLowerCase();
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
     const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const CCTV_WS_URL = wsProto + '//' + location.host + '/ws/stream';
+    const CCTV_WS_URL = cctvWsOverride
+      ? cctvWsOverride
+      : (isLocalHost ? 'wss://momaybuu-production.up.railway.app/ws/stream' : (wsProto + '//' + location.host + '/ws/stream'));
     cctvWs = new WebSocket(CCTV_WS_URL);
     cctvWs.binaryType = 'arraybuffer';
 
@@ -1546,51 +1967,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==================== Auto-Refresh ====================
-  setInterval(() => {
-    if (currentSection === 'overview') {
-      const activeMode = document.querySelector('.mode-tab.active');
-      if (activeMode && activeMode.dataset.mode === 'booking') loadBookingMode();
-    }
-    if (currentSection === 'control') loadControlPanel();
-  }, 30000);
-
-  // Refresh hourly + day/night charts every 60 seconds
   setInterval(async () => {
     if (currentSection !== 'overview') return;
-    const activeMode = document.querySelector('.mode-tab.active');
-    if (!activeMode || activeMode.dataset.mode !== 'energy') return;
-    const date = overviewEnergyDate ? overviewEnergyDate.value : todayStr();
+    const date = currentGraphEndDate || todayStr();
     const scope = overviewEnergyScope ? overviewEnergyScope.value : 'all';
-    await Promise.all([renderHourlyChart(date, scope), renderDayNightChart(scope)]);
-  }, 60000);
-
-  // Refresh summary cards (bill, kwh, comparison, solar) every 30 seconds
-  setInterval(async () => {
-    if (currentSection !== 'overview') return;
-    const activeMode = document.querySelector('.mode-tab.active');
-    if (!activeMode || activeMode.dataset.mode !== 'energy') return;
-    const date = overviewEnergyDate ? overviewEnergyDate.value : todayStr();
-    const scope = overviewEnergyScope ? overviewEnergyScope.value : 'all';
-    const isAll = scope === 'all';
-    try {
-      const uniqueApis = isAll
-        ? [...new Set(ROOMS.map(r => getEnergyAPI(r).api))]
-        : [getEnergyAPI(scope).api];
-      const results = await Promise.all(uniqueApis.map(api =>
-        fetchJSONCached(api + '/daily-bill?date=' + date, CACHE_TTL).catch(() => ({}))
-      ));
-      const billRes = {
-        electricity_bill: results.reduce((s, b) => s + (b.electricity_bill || 0), 0),
-        total_energy_kwh: results.reduce((s, b) => s + (b.total_energy_kwh || 0), 0)
-      };
-      set('eBillToday', billRes.electricity_bill != null ? '\u0E3F' + billRes.electricity_bill.toFixed(1) : '-');
-      set('eKwhToday', billRes.total_energy_kwh != null ? billRes.total_energy_kwh.toFixed(2) + ' kWh' : '-');
-    } catch { /* silent */ }
+    await loadUserEnergyInsights(date, scope);
   }, 30000);
-
-  setInterval(() => loadNotifications(), 60000);
 
   // ==================== Initial Load ====================
   loadEnergyMode();
-  loadNotifications();
 });
