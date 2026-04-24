@@ -1516,16 +1516,34 @@ body {
 }
 
 /* ==================== Summary Cards ==================== */
+.dash-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 0 0 14px 0;
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
 .dash-summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
-  padding: 54px 70px 44px;
+  padding: 24px 28px 40px;
   gap: 0;
+  background: #c0392b;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(192,57,43,0.25);
+  margin: 16px 16px 0;
+}
+
+.dash-summary > .dash-section-title {
+  width: 100%;
 }
 
 .dash-summary-sep {
   width: 1px;
-  background: #e8e8e0;
+  background: rgba(255,255,255,0.3);
   align-self: stretch;
 }
 
@@ -1537,26 +1555,27 @@ body {
 
 .dsc-label {
   font-size: 0.82rem;
-  color: #2a2a2a;
+  color: rgba(255,255,255,0.85);
   margin-bottom: 2px;
+  font-weight: 500;
 }
 
 .dsc-period {
   font-size: 0.72rem;
-  color: #7d7d7d;
+  color: rgba(255,255,255,0.65);
   margin-bottom: 5px;
 }
 
 .dsc-value {
   font-size: 0;
-  color: #1a1a1a;
+  color: #fff;
   margin-bottom: 16px;
   line-height: 1.1;
 }
 
 .dsc-value-main {
   font-size: 2rem;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -1564,7 +1583,7 @@ body {
   font-size: 0.95rem;
   font-weight: 400;
   margin-left: 6px;
-  color: #2d2d2d;
+  color: rgba(255,255,255,0.85);
 }
 
 .dsc-compare {
@@ -1584,18 +1603,18 @@ body {
 
 .dsc-compare-sep {
   width: 1px;
-  background: #e8e8e0;
+  background: rgba(255,255,255,0.3);
   align-self: stretch;
 }
 
 .dsc-compare-period {
   font-size: 0.72rem;
-  color: #8d8d8d;
+  color: rgba(255,255,255,0.6);
 }
 
 .dsc-compare-val {
   font-size: 0.74rem;
-  color: #777;
+  color: rgba(255,255,255,0.85);
 }
 
 /* ==================== Charts ==================== */
@@ -1603,7 +1622,16 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 56px;
-  padding: 34px 28px 42px;
+  padding: 20px 28px 42px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  margin: 16px 16px 0;
+}
+
+.dash-section-title--charts {
+  grid-column: 1 / -1;
+  color: #333;
 }
 
 .dash-chart-box {
@@ -1626,8 +1654,16 @@ body {
 
 /* ==================== Cost Per Person ==================== */
 .dash-cost {
-  padding: 10px 0 6px;
-  text-align: center;
+  padding: 20px 28px 24px;
+  background: #c0392b;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(192,57,43,0.25);
+  margin: 16px 16px;
+}
+
+.dash-cost > .dash-section-title {
+  color: #fff;
+}
 }
 
 .dash-cost-title {
@@ -1642,6 +1678,7 @@ body {
   justify-content: center;
   gap: 92px;
   flex-wrap: wrap;
+  text-align: center;
 }
 
 .dash-cost-item {
@@ -1651,14 +1688,14 @@ body {
 
 .dash-cost-room {
   font-size: 0.82rem;
-  color: #222;
+  color: rgba(255,255,255,0.8);
   margin-bottom: 7px;
 }
 
 .dash-cost-amount {
   font-size: 0.98rem;
-  font-weight: 400;
-  color: #222;
+  font-weight: 500;
+  color: #fff;
 }
 
 /* ==================== Loading overlay (light) ==================== */

@@ -738,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setEl('summaryThisMonthUsers', Math.round(currUsers).toLocaleString() + ' ครั้ง');
   }
 
-  const ROOM_CHART_COLORS = ['#bfb8b0', '#887e78', '#705050'];
+  const ROOM_CHART_COLORS = ['#e57373', '#c0392b', '#ffc8c8'];
 
   function renderDualCharts(sevenDayData, userCountData) {
     destroyChart('electricityChart');

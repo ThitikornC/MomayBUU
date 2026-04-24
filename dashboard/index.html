@@ -236,6 +236,26 @@
 
   <!-- Summary Cards -->
   <section class="dash-summary">
+  <h2 class="dash-section-title">ภาพรวม</h2>
+    <div class="dash-summary-card">
+      <div class="dsc-label">ค่าไฟฟ้าอาคาร</div>
+      <div class="dsc-period" id="summaryMeterMonthLabel">เม.ย.69</div>
+      <div class="dsc-value" id="summaryMeterBill">
+        <span class="dsc-value-main">3,344</span><span class="dsc-value-unit">บาท</span>
+      </div>
+      <div class="dsc-compare">
+        <div class="dsc-compare-col">
+          <span class="dsc-compare-period">มี.ค.69</span>
+          <span class="dsc-compare-val">36,124 บาท</span>
+        </div>
+        <div class="dsc-compare-sep"></div>
+        <div class="dsc-compare-col">
+          <span class="dsc-compare-period">เม.ย.69</span>
+          <span class="dsc-compare-val">3,344 บาท</span>
+        </div>
+      </div>
+    </div>
+    <div class="dash-summary-sep"></div>
     <div class="dash-summary-card">
       <div class="dsc-label">ค่าไฟฟ้ารายเดือน</div>
       <div class="dsc-period" id="summaryMonthLabel">-</div>
@@ -271,10 +291,9 @@
     </div>
   </section>
 
-  <div class="dash-divider"></div>
-
   <!-- Charts -->
   <section class="dash-charts">
+    <h2 class="dash-section-title dash-section-title--charts">ข้อมูลการเปรียบเทียบ</h2>
     <div class="dash-chart-box">
       <h3 class="dash-chart-title">เปรียบเทียบค่าไฟฟ้า</h3>
       <canvas id="electricityChart"></canvas>
@@ -285,12 +304,9 @@
     </div>
   </section>
 
-  <div class="dash-divider"></div>
-
   <!-- Cost per person -->
   <section class="dash-cost">
-    <div class="dash-divider dash-divider-short"></div>
-    <h3 class="dash-cost-title">ต้นทุนค่าไฟฟ้า</h3>
+    <h2 class="dash-section-title">ต้นทุนค่าไฟฟ้า</h2>
     <div class="dash-cost-grid" id="costPerUserGrid"></div>
   </section>
 
