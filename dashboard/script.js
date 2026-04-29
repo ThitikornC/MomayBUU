@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==================== Config ====================
   const API_BASE = window.location.origin;
   const ROOM_ENERGY = {
-    'ห้อง101โถงชั้น1': { api: 'https://momatdeerbn-production.up.railway.app', device: 'pm_deer', displayName: 'ห้อง 101' },
+    'ห้อง 101': { api: 'https://momatdeerbn-production.up.railway.app', device: 'pm_deer', displayName: 'ห้อง 101' },
     'ห้อง200':          { api: 'https://momaysandbn-production.up.railway.app', device: 'pm_sand', displayName: 'ห้อง 200' },
     'ห้อง300':          { api: 'https://momaysandbn-production.up.railway.app', device: 'pm_sand', displayName: 'ห้อง 300' }
   };
@@ -14,14 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const BUILDING_STRUCTURE = {
     'หอสมุด': {
-      '1': ['ห้อง101โถงชั้น1'],
+      '1': ['ห้อง 101'],
       '2': ['ห้อง200'],
       '3': ['ห้อง300']
     }
   };
 
   function getEnergyAPI(room) {
-    return ROOM_ENERGY[room] || ROOM_ENERGY['ห้อง101โถงชั้น1'];
+    return ROOM_ENERGY[room] || ROOM_ENERGY['ห้อง 101'];
   }
 
   // ==================== State ====================
@@ -1521,7 +1521,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Floor plan auto-switch by room scope / donut chart for all
   function updateFloorplan(scope, billPerRoom) {
-    const floorMap = { 'ห้อง101โถงชั้น1': '1', 'ห้อง200': '2', 'ห้อง300': '3' };
+    const floorMap = { 'ห้อง 101': '1', 'ห้อง200': '2', 'ห้อง300': '3' };
     const isAll = scope === 'all';
     const floor = isAll ? 'donut' : (floorMap[scope] || '1');
     document.querySelectorAll('.floorplan-panel').forEach(p => p.classList.remove('active'));

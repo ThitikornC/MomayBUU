@@ -156,8 +156,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   const API_BASE = 'https://momatdeerbn-production.up.railway.app';
 
   // ================= Room Management =================
-  // Only ห้อง101โถงชั้น1 has real data; others are empty placeholders
-  const PRIMARY_ROOM = 'ห้อง101โถงชั้น1';
+  // Only ห้อง 101 has real data; others are empty placeholders
+  const PRIMARY_ROOM = 'ห้อง 101';
   let currentRoom = PRIMARY_ROOM;
 
   function isRoomWithData(roomName) {
@@ -3402,9 +3402,7 @@ if ('Notification' in window && Notification.permission === 'default') {
   }
 
   // Helper: update label (keep dropdown inside intact)
-  const ROOM_SHORT_NAMES = {
-    'ห้อง101โถงชั้น1': 'ห้อง 101',
-  };
+  const ROOM_SHORT_NAMES = {};
 
   function updateRoomLabel(roomName) {
     if (!roomLabel) return;
@@ -3485,7 +3483,7 @@ if ('Notification' in window && Notification.permission === 'default') {
   (function setupRoomSwipe() {
     const track = document.querySelector('.page-track');
     if (!track) return;
-    const roomList = ['ห้อง101โถงชั้น1', 'ห้อง200', 'ห้อง300'];
+    const roomList = ['ห้อง 101', 'ห้อง200', 'ห้อง300'];
     let startX = 0;
     let dragging = false;
     const threshold = 80;
