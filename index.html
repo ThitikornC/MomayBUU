@@ -11,12 +11,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="preconnect" href="https://momaydocbn-production.up.railway.app">
+  <link rel="preconnect" href="https://momatdeerbn-production.up.railway.app">
 
   <!-- iOS Safari full screen fix -->
   <meta name="apple-mobile-web-app-title" content="Momay">
   <!-- ใส่ CSS versioned แทนตัวเดิม -->
-  <link rel="stylesheet" href="style.css?v=2.17.0">
+  <link rel="stylesheet" href="style.css?v=2.19">
 </head>
 
 <body>
@@ -40,10 +40,10 @@
 
 <div class="Top_Container">
   <div class="ClientName_Container">
-    <div class="ClientName">สำนักหอสมุด ม.บูรพา</div>
+    <div class="ClientName">สำนักหอสมุด ม.บูรพา  </div>
     <div class="Date_install">User Number : No.006</div>
     <div class="ClientNo">Contract Number : -</div>
-    <div class="ClientNo">Date Installed : 11-02-25</div>
+    <div class="ClientNo">Date Installed : 11-12-26</div>
     <div class="ClientNo">Contract Expiry : -</div>
   </div>
   <div class="top-right-col">
@@ -76,22 +76,22 @@
         <div class="Main_Container">
   <div class="Containerglow"></div>
   <div class="room-selector-wrap">
-    <div id="Total_Bar_Label" class="total-bar-label room-selectable">ห้อง101โถงชั้น1 <span class="room-arrow">▼</span>
+    <div id="Total_Bar_Label" class="total-bar-label room-selectable">ห้อง 101 <span class="room-arrow">▼</span>
       <div id="roomDropdown" class="room-dropdown" style="display:none;">
-        <div class="room-option selected" data-room="ห้อง101โถงชั้น1">ห้อง101โถงชั้น1</div>
+        <div class="room-option selected" data-room="ห้อง101โถงชั้น1">ห้อง 101</div>
         <div class="room-option" data-room="ห้อง200">ห้อง200</div>
         <div class="room-option" data-room="ห้อง300">ห้อง300</div>
       </div>
     </div>
   </div>
-  
+
   <div id="Main_Picinfo">
     <div id="Icons_group">
-      
+
       <div id="RoomBooking_icon">
         <img src="./images/Booking _icon.png" alt="Room Booking">
       </div>
-      
+
     </div>
   </div>
 
@@ -384,7 +384,7 @@
         <rect x="29" y="42" width="6" height="3" rx="1.5" fill="#74640a"/>
       </svg>
     </div>
-    <div class="ac-status" id="acStatus" style="cursor:pointer;" onclick="window._toggleDevice('ac')">
+    <div class="ac-status" id="acStatus" style="cursor:pointer;" onclick="window._openAcPanel()">
       <svg id="acIcon" class="ac-icon off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 52" width="52" height="52" style="pointer-events:none;">
         <!-- ตัวเครื่องแอร์ -->
         <rect x="4" y="4" width="56" height="26" rx="4" fill="#e0d8c0" stroke="#74640a" stroke-width="2" class="ac-body"/>
@@ -399,6 +399,8 @@
         <path d="M46 34 Q49 40 46 46" stroke="#74640a" stroke-width="1.5" fill="none" class="ac-wind" opacity="0"/>
       </svg>
     </div>
+
+    <!-- AC Control Panel moved to body level -->
     <div class="cctv-status" id="cctvStatus" style="pointer-events:auto;cursor:pointer;z-index:9999;position:relative;">
       <svg id="cctvIcon" class="cctv-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 60" width="52" height="52" style="pointer-events:none;">
         <rect x="38" y="0" width="16" height="5" fill="#e0d8c0" stroke="#74640a" stroke-width="1.5"/>
@@ -414,6 +416,387 @@
   </div>
   <div class="Realtime_kW" id="realtimeCountdown">--:--:--</div>
 </div>
+
+<!-- Business Container — same size as Floor_Container, frame only -->
+<div id="business_container" style="
+  width:300px;
+  height:80px;
+  box-sizing:border-box;
+  border:6px solid #74640a;
+  border-radius:10px;
+  background:linear-gradient(180deg,#f8f6f0 0%,#fffef8 45%,#fff8e8 55%,#f5f0e5 100%);
+  box-shadow:1px 1px 0 #000,-8px 6px #3b3305,0 0 20px rgba(255,230,160,0.55);
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  padding-left:10px;
+  gap:10px;
+  position:relative;
+  z-index:9001;
+  pointer-events:auto;
+">
+  <!-- Radar icon -->
+  <div id="radarStatus" style="cursor:pointer;pointer-events:auto;z-index:9001;position:relative;">
+    <img src="Buulogo.png" width="52" height="52" style="display:block;pointer-events:none;object-fit:contain;" alt="BUU Logo"/>
+  </div>
+  <!-- PM2.5 display -->
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;pointer-events:auto;">
+    <div id="pm25Circle" onclick="document.getElementById('pm25Popup').style.display='flex'" style="width:44px;height:44px;border-radius:50%;border:3px solid #74640a;background:linear-gradient(135deg,#fffef8,#f5f0e5);box-shadow:0 0 8px rgba(116,100,10,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;">
+      <span style="font-size:6px;color:#a89030;letter-spacing:0.04em;line-height:1.2;pointer-events:none;">PM2.5</span>
+      <span id="pm25Value" style="font-size:14px;font-weight:bold;color:#74640a;line-height:1;pointer-events:none;">--</span>
+      <span style="font-size:5px;color:#a89030;line-height:1.2;pointer-events:none;">μg/m³</span>
+      <span id="pm25Label" style="font-size:6px;font-weight:bold;color:#74640a;line-height:1.2;pointer-events:none;">--</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function applyPm25(val){
+    var el=document.getElementById('pm25Value');
+    var circle=document.getElementById('pm25Circle');
+    var lbl=document.getElementById('pm25Label');
+    var hl=document.getElementById('pm25Health');
+    var color,text,health;
+    if(val<=25){color='#2ecc40';text='คุณภาพดี';health='ปลอดภัย ทุกคน';}
+    else if(val<=37){color='#ffb700';text='ปานกลาง';health='ผู้ป่วยทางเดินหายใจควรระวัง';}
+    else if(val<=75){color='#ff6600';text='มีผลต่อสุขภาพ';health='อาจส่งผลต่อทุกคน';}
+    else{color='#cc0000';text='อันตราย';health='หลีกเลี่ยงกิจกรรมนอกอาคาร';}
+    if(el){el.textContent=val;el.style.color=color;}
+    if(circle){circle.style.borderColor=color;circle.style.boxShadow='0 0 10px '+color+'55';}
+    if(lbl){lbl.textContent=text;lbl.style.color=color;}
+    if(hl){hl.textContent=health;hl.style.color=color;}
+  }
+  // mock: สุ่มค่าใกล้เคียงจริง ทุก 30 นาที
+  function refreshPm25(){
+    var mock=Math.round(25+Math.random()*30);
+    applyPm25(mock);
+  }
+  refreshPm25();
+  setInterval(refreshPm25, 30*60*1000);
+})();
+</script>
+
+<!-- PM2.5 WHO Popup -->
+<div id="pm25Popup" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);">
+  <div style="background:linear-gradient(180deg,#f8f6f0 0%,#fffef8 45%,#fff8e8 55%,#f5f0e5 100%);border-radius:10px;border:6px solid #74640a;box-shadow:1px 1px 0 #000,-8px 6px #3b3305,0 0 20px rgba(255,230,160,0.55);width:300px;max-width:92vw;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#74640a,#a89030);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:#fff;font-weight:bold;font-size:14px;">ระดับคุณภาพอากาศ (PM2.5)</span>
+      <div onclick="document.getElementById('pm25Popup').style.display='none'" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</div>
+    </div>
+    <div style="padding:12px 14px 14px;">
+      <!-- rows -->
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#2ecc40;flex-shrink:0;"></div>
+          <div>
+            <span style="font-size:10px;font-weight:bold;color:#2ecc40;">0 – 15 μg/m³ — คุณภาพดี</span>
+            <div style="font-size:9px;color:#74640a;">ปลอดภัยสำหรับทุกคน</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#99e000;flex-shrink:0;"></div>
+          <div>
+            <span style="font-size:10px;font-weight:bold;color:#7ab000;">15 – 25 μg/m³ — ดี</span>
+            <div style="font-size:9px;color:#74640a;">เกินมาตรฐานเล็กน้อย</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#ffb700;flex-shrink:0;"></div>
+          <div>
+            <span style="font-size:10px;font-weight:bold;color:#cc8800;">25 – 37.5 μg/m³ — ปานกลาง</span>
+            <div style="font-size:9px;color:#74640a;">ผู้ป่วยโรคหัวใจ / หอบ / เด็ก ควรระวัง</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#ff6600;flex-shrink:0;"></div>
+          <div>
+            <span style="font-size:10px;font-weight:bold;color:#cc4400;">37.5 – 75 μg/m³ — มีผลต่อสุขภาพ</span>
+            <div style="font-size:9px;color:#74640a;">ควรสวมหน้ากาก ลดกิจกรรมนอกอาคาร</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#cc0000;flex-shrink:0;"></div>
+          <div>
+            <span style="font-size:10px;font-weight:bold;color:#cc0000;">&gt; 75 μg/m³ — อันตราย</span>
+            <div style="font-size:9px;color:#74640a;">หลีกเลี่ยงออกนอกอาคาร สวมหน้ากาก N95 เสมอ</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:8px;color:#a89030;margin:10px 0 0;text-align:center;">Source: WHO Air Quality Guidelines 2021</p>
+    </div>
+  </div>
+</div>
+
+<!-- Radar Popup -->
+<div id="radarPopup" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;justify-content:center;align-items:center;background:rgba(0,0,0,0.5);">
+  <div style="background:linear-gradient(180deg,#f8f6f0 0%,#fffef8 45%,#fff8e8 55%,#f5f0e5 100%);border-radius:10px;border:6px solid #74640a;box-shadow:1px 1px 0 #000,-8px 6px #3b3305,0 0 20px rgba(255,230,160,0.55);width:320px;max-width:92vw;overflow:hidden;">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#74640a,#a89030);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:#fff;font-weight:bold;font-size:14px;">Users Heatmap</span>
+      <div onclick="document.getElementById('radarPopup').style.display='none'" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</div>
+    </div>
+    <!-- Body -->
+    <div style="padding:12px 14px 8px;color:#74640a;">
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:bold;color:#74640a;margin-bottom:6px;">ชั้น 1</div>
+        <div id="hmDateLabel" style="font-size:10px;color:#a89030;letter-spacing:0.04em;text-align:center;">--/--/--</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:6px;">
+          <button onclick="window._hmChangeHour(-1)" style="width:24px;height:24px;border:none;background:none;color:#74640a;font-size:16px;cursor:pointer;padding:0;line-height:1;">&lsaquo;</button>
+          <span id="hmTimeLabel" style="font-size:12px;font-weight:bold;color:#74640a;min-width:44px;display:inline-block;text-align:center;">--:00</span>
+          <button onclick="window._hmChangeHour(1)" style="width:24px;height:24px;border:none;background:none;color:#74640a;font-size:16px;cursor:pointer;padding:0;line-height:1;">&rsaquo;</button>
+        </div>
+      </div>
+      <!-- outer frame: border only, no overflow:hidden -->
+      <div style="border:2px solid #74640a;border-radius:6px;background:#ede8df;">
+        <!-- inner map: overflow:hidden to clip SVG corners -->
+        <div style="position:relative;line-height:0;overflow:hidden;border-radius:4px 4px 0 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.92 595.32" style="display:block;width:100%;height:auto;background:#ede8df;">
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V959.52"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M235.68 959.52V208.8"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M664.8 129.6V959.2H242.88V216.16"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V959.52M235.68 959.52V208.8"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 959.52V1116.16H387.2V1085.44"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M665.76 963.52V1109.76H393.6V964.32L665.76 963.52Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M235.68 959.52V1085.44H387.2"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M240.32 964.32V1080.8H387.04V964.32H240.32Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M588.48 208.8H235.68M588.48 216.16H242.88"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M505.6 5.76H109.92V208.8H588.48"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V20.96H505.6V5.76"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M501.76 9.44H113.6V205.12H588.48"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M668.32 129.6V24.64H501.76V9.44"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#636466" d="M664.8 589.44H242.88M459.04 216.16V959.2"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 248.96V275.84H543.68V248.96H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 248.96V275.84H350.08V248.96H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 415.68V442.56H543.68V415.68H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 415.68V442.56H350.08V415.68H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 573.44V600.32H543.68V573.44H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 573.44V600.32H350.08V573.44H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 731.2V758.08H543.68V731.2H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 731.2V758.08H350.08V731.2H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 880V906.88H543.68V880H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 880V906.88H350.08V880H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V129.6H588.48V208.8 216.16"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M.16 0V1121.76H791.04V0"/>
+        </svg>
+        <canvas id="hmCanvas" width="842" height="595" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;pointer-events:none;"></canvas>
+        </div><!-- end inner overflow:hidden -->
+        <!-- legend inside outer frame -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:5px 8px 6px;gap:2px;">
+          <span style="font-size:8px;color:#a89030;letter-spacing:0.04em;margin-bottom:1px;">ความหนาแน่นของผู้ใช้บริการ</span>
+          <div style="width:108px;height:6px;border-radius:4px;background:linear-gradient(90deg,#0044ff,#00ccff,#00ff88,#ffff00,#ff8800,#ff0000);border:1px solid rgba(0,0,0,0.12);"></div>
+          <div style="width:108px;display:flex;justify-content:space-between;">
+            <span style="font-size:8px;color:#a89030;">น้อย</span>
+            <span style="font-size:8px;color:#a89030;">ปานกลาง</span>
+            <span style="font-size:8px;color:#a89030;">มาก</span>
+          </div>
+        </div>
+      </div><!-- end outer frame -->
+    </div>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V959.52"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M235.68 959.52V208.8"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M664.8 129.6V959.2H242.88V216.16"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V959.52M235.68 959.52V208.8"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 959.52V1116.16H387.2V1085.44"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M665.76 963.52V1109.76H393.6V964.32L665.76 963.52Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M235.68 959.52V1085.44H387.2"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M240.32 964.32V1080.8H387.04V964.32H240.32Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M588.48 208.8H235.68M588.48 216.16H242.88"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M505.6 5.76H109.92V208.8H588.48"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V20.96H505.6V5.76"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M501.76 9.44H113.6V205.12H588.48"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M668.32 129.6V24.64H501.76V9.44"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#636466" d="M664.8 589.44H242.88M459.04 216.16V959.2"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 248.96V275.84H543.68V248.96H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 248.96V275.84H350.08V248.96H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 415.68V442.56H543.68V415.68H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 415.68V442.56H350.08V415.68H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 573.44V600.32H543.68V573.44H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 573.44V600.32H350.08V573.44H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 731.2V758.08H543.68V731.2H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 731.2V758.08H350.08V731.2H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M569.28 880V906.88H543.68V880H569.28Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M375.84 880V906.88H350.08V880H375.84Z"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M672.16 208.8V129.6H588.48V208.8 216.16"/>
+          <path transform="matrix(0,-.75,.75,0,-.000061035159,595.32)" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="#000000" d="M.16 0V1121.76H791.04V0"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  // SVG screen coords derived from matrix(0,-.75,.75,0,e,595.32):
+  //   screen_x = 0.75 * y_path
+  //   screen_y = 595.32 - 0.75 * x_path
+  //
+  // Room walls (SVG viewBox 842x595), screen_x=0.75*y_path, screen_y=595.32-0.75*x_path
+  // ห้อง 1 (left):  inner walls from M668.32..V24.64H501.76V9.44 + M501.76..H113.6V205.12
+  // ห้อง 2 (main):  inner wall  from M664.8 129.6V959.2H242.88V216.16
+  // ห้อง 3 (top-R): inner wall  from M665.76 963.52V1109.76H393.6V964.32
+  // ห้อง 4 (bot-R): inner wall  from M240.32 964.32V1080.8H387.04V964.32
+
+  var Rm={
+    R1:[7,  94, 154, 510],   // ห้อง 1 — left wing
+    R2:[162, 97, 719, 413],  // ห้อง 2 — main hall
+    R3:[723, 96, 832, 300],  // ห้อง 3 — top right
+    R4:[723,305, 811, 415]   // ห้อง 4 — bottom right
+  };
+
+  // Building clip polygon (union of all 4 rooms)
+  function clipBuilding(ctx2){
+    ctx2.beginPath();
+    ctx2.rect(Rm.R1[0],Rm.R1[1],Rm.R1[2]-Rm.R1[0],Rm.R1[3]-Rm.R1[1]);
+    ctx2.rect(Rm.R2[0],Rm.R2[1],Rm.R2[2]-Rm.R2[0],Rm.R2[3]-Rm.R2[1]);
+    ctx2.rect(Rm.R3[0],Rm.R3[1],Rm.R3[2]-Rm.R3[0],Rm.R3[3]-Rm.R3[1]);
+    ctx2.rect(Rm.R4[0],Rm.R4[1],Rm.R4[2]-Rm.R4[0],Rm.R4[3]-Rm.R4[1]);
+    ctx2.clip();
+  }
+
+  // Mock hourly counts: [ห้อง1, ห้อง2, ห้อง3, ห้อง4]
+  var mockCounts={
+     6:[0, 1,0,0],  7:[1, 3,0,0],  8:[2, 5,1,0],  9:[3, 8,1,1],
+    10:[5,10,1,1], 11:[6,12,2,1], 12:[7,15,2,2], 13:[8,18,3,2],
+    14:[7,16,3,2], 15:[6,14,2,2], 16:[5,11,2,1], 17:[4, 9,1,1],
+    18:[3, 6,1,0], 19:[2, 4,0,0], 20:[1, 2,0,0], 21:[0, 1,0,0]
+  };
+  var maxCap=[10,20,5,5]; // max capacity per room
+  var rooms=[Rm.R1,Rm.R2,Rm.R3,Rm.R4];
+  var _hmHour=new Date().getHours();
+
+  function thermalColor(t){
+    var r,g,b,p;
+    if(t<0.12){p=t/0.12;r=0;g=0;b=Math.round(128+p*127);}
+    else if(t<0.28){p=(t-0.12)/0.16;r=0;g=Math.round(p*255);b=255;}
+    else if(t<0.44){p=(t-0.28)/0.16;r=0;g=255;b=Math.round(255*(1-p));}
+    else if(t<0.60){p=(t-0.44)/0.16;r=Math.round(p*255);g=255;b=0;}
+    else if(t<0.76){p=(t-0.60)/0.16;r=255;g=Math.round(255*(1-p));b=0;}
+    else if(t<0.92){r=255;g=0;b=0;}
+    else{p=(t-0.92)/0.08;r=Math.round(255*(1-p*0.5));g=0;b=0;}
+    return[r,g,b];
+  }
+
+  function renderHeat(ctx,spots){
+    var W=ctx.canvas.width, H=ctx.canvas.height;
+    // Step 1: draw all blobs on black bg → brightness accumulates where blobs overlap
+    var off=document.createElement('canvas');
+    off.width=W; off.height=H;
+    var oc=off.getContext('2d');
+    oc.fillStyle='#000';
+    oc.fillRect(0,0,W,H);
+    // Pre-clip blobs to building polygon so blur has no source data outside walls
+    oc.save();
+    clipBuilding(oc);
+    spots.forEach(function(s){
+      var rm=s.r;
+      var rw=rm[2]-rm[0], rh=rm[3]-rm[1];
+      var cx=(rm[0]+rm[2])/2, cy=(rm[1]+rm[3])/2;
+      var rad=Math.max(rw,rh)*1.05; // large enough to bleed into neighbors
+      var v=Math.min(s.v,1);
+      var g=oc.createRadialGradient(cx,cy,0,cx,cy,rad);
+      g.addColorStop(0,   'rgba(255,255,255,'+(v*0.82)+')');
+      g.addColorStop(0.35,'rgba(255,255,255,'+(v*0.50)+')');
+      g.addColorStop(0.65,'rgba(255,255,255,'+(v*0.18)+')');
+      g.addColorStop(1.0, 'rgba(255,255,255,0)');
+      oc.fillStyle=g;
+      oc.fillRect(0,0,W,H);
+    });
+    oc.restore(); // end building clip
+    // Step 2: blur entire intensity layer → blobs merge smoothly
+    var blurC=document.createElement('canvas');
+    blurC.width=W; blurC.height=H;
+    var bc=blurC.getContext('2d');
+    bc.filter='blur(14px)';
+    bc.drawImage(off,0,0);
+    bc.filter='none';
+    // Step 3: colorize pixel-by-pixel from brightness
+    var raw=bc.getImageData(0,0,W,H).data;
+    var img=bc.createImageData(W,H); var dst=img.data;
+    for(var i=0;i<raw.length;i+=4){
+      var heat=raw[i]/255;
+      if(heat<0.04){dst[i+3]=0;continue;}
+      var c=thermalColor(heat);
+      dst[i]=c[0];dst[i+1]=c[1];dst[i+2]=c[2];
+      dst[i+3]=Math.round(Math.min(heat*2.2,0.88)*255);
+    }
+    bc.putImageData(img,0,0);
+    // Step 4: clip to building polygon before drawing
+    ctx.save();
+    clipBuilding(ctx);
+    ctx.drawImage(blurC,0,0);
+    ctx.restore();
+  }
+
+  function _applyHour(h){
+    _hmHour=h;
+    var d=new Date();
+    var be=(d.getFullYear()+543)%100;
+    var lbl=document.getElementById('hmDateLabel');
+    var months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    if(lbl)lbl.textContent=d.getDate()+' - '+months[d.getMonth()]+' - '+d.getFullYear();
+    var tlbl=document.getElementById('hmTimeLabel');
+    if(tlbl)tlbl.textContent=(h<10?'0':'')+h+'.00';
+    var cnt=mockCounts[h]||[0,0,0,0];
+    ['hmC1','hmC2','hmC3','hmC4'].forEach(function(id,i){
+      var el=document.getElementById(id);if(el)el.textContent=cnt[i];
+    });
+    function cntToT(n){
+      if(n<=0)return 0;
+      if(n<=5)return 0.1+(n-1)/4*0.45;
+      return Math.min(0.55+(n-5)/15*0.45,1);
+    }
+    var spots=rooms.map(function(rm,i){
+      return{r:rm,v:cntToT(cnt[i])};
+    }).filter(function(s){return s.v>0;});
+    var canvas=document.getElementById('hmCanvas');
+    if(!canvas)return;
+    var ctx=canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(spots.length)renderHeat(ctx,spots);
+  }
+
+  window._hmChangeHour=function(delta){
+    _applyHour((_hmHour+delta+24)%24);
+  };
+
+  var _hmFloor=1;
+  window._hmChangeFloor=function(f){
+    _hmFloor=f;
+    [1,2,3].forEach(function(n){
+      var btn=document.getElementById('hmFloorBtn'+n);
+      if(!btn)return;
+      if(n===f){btn.style.background='#74640a';btn.style.color='#fff';}
+      else{btn.style.background='none';btn.style.color='#74640a';}
+    });
+    _applyHour(_hmHour);
+  };
+
+  function initHeatmap(){
+    var canvas=document.getElementById('hmCanvas');
+    if(!canvas)return;
+    canvas.dataset.built='1';
+    _applyHour(new Date().getHours());
+  }
+
+  var radarBtn=document.getElementById('radarStatus');
+  if(radarBtn){
+    radarBtn.addEventListener('touchstart',function(e){
+      e.stopPropagation();e.preventDefault();
+      var p=document.getElementById('radarPopup');
+      if(p)p.style.display='flex';
+      var c=document.getElementById('hmCanvas');
+      if(c)delete c.dataset.built;
+      setTimeout(initHeatmap,50);
+    },{passive:false});
+    radarBtn.addEventListener('click',function(){
+      var p=document.getElementById('radarPopup');
+      if(p)p.style.display='flex';
+      var c=document.getElementById('hmCanvas');
+      if(c)delete c.dataset.built;
+      setTimeout(initHeatmap,50);
+    },false);
+  }
+})();
+</script>
 <script>
 (function(){
   var cc=document.getElementById('cctvStatus');
@@ -536,13 +919,13 @@
     <canvas id="energyDayNightChart"></canvas>
   </div>
   <div class="energy-chart-legend">
-    <span class="legend-item"><span class="legend-color" style="background:#f5a623;"></span>Day (THB)</span>
-    <span class="legend-item"><span class="legend-color" style="background:#4a6fa5;"></span>Night (THB)</span>
+    <span class="legend-item"><span class="legend-color legend-color-day"></span>Day (THB)</span>
+    <span class="legend-item"><span class="legend-color legend-color-night"></span>Night (THB)</span>
   </div>
 </div>
 
 <div class="Bottom_info">
-<div class="Version">V.2.17.0</div>
+<div class="Version">V.2.20.0</div>
 <div id="calendarPopup">
   <div id="calendar"></div>
 </div>
@@ -922,12 +1305,55 @@ if ('serviceWorker' in navigator) {
 </script>
 
 
+
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<!-- AC Control Panel Popup (body level to avoid transform issues) -->
+<div id="acPanelOverlay" class="ac-panel-overlay" style="display:none;" onclick="window._closeAcPanel()"></div>
+<div id="acPanel" class="ac-panel" style="display:none;">
+  <div class="ac-panel-header">
+    <span>🌀 ควบคุมแอร์</span>
+    <button class="ac-panel-close" onclick="window._closeAcPanel()">✕</button>
+  </div>
+  <div class="ac-panel-power">
+    <button id="acPowerBtn" class="ac-btn-power-toggle off" onclick="window._toggleDevice('ac')">
+      <span class="ac-power-icon">⏻</span>
+      <span id="acPowerLabel">ปิดอยู่</span>
+    </button>
+  </div>
+  <div class="ac-panel-temp">
+    <button class="ac-btn-round" onclick="window._acTempChange(-1)">−</button>
+    <span class="ac-temp-display" id="acTempDisplay">25°C</span>
+    <button class="ac-btn-round" onclick="window._acTempChange(1)">+</button>
+  </div>
+  <div class="ac-panel-row">
+    <label>โหมด</label>
+    <select id="acModeSelect" class="ac-select">
+      <option value="0">เย็น (Cool)</option>
+      <option value="1">ร้อน (Heat)</option>
+      <option value="2">อัตโนมัติ (Auto)</option>
+      <option value="3">พัดลม (Fan)</option>
+      <option value="4">ลดความชื้น (Dry)</option>
+    </select>
+  </div>
+  <div class="ac-panel-row">
+    <label>ความแรงลม</label>
+    <select id="acWindSelect" class="ac-select">
+      <option value="0">อัตโนมัติ</option>
+      <option value="1">แรงลม 1</option>
+      <option value="2">แรงลม 2</option>
+      <option value="3">แรงลม 3</option>
+    </select>
+  </div>
+  <div class="ac-panel-actions">
+    <button class="ac-btn-send" onclick="window._acSendCommand()">ตั้งค่าแอร์</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-<script src="pageview.js?v=2.17.0" defer></script>
-<script src="script.js?v=2.17.0" defer></script>
+<script src="pageview.js?v=2.19" defer></script>
+<script src="script.js?v=2.19" defer></script>
 </body>
 </html>

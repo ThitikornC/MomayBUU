@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   };
 
   // API base URL (declare early so functions can use it immediately)
-  const API_BASE = 'https://momaydocbn-production.up.railway.app';
+  const API_BASE = 'https://momatdeerbn-production.up.railway.app';
 
   // ================= Room Management =================
   // Only ห้อง101โถงชั้น1 has real data; others are empty placeholders
@@ -308,18 +308,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!checkinCountdownInterval) {
           startCheckinCountdown();
         }
-        // Prefer actual MQTT-backed state when available
+        // Prefer actual state when available — bulb จาก MQTT, AC จาก Tuya
         try {
           const actual = await getActualBulbState(roomName);
-          if (actual !== null) {
-            updateBulbStatus(actual);
-            updateAcStatus(actual);
-          } else {
-            updateBulbStatus(true);
-            updateAcStatus(true);
-          }
+          if (actual !== null) updateBulbStatus(actual);
+          else updateBulbStatus(true);
         } catch (e) {
           updateBulbStatus(true);
+        }
+        try {
+          const acActual = await getActualAcState(roomName);
+          if (acActual !== null) updateAcStatus(acActual);
+          else updateAcStatus(true);
+        } catch (e) {
           updateAcStatus(true);
         }
       } else {
@@ -333,17 +334,15 @@ document.addEventListener('DOMContentLoaded', async function() {
           clearInterval(checkinCountdownInterval);
           checkinCountdownInterval = null;
         }
-        // ใช้สถานะจริงจาก MQTT — ถ้าอ่านไม่ได้ ให้คง state เดิม (ไม่ reset เป็น false)
+        // ใช้สถานะจริง — bulb จาก MQTT, AC จาก Tuya
         try {
           const actual = await getActualBulbState(roomName);
-          if (actual !== null) {
-            updateBulbStatus(actual);
-            updateAcStatus(actual);
-          }
-          // ถ้า actual === null → ไม่แก้ icon (คง state ที่ user toggle ไว้)
-        } catch (e) {
-          // ไม่ทำอะไร — คง state เดิม
-        }
+          if (actual !== null) updateBulbStatus(actual);
+        } catch (e) { /* คง state เดิม */ }
+        try {
+          const acActual = await getActualAcState(roomName);
+          if (acActual !== null) updateAcStatus(acActual);
+        } catch (e) { /* คง state เดิม */ }
       }
     } catch (err) {
       console.error('Error fetching active booking:', err);
@@ -428,57 +427,145 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (iconEl) iconEl.style.opacity = '0.4';
 
     try {
-      const res = await fetch('/api/toggle-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ room: roomName, action: newAction })
-      });
-      const json = await res.json();
-      if (!json.success) {
-        console.error('Toggle failed:', json.error);
-        if (iconEl) iconEl.style.opacity = '1';
-        toggleBusy = false;
-        return;
-      }
+      // AC ใช้ Tuya IR Remote
+      if (type === 'ac') {
+        const res = await fetch('/api/tuya-ac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room: roomName, action: newAction })
+        });
+        const json = await res.json();
+        if (json.success) {
+          updateAcStatus(newAction === 'ON');
+          console.log('✅ Tuya AC:', newAction);
+        } else {
+          console.error('Tuya AC failed:', json.error);
+          updateAcStatus(currentOn); // คงสถานะเดิม
+        }
+      } else {
+        // Bulb ใช้ Sonoff MQTT เหมือนเดิม
+        const res = await fetch('/api/toggle-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room: roomName, action: newAction })
+        });
+        const json = await res.json();
+        if (!json.success) {
+          console.error('Toggle failed:', json.error);
+          if (iconEl) iconEl.style.opacity = '1';
+          toggleBusy = false;
+          return;
+        }
 
-      // Poll /api/room-state เพื่อรอ Sonoff ตอบกลับจริง (สูงสุด 3 วินาที)
-      let confirmed = false;
-      for (let i = 0; i < 6; i++) {
-        await new Promise(r => setTimeout(r, 500)); // รอ 500ms แต่ละครั้ง
-        try {
-          const stateRes = await fetch('/api/room-state');
-          if (stateRes.ok) {
-            const stateJson = await stateRes.json();
-            if (stateJson && stateJson.success && stateJson.roomState) {
-              const state = stateJson.roomState[roomName];
-              if (typeof state === 'string') {
-                const isOn = state.toUpperCase() === 'ON';
-                // เช็คว่าสถานะเปลี่ยนจริงหรือยัง
-                if (isOn !== currentOn) {
-                  // Sonoff ตอบกลับแล้ว สถานะเปลี่ยนตามที่สั่ง
-                  if (type === 'bulb') updateBulbStatus(isOn);
-                  else updateAcStatus(isOn);
-                  confirmed = true;
-                  break;
+        // Poll /api/room-state เพื่อรอ Sonoff ตอบกลับจริง (สูงสุด 3 วินาที)
+        let confirmed = false;
+        for (let i = 0; i < 6; i++) {
+          await new Promise(r => setTimeout(r, 500));
+          try {
+            const stateRes = await fetch('/api/room-state');
+            if (stateRes.ok) {
+              const stateJson = await stateRes.json();
+              if (stateJson && stateJson.success && stateJson.roomState) {
+                const state = stateJson.roomState[roomName];
+                if (typeof state === 'string') {
+                  const isOn = state.toUpperCase() === 'ON';
+                  if (isOn !== currentOn) {
+                    updateBulbStatus(isOn);
+                    confirmed = true;
+                    break;
+                  }
                 }
-                // ถ้าสถานะยังเหมือนเดิม → ยัง poll ต่อ (Sonoff อาจยังไม่ตอบ)
               }
             }
-          }
-        } catch (e2) { /* retry */ }
-      }
+          } catch (e2) { /* retry */ }
+        }
 
-      // ถ้า poll ครบแล้ว Sonoff ไม่ตอบ → คงสถานะเดิม (ไม่เปลี่ยนไอคอน)
-      if (!confirmed) {
-        console.warn('Sonoff did not respond — keeping previous state');
-        if (type === 'bulb') updateBulbStatus(currentOn);
-        else updateAcStatus(currentOn);
+        if (!confirmed) {
+          console.warn('Sonoff did not respond — keeping previous state');
+          updateBulbStatus(currentOn);
+        }
       }
     } catch (e) {
       console.error('Toggle error:', e);
     } finally {
       if (iconEl) iconEl.style.opacity = '1';
       toggleBusy = false;
+    }
+  };
+
+  // ===================== AC Control Panel =====================
+  let acTemp = 25;
+
+  function updateAcPanelPowerBtn() {
+    const btn = document.getElementById('acPowerBtn');
+    const label = document.getElementById('acPowerLabel');
+    if (!btn) return;
+    if (deviceState.ac) {
+      btn.classList.remove('off');
+      btn.classList.add('on');
+      if (label) label.textContent = 'เปิดอยู่';
+    } else {
+      btn.classList.remove('on');
+      btn.classList.add('off');
+      if (label) label.textContent = 'ปิดอยู่';
+    }
+  }
+
+  window._openAcPanel = function() {
+    document.getElementById('acPanel').style.display = '';
+    document.getElementById('acPanelOverlay').style.display = '';
+    document.getElementById('acTempDisplay').textContent = acTemp + '°C';
+    updateAcPanelPowerBtn();
+  };
+
+  window._closeAcPanel = function() {
+    document.getElementById('acPanel').style.display = 'none';
+    document.getElementById('acPanelOverlay').style.display = 'none';
+  };
+
+  window._acTempChange = function(delta) {
+    acTemp = Math.min(30, Math.max(16, acTemp + delta));
+    document.getElementById('acTempDisplay').textContent = acTemp + '°C';
+  };
+
+  // Override _toggleDevice for AC to also update panel button
+  const _origToggle = window._toggleDevice;
+  window._toggleDevice = async function(type) {
+    await _origToggle(type);
+    if (type === 'ac') updateAcPanelPowerBtn();
+  };
+
+  window._acSendCommand = async function() {
+    const roomName = (currentRoom || '').replace(/\s*▼\s*/, '').trim();
+    if (!roomName) return;
+
+    const mode = parseInt(document.getElementById('acModeSelect').value);
+    const wind = parseInt(document.getElementById('acWindSelect').value);
+
+    const btn = document.querySelector('.ac-btn-send');
+    if (btn) { btn.textContent = 'กำลังส่ง...'; btn.disabled = true; }
+
+    try {
+      const res = await fetch('/api/tuya-ac/scenes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room: roomName, power: 1, temp: acTemp, mode: mode, wind: wind })
+      });
+      const json = await res.json();
+      if (json.success) {
+        updateAcStatus(true);
+        updateAcPanelPowerBtn();
+        console.log('✅ AC command sent:', { temp: acTemp, mode, wind });
+        window._closeAcPanel();
+      } else {
+        console.error('AC command failed:', json.error);
+        alert('ส่งคำสั่งไม่สำเร็จ: ' + (json.error || 'Unknown error'));
+      }
+    } catch (e) {
+      console.error('AC command error:', e);
+      alert('เกิดข้อผิดพลาด');
+    } finally {
+      if (btn) { btn.textContent = 'ตั้งค่าแอร์'; btn.disabled = false; }
     }
   };
 
@@ -509,6 +596,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
       } catch (e2) { /* ignore */ }
     }
+    return null;
+  }
+
+  // Get AC state from Tuya IR (server tracks state)
+  async function getActualAcState(roomName) {
+    try {
+      const res = await fetch('/api/tuya-ac/state', { method: 'GET' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && json.acState) {
+          const cleanRoom = (roomName || '').replace(/\s*▼\s*/, '').trim();
+          const state = json.acState[cleanRoom];
+          if (typeof state === 'boolean') return state;
+        }
+      }
+    } catch (e) { /* ignore */ }
     return null;
   }
 
@@ -599,6 +702,12 @@ document.addEventListener('DOMContentLoaded', async function() {
       energyChartInstance.destroy();
     }
 
+    const rootStyles = getComputedStyle(document.documentElement);
+    const dayBarColor = rootStyles.getPropertyValue('--energy-day-bar').trim() || 'rgba(245, 166, 35, 0.85)';
+    const dayBorderColor = rootStyles.getPropertyValue('--energy-day-border').trim() || '#d4920a';
+    const nightBarColor = rootStyles.getPropertyValue('--energy-night-bar').trim() || 'rgba(74, 111, 165, 0.85)';
+    const nightBorderColor = rootStyles.getPropertyValue('--energy-night-border').trim() || '#35577a';
+
     const ctx = canvas.getContext('2d');
     energyChartInstance = new Chart(ctx, {
       type: 'bar',
@@ -608,8 +717,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           {
             label: 'กลางวัน',
             data: dayCosts,
-            backgroundColor: 'rgba(245, 166, 35, 0.85)',
-            borderColor: '#d4920a',
+            backgroundColor: dayBarColor,
+            borderColor: dayBorderColor,
             borderWidth: 1,
             borderRadius: 3,
             barPercentage: 0.7,
@@ -618,8 +727,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           {
             label: 'กลางคืน',
             data: nightCosts,
-            backgroundColor: 'rgba(74, 111, 165, 0.85)',
-            borderColor: '#35577a',
+            backgroundColor: nightBarColor,
+            borderColor: nightBorderColor,
             borderWidth: 1,
             borderRadius: 3,
             barPercentage: 0.7,
@@ -785,7 +894,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       cache._powerFetching = true;
 
       // Fetch latest in background (stale-while-revalidate)
-      fetch(`${API_BASE}/daily-energy/pm_doc?date=` + localDate)
+      fetch(`${API_BASE}/daily-energy/pm_deer?date=` + localDate)
         .then(res => res.json())
         .then(json => {
           const data = json.data || [];
@@ -1000,7 +1109,7 @@ async function fetchDailyData(date){
             let combined = [];
             for (const dstr of fetchDates) {
               try {
-                const r = await fetch(`${API_BASE}/daily-energy/pm_doc?date=${dstr}`);
+                const r = await fetch(`${API_BASE}/daily-energy/pm_deer?date=${dstr}`);
                 const j = await r.json();
                 combined = combined.concat(j.data ?? []);
               } catch(e) { /* ignore per-day failure */ }
@@ -1031,7 +1140,7 @@ async function fetchDailyData(date){
     let combined = [];
     for (const dstr of fetchDates) {
       try {
-        const res = await fetch(`${API_BASE}/daily-energy/pm_doc?date=${dstr}`);
+        const res = await fetch(`${API_BASE}/daily-energy/pm_deer?date=${dstr}`);
         const json = await res.json();
         combined = combined.concat(json.data ?? []);
       } catch (e) {
@@ -1687,9 +1796,9 @@ initializeChart();
           const energy = (props.energy !== null && props.energy !== undefined) ? Number(props.energy).toFixed(2) + ' Unit' : '';
 
           // Title may still be used for the event header; we display bill first then energy
-          const titleHtml = arg.event.title ? `<div style="font-size:11px; font-weight:700; color:#2c1810;">${arg.event.title}</div>` : '';
-          const billHtml = bill ? `<div style="font-size:12px; font-weight:800; color:#5a2b00; margin-top:4px;">${bill}</div>` : '';
-          const energyHtml = energy ? `<div style="font-size:11px; color:#333;">${energy}</div>` : '';
+          const titleHtml = arg.event.title ? `<div class="calendar-event-title">${arg.event.title}</div>` : '';
+          const billHtml = bill ? `<div class="calendar-event-bill">${bill}</div>` : '';
+          const energyHtml = energy ? `<div class="calendar-event-energy">${energy}</div>` : '';
 
           return { html: `${titleHtml}${billHtml}${energyHtml}` };
         } catch (e) {
@@ -1772,12 +1881,20 @@ initializeChart();
   }
 
   // ================= Room Booking =================
-  const roomBookingIcon = document.querySelector("#RoomBooking_icon img");
+  const roomBookingIconWrap = document.getElementById("RoomBooking_icon");
+  const roomBookingIconImg = document.querySelector("#RoomBooking_icon img");
   const roomBookingPopup = document.getElementById("roomBookingPopup");
   const roomBookingTitle = document.getElementById("roomBookingTitle");
   const confirmBookingBtn = document.getElementById("confirmBooking");
   const cancelBookingBtn = document.getElementById("cancelBooking");
   const bookingOverlay = document.getElementById("overlay");
+
+  function getCurrentRoomName() {
+    const roomLabel = document.getElementById("Total_Bar_Label");
+    const selectedOption = document.querySelector('#roomDropdown .room-option.selected');
+    const fallbackRoom = roomLabel?.firstChild?.textContent?.trim();
+    return selectedOption?.getAttribute('data-room') || fallbackRoom || "ไม่ระบุห้อง";
+  }
   
   // Bookings data cache
   let bookingsDataByDate = {};
@@ -1829,7 +1946,7 @@ initializeChart();
     
     // Set room name in header
     const selectedOption = document.querySelector('#roomDropdown .room-option.selected');
-    const roomName = selectedOption ? selectedOption.getAttribute('data-room') : (roomLabel ? roomLabel.childNodes[0].textContent.trim() : '');
+    const roomName = selectedOption?.getAttribute('data-room') || roomLabel?.firstChild?.textContent?.trim() || '';
     if (scheduleRoomName) {
       scheduleRoomName.textContent = roomName;
     }
@@ -1920,27 +2037,36 @@ initializeChart();
     });
   }
 
-  if (roomBookingIcon && roomBookingPopup) {
-    roomBookingIcon.addEventListener("click", () => {
-      // Get room name from selected dropdown option
-      const roomLabel = document.getElementById("Total_Bar_Label");
-      const selectedOption = document.querySelector('#roomDropdown .room-option.selected');
-      const roomName = selectedOption ? selectedOption.getAttribute('data-room') : (roomLabel ? roomLabel.childNodes[0].textContent.trim() : "ไม่ระบุห้อง");
+  if ((roomBookingIconWrap || roomBookingIconImg) && roomBookingPopup) {
+    const openRoomBookingPopup = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const roomName = getCurrentRoomName();
       if (roomBookingTitle) {
         roomBookingTitle.textContent = `จองห้อง: ${roomName}`;
       }
-      // Set default date to today
+
       const bookingDateInput = document.getElementById("bookingDate");
       const todayDate = new Date().toISOString().split('T')[0];
       if (bookingDateInput) {
         bookingDateInput.value = todayDate;
       }
-      // Generate schedule table for today
+
       generateScheduleTable(todayDate);
-      
       roomBookingPopup.style.display = "flex";
       if (bookingOverlay) bookingOverlay.style.display = "block";
-    });
+    };
+
+    if (roomBookingIconWrap) {
+      roomBookingIconWrap.addEventListener("click", openRoomBookingPopup);
+      roomBookingIconWrap.addEventListener("touchstart", openRoomBookingPopup, { passive: false });
+    }
+    if (roomBookingIconImg) {
+      roomBookingIconImg.addEventListener("click", openRoomBookingPopup);
+      roomBookingIconImg.addEventListener("touchstart", openRoomBookingPopup, { passive: false });
+    }
   }
 
   if (cancelBookingBtn) {
@@ -1957,8 +2083,7 @@ initializeChart();
       const endTime = document.getElementById("bookingEndTime")?.value;
       const bookerName = document.getElementById("bookerName")?.value;
       const purpose = document.getElementById("bookingPurpose")?.value;
-      const selectedOption = document.querySelector('#roomDropdown .room-option.selected');
-      const roomName = selectedOption ? selectedOption.getAttribute('data-room') : "ไม่ระบุห้อง";
+      const roomName = getCurrentRoomName();
       
       if (!bookingDate || !bookerName) {
         alert("กรุณากรอกวันที่และชื่อผู้จอง");
@@ -2659,9 +2784,9 @@ async function markAllAsRead() {
 // อัปเดต badge และสั่น bell icon
 function updateBadge(count) {
   if (!bellBadge || !bellIcon) return;
-  // Update badge text and visibility
-  bellBadge.textContent = count > 0 ? String(count) : '';
-  bellBadge.style.display = count > 0 ? 'inline-block' : 'none';
+  // Keep badge hidden regardless of unread count (UI requested)
+  bellBadge.textContent = '';
+  bellBadge.style.display = 'none';
   
   // ถ้ามี notification ใหม่ ให้สั่น bell icon
   if (count > 0) shakeBellIcon();
@@ -2780,9 +2905,9 @@ function shakeKwangIcon() {
 // อัปเดตฟังก์ชัน updateBadge เพื่อสั่น icon ตาม type
 function updateBadgeWithShake(count, latestType) {
   if (!bellBadge || !bellIcon) return;
-  // Update badge text and visibility
-  bellBadge.textContent = count > 0 ? String(count) : '';
-  bellBadge.style.display = count > 0 ? 'inline-block' : 'none';
+  // Keep badge hidden regardless of unread count (UI requested)
+  bellBadge.textContent = '';
+  bellBadge.style.display = 'none';
 
   if (count > 0) {
     shakeBellIcon();
@@ -2892,7 +3017,7 @@ if ('Notification' in window && Notification.permission === 'default') {
     if (!res.ok) throw new Error("Network response was not ok");
     const json = await res.json();
 
-    const energyRes = await fetch(`${API_BASE}/daily-energy/pm_doc?date=${apiDate}`);
+    const energyRes = await fetch(`${API_BASE}/daily-energy/pm_deer?date=${apiDate}`);
     const energyJson = await energyRes.json();
     const energyData = energyJson.data || [];
 
@@ -3277,6 +3402,10 @@ if ('Notification' in window && Notification.permission === 'default') {
   }
 
   // Helper: update label (keep dropdown inside intact)
+  const ROOM_SHORT_NAMES = {
+    'ห้อง101โถงชั้น1': 'ห้อง 101',
+  };
+
   function updateRoomLabel(roomName) {
     if (!roomLabel) return;
     // Only update text nodes and arrow, preserve dropdown element inside
@@ -3289,7 +3418,8 @@ if ('Notification' in window && Notification.permission === 'default') {
       }
     });
     // Re-insert text + arrow before dropdown
-    const textNode = document.createTextNode(roomName + ' ');
+    const displayName = ROOM_SHORT_NAMES[roomName] || roomName;
+    const textNode = document.createTextNode(displayName + ' ');
     if (!arrow) {
       const newArrow = document.createElement('span');
       newArrow.className = 'room-arrow';
