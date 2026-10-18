@@ -46,7 +46,8 @@ const BUU = {
   },
   primaryMeterKey: 'sand',
   primaryRoomKey: 'ห้อง 101',  // the room the main app shows live data for
-  settings: { timezone: 'Asia/Bangkok', bookingEarlyMinutes: 15, joinPolicy: 'open', allowedDomains: [] }
+  // cctvViewRole 'user': every member keeps seeing the CCTV popup, as before roles existed
+  settings: { timezone: 'Asia/Bangkok', bookingEarlyMinutes: 15, joinPolicy: 'open', allowedDomains: [], cctvViewRole: 'user' }
 };
 
 // Meters: dashboard/script.js reads ห้อง 101 from the "deer" service and the others from "sand"
@@ -135,6 +136,9 @@ async function upsert(db, collection, filter, doc) {
     await db.collection('organizations').updateOne(
       { _id: orgId, primaryRoomKey: { $exists: false } },
       { $set: { primaryRoomKey: BUU.primaryRoomKey } });
+    await db.collection('organizations').updateOne(
+      { _id: orgId, 'settings.cctvViewRole': { $exists: false } },
+      { $set: { 'settings.cctvViewRole': BUU.settings.cctvViewRole } });
   }
 
   // 3. Stamp orgId on existing documents

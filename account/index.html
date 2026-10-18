@@ -98,6 +98,39 @@
       </form>
     </section>
 
+    <section class="card hidden" id="brandingCard">
+      <h2>แบรนด์</h2>
+      <p class="hint">ชื่อ โลโก้ และสีที่แสดงในแอป หน้าเข้าสู่ระบบ และเมื่อเพิ่มแอปลงหน้าจอ</p>
+      <form id="brandingForm" novalidate>
+        <div class="row">
+          <div><label for="brandName">ชื่อที่แสดง</label><input type="text" id="brandName" maxlength="100"></div>
+          <div class="shrink"><label for="brandColor">สีหลัก</label><input type="color" id="brandColor" style="width:64px;height:42px;padding:2px;border:1px solid #ccc;border-radius:8px"></div>
+          <button type="submit" class="shrink">บันทึก</button>
+        </div>
+        <div class="msg" id="brandingMsg" aria-live="polite"></div>
+      </form>
+      <label for="logoFile">โลโก้ (PNG, JPEG หรือ WebP ไม่เกิน 500 KB)</label>
+      <div class="row">
+        <div class="shrink"><img id="logoPreview" alt="" style="width:56px;height:56px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff"></div>
+        <div><input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp"></div>
+      </div>
+      <div class="msg" id="logoMsg" aria-live="polite"></div>
+    </section>
+
+    <section class="card hidden" id="cctvCard">
+      <h2>กล้อง CCTV</h2>
+      <p class="hint">relay.py ที่เครื่องข้างกล้องใช้รหัสนี้เป็น <code>RELAY_KEY</code> เพื่อส่งภาพเข้าองค์กรนี้ สร้างรหัสใหม่แล้วรหัสเดิมจะใช้ไม่ได้</p>
+      <p class="hint" id="cctvKeyState"></p>
+      <div class="row">
+        <div><label for="cctvRole">ใครดูกล้องได้</label>
+          <select id="cctvRole"><option value="user">สมาชิกทุกคน</option><option value="admin">ผู้ดูแลและเจ้าของ</option><option value="owner">เจ้าของเท่านั้น</option></select>
+        </div>
+        <button type="button" class="secondary shrink" id="cctvKeyBtn">สร้างรหัส relay ใหม่</button>
+      </div>
+      <div class="copy-box hidden" id="cctvKeyBox"><input type="text" id="cctvKey" readonly></div>
+      <div class="msg" id="cctvMsg" aria-live="polite"></div>
+    </section>
+
     <section class="card hidden" id="settingsCard">
       <h2>ตั้งค่าองค์กร</h2>
       <form id="settingsForm" novalidate>

@@ -4,6 +4,8 @@
 // with resolveOrg() and every query goes through orgFilter() so data never leaks
 // between organizations.
 
+const crypto = require('crypto');
+
 const DEFAULT_ORG_SLUG = process.env.DEFAULT_ORG_SLUG || 'buu-library';
 const ORG_COOKIE = 'momay_org';
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
@@ -157,6 +159,32 @@ async function buildOrgConfig(db, currentOrg) {
   };
 }
 
+// Web app manifest for one organization, served at <base>manifest.json
+function buildManifest(currentOrg, base) {
+  const b = currentOrg.branding || {};
+  const name = b.displayName || currentOrg.name || 'Momay';
+  const color = b.primaryColor || '#8B4513';
+  return {
+    name,
+    short_name: name.length > 12 ? 'Momay' : name,
+    description: 'Solar & energy dashboard',
+    start_url: base + '?source=pwa',
+    scope: base,
+    display: 'fullscreen',
+    orientation: 'portrait',
+    background_color: color,
+    theme_color: color,
+    icons: [
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }
+    ]
+  };
+}
+
+function hashSecret(value) {
+  return crypto.createHash('sha256').update(String(value)).digest('hex');
+}
+
 function orgCookieHeader(slug) {
   return `${ORG_COOKIE}=${encodeURIComponent(slug)}; Path=/; SameSite=Lax; Max-Age=31536000`;
 }
@@ -175,5 +203,7 @@ module.exports = {
   matchOrgPath,
   orgCookieHeader,
   controlUrlFor,
+  hashSecret,
+  buildManifest,
   buildOrgConfig
 };

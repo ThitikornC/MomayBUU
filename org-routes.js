@@ -9,6 +9,10 @@
 //
 // For the current organization (see org.js resolveOrg):
 //   GET    /api/org/me                 my role here, and whether I can join
+//   PATCH  /api/org/branding           display name, colour              owner
+//   GET    /api/org/logo               the uploaded logo (public)
+//   PUT    /api/org/logo               upload logo (raw png/jpeg/webp body) owner
+//   POST   /api/org/cctv-key           new key for this org's CCTV relay owner
 //   POST   /api/org/join               join (when the join policy allows it)
 //   PATCH  /api/org                    name, services, join policy      owner
 //   GET    /api/org/members            list members                     admin
@@ -19,8 +23,14 @@
 //   DELETE /api/org/invites/:id        cancel invite                    admin
 //   GET/POST /api/org/{buildings,rooms,meters}, PATCH/DELETE /api/org/{buildings,rooms,meters}/:id   admin
 
+const crypto = require('crypto');
+const { Binary } = require('mongodb');
 const org = require('./org');
 const members = require('./members');
+
+const LOGO_MAX_BYTES = 500 * 1024;
+// SVG is left out on purpose: it can carry scripts and is served from this origin
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 function send(res, status, body) {
   res.statusCode = status;
@@ -53,6 +63,25 @@ function publicOrg(o, membership) {
     logoUrl: (o.branding && o.branding.logoUrl) || null,
     role: membership ? membership.role : null
   };
+}
+
+// Reads a raw request body up to `limit` bytes; resolves null if it is larger
+function readRaw(req, limit) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    // past the limit, keep draining (so the 413 answer reaches the client) but drop the data
+    req.on('data', c => {
+      size += c.length;
+      if (size <= limit) chunks.push(c);
+    });
+    req.on('end', () => resolve(size > limit ? null : Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+function isHexColor(v) {
+  return typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
 }
 
 function appBase(req) {
@@ -253,10 +282,75 @@ async function handleOrgAPI(req, res, url, method, ctx, currentOrg) {
         settings: members.hasRole(membership, 'owner') ? {
           joinPolicy: (currentOrg.settings && currentOrg.settings.joinPolicy) || 'invite',
           allowedDomains: (currentOrg.settings && currentOrg.settings.allowedDomains) || [],
+          cctvViewRole: (currentOrg.settings && currentOrg.settings.cctvViewRole) || 'admin',
+          hasCctvKey: !!(currentOrg.cctv && currentOrg.cctv.relayKeyHash),
           services: currentOrg.services || {}
         } : null
       }
     });
+  }
+
+  if (url === '/api/org/logo' && method === 'GET') {
+    const asset = await db.collection('org_assets').findOne({ orgId: currentOrg._id, kind: 'logo' });
+    if (!asset) return fail(res, 404, 'ยังไม่มีโลโก้');
+    res.statusCode = 200;
+    res.setHeader('Content-Type', asset.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');  // the URL carries ?v=<upload time>
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.end(Buffer.from(asset.data.buffer));
+    return true;
+  }
+
+  if (url === '/api/org/logo' && method === 'PUT') {
+    const auth = await requireRole(req, res, ctx, currentOrg, 'owner');
+    if (!auth) return true;
+    const type = (req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+    if (!LOGO_TYPES.includes(type)) return fail(res, 415, 'โลโก้ต้องเป็นไฟล์ PNG, JPEG หรือ WebP');
+    const data = await readRaw(req, LOGO_MAX_BYTES);
+    if (!data) return fail(res, 413, 'โลโก้ต้องไม่เกิน 500 KB');
+    if (!data.length) return fail(res, 400, 'ไม่พบไฟล์');
+    const now = new Date();
+    await db.collection('org_assets').updateOne(
+      { orgId: currentOrg._id, kind: 'logo' },
+      { $set: { contentType: type, data: new Binary(data), size: data.length, updatedAt: now } },
+      { upsert: true });
+    const logoUrl = `/api/org/logo?org=${currentOrg.slug}&v=${now.getTime()}`;
+    await db.collection('organizations').updateOne({ _id: currentOrg._id }, { $set: { 'branding.logoUrl': logoUrl } });
+    org.forgetOrg(currentOrg.slug);
+    return send(res, 200, { success: true, data: { logoUrl } });
+  }
+
+  if (url === '/api/org/branding' && method === 'PATCH') {
+    const auth = await requireRole(req, res, ctx, currentOrg, 'owner');
+    if (!auth) return true;
+    const body = await ctx.parseBody(req);
+    const set = {};
+    if (body.displayName !== undefined) {
+      const name = str(body.displayName, 100);
+      if (name.length < 2) return fail(res, 400, 'ชื่อที่แสดงต้องยาวอย่างน้อย 2 ตัวอักษร');
+      set['branding.displayName'] = name;
+    }
+    if (body.primaryColor !== undefined) {
+      if (!isHexColor(body.primaryColor)) return fail(res, 400, 'สีต้องอยู่ในรูปแบบ #RRGGBB');
+      set['branding.primaryColor'] = body.primaryColor.toLowerCase();
+    }
+    if (body.logoUrl === null) set['branding.logoUrl'] = null;
+    if (!Object.keys(set).length) return fail(res, 400, 'ไม่มีอะไรให้แก้ไข');
+    await db.collection('organizations').updateOne({ _id: currentOrg._id }, { $set: set });
+    org.forgetOrg(currentOrg.slug);
+    return send(res, 200, { success: true });
+  }
+
+  if (url === '/api/org/cctv-key' && method === 'POST') {
+    const auth = await requireRole(req, res, ctx, currentOrg, 'owner');
+    if (!auth) return true;
+    const key = crypto.randomBytes(24).toString('base64url');
+    await db.collection('organizations').updateOne(
+      { _id: currentOrg._id },
+      { $set: { 'cctv.relayKeyHash': org.hashSecret(key), 'cctv.keyCreatedAt': new Date() } });
+    org.forgetOrg(currentOrg.slug);
+    // shown once: only its hash is stored. relay.py uses it as RELAY_KEY.
+    return send(res, 200, { success: true, data: { relayKey: key } });
   }
 
   if (url === '/api/org/join' && method === 'POST') {
@@ -289,6 +383,10 @@ async function handleOrgAPI(req, res, url, method, ctx, currentOrg) {
     }
     if (Array.isArray(body.allowedDomains)) {
       set['settings.allowedDomains'] = body.allowedDomains.map(d => str(d, 100).toLowerCase().replace(/^@/, '')).filter(Boolean).slice(0, 20);
+    }
+    if (body.cctvViewRole !== undefined) {
+      if (!members.ROLES.includes(body.cctvViewRole)) return fail(res, 400, 'cctvViewRole ไม่ถูกต้อง');
+      set['settings.cctvViewRole'] = body.cctvViewRole;
     }
     if (body.primaryRoomKey !== undefined) set.primaryRoomKey = str(body.primaryRoomKey, 60) || null;
     if (body.primaryMeterId !== undefined) set.primaryMeterId = members.toObjectId(body.primaryMeterId);
