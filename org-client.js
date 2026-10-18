@@ -15,6 +15,7 @@
       .then(json => {
         const config = json && json.success ? json.data : null;
         window.MomayOrg.config = config;
+        applyBranding(config);
         return config;
       })
       .catch(err => {
@@ -24,10 +25,25 @@
     return loading;
   }
 
+  // Puts the organization's name, logo and colour on the page:
+  // [data-org-name] gets the name, img[data-org-logo] the logo, and --brand / theme-color the colour
+  function applyBranding(config) {
+    if (!config) return;
+    const b = config.org.branding || {};
+    const name = b.displayName || config.org.name;
+    document.querySelectorAll('[data-org-name]').forEach(el => { el.textContent = name; });
+    if (b.logoUrl) document.querySelectorAll('img[data-org-logo]').forEach(img => { img.src = b.logoUrl; img.alt = name; });
+    if (b.primaryColor) {
+      document.documentElement.style.setProperty('--brand', b.primaryColor);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', b.primaryColor);
+    }
+  }
+
   function roomByKey(key) {
     const config = window.MomayOrg.config;
     return config ? config.rooms.find(r => r.key === key) || null : null;
   }
 
-  window.MomayOrg = { config: null, load, roomByKey };
+  window.MomayOrg = { config: null, load, roomByKey, applyBranding };
 })();

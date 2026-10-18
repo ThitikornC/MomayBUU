@@ -34,9 +34,14 @@ const JWT_SECRET = process.env.JWT_SECRET || '';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(',').map(o => o.trim().replace(/\/+$/, '')).filter(Boolean);
 
-let relaySocket = null;
-const viewerClients = new Set();
-let latestFrame = null;  // เก็บ frame ล่าสุดให้ viewer ใหม่เห็นทันที
+// CCTV streams, one per organization: orgId -> { relay, viewers, latestFrame }
+// latestFrame: เก็บ frame ล่าสุดให้ viewer ใหม่เห็นทันที
+const cctvStreams = new Map();
+function cctvStream(orgId) {
+  const key = String(orgId);
+  if (!cctvStreams.has(key)) cctvStreams.set(key, { relay: null, viewers: new Set(), latestFrame: null });
+  return cctvStreams.get(key);
+}
 
 let db = null;
 
@@ -785,6 +790,19 @@ const server = http.createServer(async (req, res) => {
     decoded = orgPath.rest;
   }
 
+  // The installable app (PWA) carries each organization's name, colour and start page
+  if (decoded === '/manifest.json' && db) {
+    try {
+      const pageOrg = await org.findOrgBySlug(db, pageOrgSlug);
+      if (pageOrg) {
+        res.setHeader('Content-Type', 'application/manifest+json');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.end(JSON.stringify(org.buildManifest(pageOrg, orgPath ? `/o/${pageOrg.slug}/` : '/')));
+        return;
+      }
+    } catch (e) { /* fall back to the static manifest.json */ }
+  }
+
   let filePath = path.join(root, decoded);
   if (filePath.endsWith(path.sep)) filePath = path.join(filePath, 'index.html');
   if (!filePath.startsWith(root)) {
@@ -823,40 +841,83 @@ const server = http.createServer(async (req, res) => {
 });
 
 // ─── CCTV WebSocket Relay ───
+// Each organization has its own relay (relay.py next to its cameras) and its own viewers.
+// A relay authenticates with its organization's key (set on the account page; RELAY_KEY
+// still works for the default organization). Viewers send their login token as ?token=.
 const wssRelay  = new WebSocketServer({ noServer: true });
 const wssViewer = new WebSocketServer({ noServer: true });
 
-server.on('upgrade', (req, socket, head) => {
-  const url = new URL(req.url, `http://localhost:${port}`);
+function rejectUpgrade(socket, status, reason) {
+  socket.write(`HTTP/1.1 ${status} ${reason}\r\n\r\n`);
+  socket.destroy();
+}
 
-  if (url.pathname === '/ws/relay') {
-    const key = url.searchParams.get('key');
-    if (key !== RELAY_KEY) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+async function relayOrg(key) {
+  if (!key) return null;
+  if (key === RELAY_KEY && RELAY_KEY !== 'changeme') return org.findOrgBySlug(db, org.DEFAULT_ORG_SLUG);
+  return db.collection('organizations').findOne({ 'cctv.relayKeyHash': org.hashSecret(key) });
+}
+
+async function viewerOrg(req, url) {
+  const currentOrg = await org.findOrgBySlug(db, org.requestedOrgSlug(req));
+  if (!currentOrg) return { status: 404 };
+  const token = url.searchParams.get('token') || '';
+  const user = token ? await getUserFromToken(token).catch(() => null) : null;
+  if (!user) return { status: 401 };
+  const minRole = (currentOrg.settings && currentOrg.settings.cctvViewRole) || 'admin';
+  const membership = await members.findMembership(db, currentOrg, user);
+  if (!members.hasRole(membership, minRole)) return { status: 403 };
+  return { org: currentOrg };
+}
+
+server.on('upgrade', async (req, socket, head) => {
+  const url = new URL(req.url, `http://localhost:${port}`);
+  try {
+    if (url.pathname === '/ws/relay') {
+      const relayFor = await relayOrg(url.searchParams.get('key'));
+      if (!relayFor) {
+        console.log('[CCTV] Relay rejected — bad key');
+        return rejectUpgrade(socket, 401, 'Unauthorized');
+      }
+      wssRelay.handleUpgrade(req, socket, head, ws => wssRelay.emit('connection', ws, relayFor));
+    } else if (url.pathname === '/ws/stream') {
+      const result = await viewerOrg(req, url);
+      if (!result.org) return rejectUpgrade(socket, result.status, result.status === 401 ? 'Unauthorized' : 'Forbidden');
+      wssViewer.handleUpgrade(req, socket, head, ws => wssViewer.emit('connection', ws, result.org));
+    } else {
       socket.destroy();
-      console.log('[CCTV] Relay rejected — bad key');
-      return;
     }
-    wssRelay.handleUpgrade(req, socket, head, ws => wssRelay.emit('connection', ws));
-  } else if (url.pathname === '/ws/stream') {
-    wssViewer.handleUpgrade(req, socket, head, ws => wssViewer.emit('connection', ws));
-  } else {
-    socket.destroy();
+  } catch (e) {
+    console.error('[CCTV] upgrade error:', e.message);
+    rejectUpgrade(socket, 503, 'Service Unavailable');
   }
 });
 
-// Relay: receives JPEG frames from local relay.py
-wssRelay.on('connection', (ws) => {
-  if (relaySocket) {
-    try { relaySocket.close(); } catch(e) {}
-    console.log('[CCTV] Replaced existing relay');
+function relayGone(stream, ws) {
+  if (stream.relay !== ws) return;
+  stream.relay = null;
+  stream.latestFrame = null;
+  // แจ้ง viewers ทั้งหมดว่า relay หลุด
+  for (const v of stream.viewers) {
+    if (v.readyState === WebSocket.OPEN) {
+      try { v.send('relay_offline'); } catch(e) {}
+    }
   }
-  relaySocket = ws;
-  console.log(`[CCTV] ✓ Relay connected — viewers: ${viewerClients.size}`);
+}
+
+// Relay: receives JPEG frames from local relay.py
+wssRelay.on('connection', (ws, relayFor) => {
+  const stream = cctvStream(relayFor._id);
+  if (stream.relay) {
+    try { stream.relay.close(); } catch(e) {}
+    console.log(`[CCTV] ${relayFor.slug}: replaced existing relay`);
+  }
+  stream.relay = ws;
+  console.log(`[CCTV] ${relayFor.slug}: ✓ relay connected — viewers: ${stream.viewers.size}`);
 
   ws.on('message', (data) => {
-    latestFrame = data;
-    for (const v of viewerClients) {
+    stream.latestFrame = data;
+    for (const v of stream.viewers) {
       if (v.readyState === WebSocket.OPEN) {
         v.send(data, { binary: true });
       }
@@ -864,48 +925,32 @@ wssRelay.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    console.log('[CCTV] ✗ Relay disconnected');
-    if (relaySocket === ws) {
-      relaySocket = null;
-      latestFrame = null;
-      // แจ้ง viewers ทั้งหมดว่า relay หลุด
-      for (const v of viewerClients) {
-        if (v.readyState === WebSocket.OPEN) {
-          try { v.send('relay_offline'); } catch(e) {}
-        }
-      }
-    }
+    console.log(`[CCTV] ${relayFor.slug}: ✗ relay disconnected`);
+    relayGone(stream, ws);
   });
 
   ws.on('error', (err) => {
-    console.error('[CCTV] Relay error:', err.message);
-    if (relaySocket === ws) {
-      relaySocket = null;
-      latestFrame = null;
-      for (const v of viewerClients) {
-        if (v.readyState === WebSocket.OPEN) {
-          try { v.send('relay_offline'); } catch(e) {}
-        }
-      }
-    }
+    console.error(`[CCTV] ${relayFor.slug}: relay error:`, err.message);
+    relayGone(stream, ws);
   });
 });
 
-// Viewer: browser connects to watch stream
-wssViewer.on('connection', (ws) => {
-  viewerClients.add(ws);
-  console.log(`[CCTV] + Viewer — total: ${viewerClients.size}`);
+// Viewer: browser connects to watch its organization's stream
+wssViewer.on('connection', (ws, viewerFor) => {
+  const stream = cctvStream(viewerFor._id);
+  stream.viewers.add(ws);
+  console.log(`[CCTV] ${viewerFor.slug}: + viewer — total: ${stream.viewers.size}`);
 
   // ส่ง frame ล่าสุดให้เห็นภาพทันทีไม่ต้องรอ
-  if (latestFrame) {
-    try { ws.send(latestFrame, { binary: true }); } catch(e) {}
+  if (stream.latestFrame) {
+    try { ws.send(stream.latestFrame, { binary: true }); } catch(e) {}
   }
 
   ws.on('close', () => {
-    viewerClients.delete(ws);
-    console.log(`[CCTV] - Viewer — total: ${viewerClients.size}`);
+    stream.viewers.delete(ws);
+    console.log(`[CCTV] ${viewerFor.slug}: - viewer — total: ${stream.viewers.size}`);
   });
-  ws.on('error', () => viewerClients.delete(ws));
+  ws.on('error', () => stream.viewers.delete(ws));
 });
 
 // Connect to DB then start server

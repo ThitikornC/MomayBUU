@@ -1716,7 +1716,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const CCTV_WS_URL = cctvWsOverride
       ? cctvWsOverride
       : (isLocalHost ? 'wss://momaybuu-production.up.railway.app/ws/stream' : (wsProto + '//' + location.host + '/ws/stream'));
-    cctvWs = new WebSocket(CCTV_WS_URL);
+    // the server checks the viewer's login and organization
+    const token = window.MomayAuth ? window.MomayAuth.getToken() : '';
+    cctvWs = new WebSocket(CCTV_WS_URL + (token && !cctvWsOverride ? (CCTV_WS_URL.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token) : ''));
     cctvWs.binaryType = 'arraybuffer';
 
     cctvWs.onopen = function() {

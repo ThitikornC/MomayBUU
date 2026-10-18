@@ -196,15 +196,8 @@
   document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => showTab('login')));
 
-  // Organization name and logo on top
-  if (window.MomayOrg) {
-    window.MomayOrg.load().then(config => {
-      if (!config) return;
-      const b = config.org.branding || {};
-      $('orgName').textContent = b.displayName || config.org.name;
-      if (b.logoUrl) $('orgLogo').src = b.logoUrl;
-    });
-  }
+  // Organization name, logo and colour on top
+  if (window.MomayOrg) window.MomayOrg.load();
 
   $('backToApp').href = Auth.orgBase();
   showTab(params.get('mode') === 'register' ? 'register' : 'login');

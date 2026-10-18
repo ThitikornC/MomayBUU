@@ -251,13 +251,59 @@
     say('settingsMsg', json.success ? 'บันทึกแล้ว' : json.error, json.success);
   });
 
+  // ─── Branding and CCTV (owner) ───
+  function fillBranding() {
+    const config = window.MomayOrg.config;
+    const b = (config && config.org.branding) || {};
+    $('brandName').value = b.displayName || me.org.name;
+    $('brandColor').value = b.primaryColor || '#8b4513';
+    if (b.logoUrl) $('logoPreview').src = b.logoUrl;
+    $('cctvRole').value = me.settings.cctvViewRole;
+    $('cctvKeyState').textContent = me.settings.hasCctvKey ? 'มีรหัส relay แล้ว' : 'ยังไม่มีรหัส relay';
+  }
+
+  $('brandingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const json = await api('/api/org/branding', { method: 'PATCH', body: { displayName: $('brandName').value.trim(), primaryColor: $('brandColor').value } });
+    say('brandingMsg', json.success ? 'บันทึกแล้ว' : json.error, json.success);
+    if (json.success) document.documentElement.style.setProperty('--brand', $('brandColor').value);
+  });
+
+  $('logoFile').addEventListener('change', async () => {
+    const file = $('logoFile').files[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) return say('logoMsg', 'โลโก้ต้องไม่เกิน 500 KB');
+    const res = await Auth.authFetch('/api/org/logo', { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+    const json = await res.json().catch(() => ({}));
+    if (!json.success) return say('logoMsg', json.error || 'อัปโหลดไม่สำเร็จ');
+    $('logoPreview').src = json.data.logoUrl;
+    $('orgLogo').src = json.data.logoUrl;
+    say('logoMsg', 'อัปโหลดโลโก้แล้ว', true);
+  });
+
+  $('cctvRole').addEventListener('change', async () => {
+    const json = await api('/api/org', { method: 'PATCH', body: { cctvViewRole: $('cctvRole').value } });
+    say('cctvMsg', json.success ? 'บันทึกแล้ว' : json.error, json.success);
+  });
+
+  $('cctvKeyBtn').addEventListener('click', async () => {
+    if (me.settings.hasCctvKey && !confirm('สร้างรหัสใหม่? relay ที่ใช้รหัสเดิมจะเชื่อมต่อไม่ได้')) return;
+    const json = await api('/api/org/cctv-key', { method: 'POST' });
+    if (!json.success) return say('cctvMsg', json.error);
+    me.settings.hasCctvKey = true;
+    $('cctvKey').value = json.data.relayKey;
+    $('cctvKeyBox').classList.remove('hidden');
+    $('cctvKeyState').textContent = 'มีรหัส relay แล้ว';
+    say('cctvMsg', 'รหัสนี้แสดงครั้งเดียว คัดลอกไปใส่ RELAY_KEY ใน .env ของ relay.py', true);
+  });
+
   // ─── Boot ───
   async function boot() {
     const user = Auth.getUser();
     $('userEmail').textContent = user ? user.email : '';
     $('logoutBtn').addEventListener('click', () => { Auth.logout(); location.href = Auth.pageUrl('login/'); });
 
-    await loadMyOrgs();
+    await Promise.all([loadMyOrgs(), window.MomayOrg.load()]);
 
     const meJson = await api('/api/org/me');
     if (!meJson.success) return;
@@ -281,8 +327,9 @@
       await Promise.all([loadMembers(), loadInvites(), loadRoomsAndMeters()]);
     }
     if (me.role === 'owner' && me.settings) {
-      $('settingsCard').classList.remove('hidden');
+      ['settingsCard', 'brandingCard', 'cctvCard'].forEach(id => $(id).classList.remove('hidden'));
       fillSettings();
+      fillBranding();
     }
   }
 

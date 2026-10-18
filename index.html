@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#8B4513">
   <title>Momay</title>
 
@@ -40,7 +40,7 @@
 
 <div class="Top_Container">
   <div class="ClientName_Container">
-    <div class="ClientName">สำนักหอสมุด ม.บูรพา  </div>
+    <div class="ClientName" data-org-name>สำนักหอสมุด ม.บูรพา  </div>
     <div class="Date_install">User Number : No.006</div>
     <div class="ClientNo">Contract Number : -</div>
     <div class="ClientNo">Date Installed : 11-12-26</div>
@@ -437,7 +437,7 @@
 ">
   <!-- Radar icon -->
   <div id="radarStatus" style="cursor:pointer;pointer-events:auto;z-index:9001;position:relative;">
-    <img src="Buulogo.png" width="52" height="52" style="display:block;pointer-events:none;object-fit:contain;" alt="BUU Logo"/>
+    <img src="Buulogo.png" data-org-logo width="52" height="52" style="display:block;pointer-events:none;object-fit:contain;" alt="BUU Logo"/>
   </div>
   <!-- PM2.5 display -->
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;pointer-events:auto;">
@@ -1157,7 +1157,7 @@ if ('serviceWorker' in navigator) {
     </div>
     <!-- Footer -->
     <div style="padding:6px 14px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(180deg,#f0ebe0,#e8e0d0);">
-      <span style="color:#74640a;font-size:11px;">สำนักหอสมุด ม.บูรพา</span>
+      <span style="color:#74640a;font-size:11px;" data-org-name>สำนักหอสมุด ม.บูรพา</span>
       <span id="cctvFps" style="color:#a89030;font-size:10px;"></span>
     </div>
   </div>
@@ -1167,7 +1167,11 @@ if ('serviceWorker' in navigator) {
 (function(){
   // ─── CCTV Stream URL — same origin as MomayBUU server ───
   var wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  var CCTV_WS_URL = wsProto + '//' + location.host + '/ws/stream';
+  // the server checks the viewer's login and organization (cookie set with this page)
+  function cctvUrl() {
+    var token = window.MomayAuth ? window.MomayAuth.getToken() : '';
+    return wsProto + '//' + location.host + '/ws/stream' + (token ? '?token=' + encodeURIComponent(token) : '');
+  }
 
   var ws = null;
   var imgEl   = document.getElementById('cctvFrame');
@@ -1216,9 +1220,13 @@ if ('serviceWorker' in navigator) {
 
   function connect() {
     if (ws) return;
+    if (!(window.MomayAuth && window.MomayAuth.getToken())) {
+      showOffline('เข้าสู่ระบบเพื่อดูกล้อง');
+      return;
+    }
     setStatus('connecting', 'กำลังเชื่อมต่อ...');
 
-    ws = new WebSocket(CCTV_WS_URL);
+    ws = new WebSocket(cctvUrl());
     ws.binaryType = 'arraybuffer';
 
     ws.onopen = function() {
