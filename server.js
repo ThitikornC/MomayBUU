@@ -1,4 +1,6 @@
 const http = require('http');
+const https = require('https');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
@@ -17,6 +19,21 @@ const RELAY_KEY = process.env.RELAY_KEY || 'changeme';
 
 // Control server URL (for Sonoff toggle proxy)
 const CONTROL_URL = process.env.CONTROL_URL || 'https://controlbuu-production.up.railway.app';
+
+// Auth: tokens are issued by the JWT auth backend (same one dashboard/auth.js logs in to)
+const AUTH_URL = process.env.AUTH_URL || 'https://aut-production.up.railway.app';
+// Optional: if the auth backend's HS256 secret is shared here, tokens are verified locally
+// instead of calling AUTH_URL/api/auth/me
+const JWT_SECRET = process.env.JWT_SECRET || '';
+// Comma-separated emails allowed to delete any booking (others can delete only their own)
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+  .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+
+// CORS: comma-separated origins allowed to call the API cross-origin.
+// Same-origin requests (the app and /dashboard served by this server) don't need to be listed.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',').map(o => o.trim().replace(/\/+$/, '')).filter(Boolean);
+
 let relaySocket = null;
 const viewerClients = new Set();
 let latestFrame = null;  // เก็บ frame ล่าสุดให้ viewer ใหม่เห็นทันที
@@ -98,19 +115,131 @@ async function checkOverlap(room, date, startTime, endTime, excludeId = null) {
   return { overlap: false };
 }
 
+// ─── Auth helpers ───
+function base64UrlDecode(str) {
+  return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+}
+
+// Verify an HS256 JWT with JWT_SECRET. Returns the payload or null.
+function verifyJwtLocally(token) {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const header = JSON.parse(base64UrlDecode(parts[0]).toString());
+    if (header.alg !== 'HS256') return null;
+    const expected = crypto.createHmac('sha256', JWT_SECRET).update(parts[0] + '.' + parts[1]).digest();
+    const actual = base64UrlDecode(parts[2]);
+    if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) return null;
+    const payload = JSON.parse(base64UrlDecode(parts[1]).toString());
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Ask the auth backend who owns this token (GET /api/auth/me)
+function fetchAuthMe(token) {
+  return new Promise((resolve, reject) => {
+    const meUrl = new URL('/api/auth/me', AUTH_URL);
+    const proto = meUrl.protocol === 'https:' ? https : http;
+    const authReq = proto.request(meUrl, {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + token },
+      timeout: 5000
+    }, (aRes) => {
+      let data = '';
+      aRes.on('data', c => data += c);
+      aRes.on('end', () => {
+        if (aRes.statusCode !== 200) return resolve(null);
+        try {
+          const json = JSON.parse(data);
+          resolve(json && json.user ? json.user : null);
+        } catch (e) { resolve(null); }
+      });
+    });
+    authReq.on('error', reject);
+    authReq.on('timeout', () => { authReq.destroy(); reject(new Error('Timeout')); });
+    authReq.end();
+  });
+}
+
+// Short cache so every click doesn't round-trip to the auth backend
+const AUTH_CACHE_MS = 60 * 1000;
+const authCache = new Map();  // token -> { user, expires }
+
+async function getUserFromToken(token) {
+  if (JWT_SECRET) {
+    const payload = verifyJwtLocally(token);
+    if (!payload) return null;
+    return {
+      id: String(payload.id || payload.userId || payload.sub || ''),
+      email: (payload.email || '').toLowerCase(),
+      name: payload.name || ''
+    };
+  }
+
+  const cached = authCache.get(token);
+  if (cached && cached.expires > Date.now()) return cached.user;
+
+  const me = await fetchAuthMe(token);
+  const user = me ? { id: String(me.id || me._id || ''), email: (me.email || '').toLowerCase(), name: me.name || '' } : null;
+  if (user) {
+    if (authCache.size > 1000) authCache.clear();
+    authCache.set(token, { user, expires: Date.now() + AUTH_CACHE_MS });
+  }
+  return user;
+}
+
+// Returns the logged-in user, or sends 401/503 and returns null
+async function requireAuth(req, res) {
+  const header = req.headers['authorization'] || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token) {
+    res.statusCode = 401;
+    res.end(JSON.stringify({ success: false, error: 'กรุณาเข้าสู่ระบบก่อน', code: 'AUTH_REQUIRED' }));
+    return null;
+  }
+  try {
+    const user = await getUserFromToken(token);
+    if (!user) {
+      res.statusCode = 401;
+      res.end(JSON.stringify({ success: false, error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', code: 'AUTH_INVALID' }));
+      return null;
+    }
+    return user;
+  } catch (e) {
+    res.statusCode = 503;
+    res.end(JSON.stringify({ success: false, error: 'ไม่สามารถตรวจสอบสิทธิ์ได้ในขณะนี้' }));
+    return null;
+  }
+}
+
+function isAdmin(user) {
+  return !!user.email && ADMIN_EMAILS.includes(user.email);
+}
+
+function setCorsHeaders(req, res) {
+  const origin = (req.headers.origin || '').replace(/\/+$/, '');
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  res.setHeader('Vary', 'Origin');
+}
+
 // API Routes
 async function handleAPI(req, res) {
   const url = req.url.split('?')[0];
   const method = req.method;
   
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // CORS: only origins in ALLOWED_ORIGINS get Access-Control-Allow-* headers
+  setCorsHeaders(req, res);
   res.setHeader('Content-Type', 'application/json');
   
   if (method === 'OPTIONS') {
-    res.statusCode = 200;
+    res.statusCode = 204;
     res.end();
     return true;
   }
@@ -138,6 +267,8 @@ async function handleAPI(req, res) {
   
   // POST /api/bookings - Create new booking
   if (url === '/api/bookings' && method === 'POST') {
+    const user = await requireAuth(req, res);
+    if (!user) return true;
     try {
       const body = await parseBody(req);
       const { room, date, startTime, endTime, bookerName, purpose } = body;
@@ -176,6 +307,7 @@ async function handleAPI(req, res) {
         bookerName,
         purpose: purpose || '',
         color,
+        ownerId: user.id,  // auth user id, used to allow the owner to delete
         createdAt: new Date().toISOString()
       };
       
@@ -275,6 +407,8 @@ async function handleAPI(req, res) {
   
   // POST /api/toggle-device — proxy to Control server to toggle Sonoff
   if (url === '/api/toggle-device' && method === 'POST') {
+    const user = await requireAuth(req, res);
+    if (!user) return true;
     try {
       const body = await parseBody(req);
       const { room, action } = body;
@@ -289,7 +423,7 @@ async function handleAPI(req, res) {
       const controlUrl = new URL('/toggle', CONTROL_URL);
 
       const proxyRes = await new Promise((resolve, reject) => {
-        const proto = controlUrl.protocol === 'https:' ? require('https') : require('http');
+        const proto = controlUrl.protocol === 'https:' ? https : http;
         const proxyReq = proto.request(controlUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
@@ -493,15 +627,32 @@ async function handleAPI(req, res) {
 
   // DELETE /api/bookings/:id - Delete booking
   if (url.startsWith('/api/bookings/') && method === 'DELETE') {
+    const user = await requireAuth(req, res);
+    if (!user) return true;
     try {
       const id = url.split('/').pop();
-      const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
-      
-      if (result.deletedCount === 0) {
+      if (!ObjectId.isValid(id)) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: 'Invalid booking id' }));
+        return true;
+      }
+
+      const booking = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
+      if (!booking) {
         res.statusCode = 404;
         res.end(JSON.stringify({ success: false, error: 'Booking not found' }));
         return true;
       }
+
+      // Owner or admin only (bookings made before auth have no owner → admin only)
+      const isOwner = !!booking.ownerId && booking.ownerId === user.id;
+      if (!isOwner && !isAdmin(user)) {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ success: false, error: 'ไม่มีสิทธิ์ลบการจองนี้' }));
+        return true;
+      }
+
+      await db.collection(COLLECTION_NAME).deleteOne({ _id: booking._id });
       
       res.statusCode = 200;
       res.end(JSON.stringify({ success: true, message: 'Booking deleted' }));

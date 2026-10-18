@@ -1480,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (iconEl) iconEl.style.opacity = '0.4';
 
     try {
-      const res = await fetch(API_BASE + '/api/toggle-device', {
+      const res = await window.MomayAuth.authFetch(API_BASE + '/api/toggle-device', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ room, action: newAction })

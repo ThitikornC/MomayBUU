@@ -516,9 +516,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupReset();
   setupLogout();
 
-  // TEMPORARY: bypass auth — ลบบรรทัดนี้เมื่อต้องการเปิด login คืน
-  showDashboard({ name: 'Guest', email: '' }); return;
-
   const token = getToken();
   if (token && !isTokenExpired(token)) {
     try {
