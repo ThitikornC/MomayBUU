@@ -5,13 +5,14 @@ const fs = require('fs');
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
 const { WebSocketServer, WebSocket } = require('ws');
+const org = require('./org');
 
 const port = process.env.PORT || 8000;
 const root = path.resolve(__dirname);
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://nippit62:ohm0966477158@testing.hgxbz.mongodb.net/?retryWrites=true&w=majority';
-const DB_NAME = 'momay_buu';
+const DB_NAME = process.env.DB_NAME || 'momay_buu';
 const COLLECTION_NAME = 'bookings';
 
 // CCTV WebSocket Relay
@@ -49,6 +50,8 @@ async function connectDB() {
     // Create indexes for faster queries
     await db.collection(COLLECTION_NAME).createIndex({ date: 1, room: 1 });
     await db.collection(COLLECTION_NAME).createIndex({ bookingId: 1 }, { unique: true });
+    await org.ensureOrgIndexes(db);
+    await org.warnUnmigrated(db);
     
     console.log('Connected to MongoDB with indexes');
   } catch (error) {
@@ -88,11 +91,11 @@ function parseBody(req) {
 }
 
 // Check for overlapping bookings
-async function checkOverlap(room, date, startTime, endTime, excludeId = null) {
+async function checkOverlap(currentOrg, room, date, startTime, endTime, excludeId = null) {
   const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
   const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
   
-  const query = { room, date };
+  const query = org.orgFilter(currentOrg, { room, date });
   if (excludeId) {
     query._id = { $ne: new ObjectId(excludeId) };
   }
@@ -243,6 +246,17 @@ async function handleAPI(req, res) {
     res.end();
     return true;
   }
+
+  // Every API call is for one organization (see org.js for how it is chosen)
+  let currentOrg;
+  try {
+    currentOrg = await org.resolveOrg(db, req, res);
+  } catch (error) {
+    res.statusCode = 503;
+    res.end(JSON.stringify({ success: false, error: 'ฐานข้อมูลไม่พร้อมใช้งาน' }));
+    return true;
+  }
+  if (!currentOrg) return true;
   
   // GET /api/bookings - Get all bookings or filter by date/room
   if (url === '/api/bookings' && method === 'GET') {
@@ -251,7 +265,7 @@ async function handleAPI(req, res) {
       const date = urlParams.searchParams.get('date');
       const room = urlParams.searchParams.get('room');
       
-      const query = {};
+      const query = org.orgFilter(currentOrg);
       if (date) query.date = date;
       if (room) query.room = room;
       
@@ -278,9 +292,11 @@ async function handleAPI(req, res) {
         res.end(JSON.stringify({ success: false, error: 'Missing required fields' }));
         return true;
       }
+      const newRoom = room.replace(/\s*▼\s*/, '').trim();  // strip UI dropdown symbol
+      const roomDoc = await db.collection('rooms').findOne(org.orgFilter(currentOrg, { key: newRoom }));
       
       // Check for overlapping bookings
-      const overlapCheck = await checkOverlap(room, date, startTime, endTime);
+      const overlapCheck = await checkOverlap(currentOrg, newRoom, date, startTime, endTime);
       if (overlapCheck.overlap) {
         res.statusCode = 409;
         res.end(JSON.stringify({ 
@@ -299,8 +315,10 @@ async function handleAPI(req, res) {
       const color = colors[Math.floor(Math.random() * colors.length)];
       
       const newBooking = {
+        orgId: currentOrg._id,
         bookingId,
-        room: (room || '').replace(/\s*▼\s*/, '').trim(),  // strip UI dropdown symbol
+        room: newRoom,
+        roomId: roomDoc ? roomDoc._id : null,
         date,
         startTime,
         endTime,
@@ -346,9 +364,9 @@ async function handleAPI(req, res) {
       
       // Find bookings for today and this room (strip ▼ for matching)
       const cleanRoom = (room || '').replace(/\s*▼\s*/, '').trim();
-      const bookings = await db.collection(COLLECTION_NAME).find({
+      const bookings = await db.collection(COLLECTION_NAME).find(org.orgFilter(currentOrg, {
         date: today
-      }).toArray();
+      })).toArray();
       // Filter by room name (handle ▼ suffix in stored data)
       const roomBookings = bookings.filter(b => (b.room || '').replace(/\s*▼\s*/, '').trim() === cleanRoom);
       
@@ -491,7 +509,7 @@ async function handleAPI(req, res) {
         bookingId = qrData.substring(3);
       }
 
-      const booking = await db.collection(COLLECTION_NAME).findOne({ bookingId });
+      const booking = await db.collection(COLLECTION_NAME).findOne(org.orgFilter(currentOrg, { bookingId }));
 
       if (!booking) {
         res.statusCode = 404;
@@ -546,7 +564,7 @@ async function handleAPI(req, res) {
         firstCheckIn = now.toISOString();
         isFirstCheckIn = true;
         await db.collection(COLLECTION_NAME).updateOne(
-          { bookingId: booking.bookingId },
+          { _id: booking._id },
           { $set: { firstCheckIn: firstCheckIn } }
         );
       }
@@ -559,6 +577,7 @@ async function handleAPI(req, res) {
 
       // Log access
       await db.collection('access_logs').insertOne({
+        orgId: currentOrg._id,
         bookingId: booking.bookingId,
         room: booking.room,
         bookerName: booking.bookerName,
@@ -601,7 +620,7 @@ async function handleAPI(req, res) {
       const date = urlParams.searchParams.get('date');
       const room = urlParams.searchParams.get('room');
 
-      const query = {};
+      const query = org.orgFilter(currentOrg);
       if (date) {
         query.attemptTime = {
           $gte: `${date}T00:00:00`,
@@ -637,7 +656,7 @@ async function handleAPI(req, res) {
         return true;
       }
 
-      const booking = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
+      const booking = await db.collection(COLLECTION_NAME).findOne(org.orgFilter(currentOrg, { _id: new ObjectId(id) }));
       if (!booking) {
         res.statusCode = 404;
         res.end(JSON.stringify({ success: false, error: 'Booking not found' }));
@@ -674,7 +693,23 @@ const server = http.createServer(async (req, res) => {
   }
   
   // Static file serving
-  const decoded = decodeURIComponent(req.url.split('?')[0]);
+  let decoded = decodeURIComponent(req.url.split('?')[0]);
+
+  // /o/<slug>/... serves the same app for one organization; the cookie tells the API which one
+  let pageOrgSlug = org.DEFAULT_ORG_SLUG;
+  const orgPath = org.matchOrgPath(decoded);
+  if (orgPath) {
+    if (decoded === `/o/${orgPath.slug}`) {
+      // trailing slash so the page's relative URLs (script.js, images/...) resolve under /o/<slug>/
+      res.statusCode = 301;
+      res.setHeader('Location', `/o/${orgPath.slug}/`);
+      res.end();
+      return;
+    }
+    pageOrgSlug = orgPath.slug;
+    decoded = orgPath.rest;
+  }
+
   let filePath = path.join(root, decoded);
   if (filePath.endsWith(path.sep)) filePath = path.join(filePath, 'index.html');
   if (!filePath.startsWith(root)) {
@@ -700,6 +735,9 @@ const server = http.createServer(async (req, res) => {
       const ct = getContentType(filePath);
       res.setHeader('Content-Type', ct);
       // ไม่ให้ browser cache HTML/JS/CSS เพื่อให้ได้ไฟล์ใหม่ทุกครั้ง
+      if (ct.includes('html')) {
+        res.setHeader('Set-Cookie', org.orgCookieHeader(pageOrgSlug));
+      }
       if (ct.includes('html') || ct.includes('javascript') || ct.includes('css')) {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
