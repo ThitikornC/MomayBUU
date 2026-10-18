@@ -1,18 +1,18 @@
 // ==================== MomayBUU Dashboard ====================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
   // ==================== Config ====================
   const API_BASE = window.location.origin;
-  const ROOM_ENERGY = {
+  // Rooms, buildings and meters come from /api/org/config (org-client.js);
+  // the BUU values below are only used if the config can't be loaded.
+  const orgConfig = window.MomayOrg ? await window.MomayOrg.load() : null;
+
+  let ROOM_ENERGY = {
     'ห้อง 101': { api: 'https://momatdeerbn-production.up.railway.app', device: 'pm_sand', displayName: 'ห้อง 101' },
     'ห้อง200':          { api: 'https://momaysandbn-production.up.railway.app', device: 'pm_sand', displayName: 'ห้อง 200' },
     'ห้อง300':          { api: 'https://momaysandbn-production.up.railway.app', device: 'pm_sand', displayName: 'ห้อง 300' }
   };
-  const ENERGY_RATE_THB_PER_KWH = 4.4;
-  const DEFAULT_GRAPH_DAYS_WINDOW = 7;
-  const ROOMS = Object.keys(ROOM_ENERGY);
-
-  const BUILDING_STRUCTURE = {
+  let BUILDING_STRUCTURE = {
     'หอสมุด': {
       '1': ['ห้อง 101'],
       '2': ['ห้อง200'],
@@ -20,8 +20,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  if (orgConfig && orgConfig.rooms.length) {
+    // A room without its own meter reads the organization's primary meter
+    const fallbackMeter = orgConfig.primaryMeter || {};
+    ROOM_ENERGY = {};
+    BUILDING_STRUCTURE = {};
+    const buildingName = id => (orgConfig.buildings.find(b => b.id === id) || {}).name || 'อาคาร';
+    orgConfig.rooms.forEach(r => {
+      const meter = r.meter || fallbackMeter;
+      ROOM_ENERGY[r.key] = { api: meter.energyApiUrl, device: meter.deviceId, displayName: r.displayName };
+      const building = buildingName(r.buildingId);
+      const floor = r.floor || '1';
+      BUILDING_STRUCTURE[building] = BUILDING_STRUCTURE[building] || {};
+      (BUILDING_STRUCTURE[building][floor] = BUILDING_STRUCTURE[building][floor] || []).push(r.key);
+    });
+  }
+
+  const ENERGY_RATE_THB_PER_KWH = 4.4;
+  const DEFAULT_GRAPH_DAYS_WINDOW = 7;
+  const ROOMS = Object.keys(ROOM_ENERGY);
+
   function getEnergyAPI(room) {
-    return ROOM_ENERGY[room] || ROOM_ENERGY['ห้อง 101'];
+    return ROOM_ENERGY[room] || ROOM_ENERGY[ROOMS[0]];
   }
 
   // ==================== State ====================
@@ -1521,7 +1541,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Floor plan auto-switch by room scope / donut chart for all
   function updateFloorplan(scope, billPerRoom) {
-    const floorMap = { 'ห้อง 101': '1', 'ห้อง200': '2', 'ห้อง300': '3' };
+    const floorMap = {};
+    Object.values(BUILDING_STRUCTURE).forEach(floors => {
+      Object.entries(floors).forEach(([f, rooms]) => rooms.forEach(r => { floorMap[r] = f; }));
+    });
     const isAll = scope === 'all';
     const floor = isAll ? 'donut' : (floorMap[scope] || '1');
     document.querySelectorAll('.floorplan-panel').forEach(p => p.classList.remove('active'));

@@ -258,6 +258,20 @@ async function handleAPI(req, res) {
   }
   if (!currentOrg) return true;
   
+  // GET /api/org/config - The organization's rooms, meters and public settings
+  // (replaces the room lists and service URLs that were hardcoded in script.js / dashboard/script.js)
+  if (url === '/api/org/config' && method === 'GET') {
+    try {
+      const config = await org.buildOrgConfig(db, currentOrg);
+      res.statusCode = 200;
+      res.end(JSON.stringify({ success: true, data: config }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+    return true;
+  }
+
   // GET /api/bookings - Get all bookings or filter by date/room
   if (url === '/api/bookings' && method === 'GET') {
     try {
@@ -294,6 +308,11 @@ async function handleAPI(req, res) {
       }
       const newRoom = room.replace(/\s*▼\s*/, '').trim();  // strip UI dropdown symbol
       const roomDoc = await db.collection('rooms').findOne(org.orgFilter(currentOrg, { key: newRoom }));
+      if (!roomDoc || roomDoc.bookable === false) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: 'ไม่พบห้องนี้ในองค์กร' }));
+        return true;
+      }
       
       // Check for overlapping bookings
       const overlapCheck = await checkOverlap(currentOrg, newRoom, date, startTime, endTime);
@@ -318,7 +337,7 @@ async function handleAPI(req, res) {
         orgId: currentOrg._id,
         bookingId,
         room: newRoom,
-        roomId: roomDoc ? roomDoc._id : null,
+        roomId: roomDoc._id,
         date,
         startTime,
         endTime,
@@ -435,10 +454,16 @@ async function handleAPI(req, res) {
         res.end(JSON.stringify({ success: false, error: 'Missing room or action' }));
         return true;
       }
+      const roomDoc = await db.collection('rooms').findOne(org.orgFilter(currentOrg, { key: room }));
+      if (!roomDoc) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ success: false, error: 'ไม่พบห้องนี้ในองค์กร' }));
+        return true;
+      }
 
       // Forward to Control server
       const payload = JSON.stringify({ room, action });
-      const controlUrl = new URL('/toggle', CONTROL_URL);
+      const controlUrl = new URL('/toggle', org.controlUrlFor(currentOrg, CONTROL_URL));
 
       const proxyRes = await new Promise((resolve, reject) => {
         const proto = controlUrl.protocol === 'https:' ? https : http;
@@ -470,7 +495,7 @@ async function handleAPI(req, res) {
   // GET /api/room-state — proxy to Control server for device state
   if (url === '/api/room-state' && method === 'GET') {
     try {
-      const controlUrl = new URL('/room-state', CONTROL_URL);
+      const controlUrl = new URL('/room-state', org.controlUrlFor(currentOrg, CONTROL_URL));
       const proto = controlUrl.protocol === 'https:' ? require('https') : require('http');
       const proxyRes = await new Promise((resolve, reject) => {
         const proxyReq = proto.request(controlUrl, { method: 'GET', timeout: 5000 }, (pRes) => {

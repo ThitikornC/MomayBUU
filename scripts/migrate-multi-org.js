@@ -32,6 +32,7 @@ const BUU = {
     notifyUrl: 'https://momaydocbn-production.up.railway.app'
   },
   primaryMeterKey: 'sand',
+  primaryRoomKey: 'ห้อง 101',  // the room the main app shows live data for
   settings: { timezone: 'Asia/Bangkok', bookingEarlyMinutes: 15, joinPolicy: 'open', allowedDomains: [] }
 };
 
@@ -92,7 +93,7 @@ async function upsert(db, collection, filter, doc) {
 
   // 1. Organization
   console.log('\n1. Organization');
-  const { slug, ...orgFields } = BUU;
+  const { slug, primaryMeterKey, ...orgFields } = BUU;
   let orgId = await upsert(db, 'organizations', { slug }, orgFields);
 
   // Dry run on an empty database: nothing to stamp yet
@@ -117,7 +118,10 @@ async function upsert(db, collection, filter, doc) {
   if (orgId && APPLY) {
     await db.collection('organizations').updateOne(
       { _id: orgId, primaryMeterId: { $exists: false } },
-      { $set: { primaryMeterId: meterIds[BUU.primaryMeterKey] } });
+      { $set: { primaryMeterId: meterIds[primaryMeterKey] } });
+    await db.collection('organizations').updateOne(
+      { _id: orgId, primaryRoomKey: { $exists: false } },
+      { $set: { primaryRoomKey: BUU.primaryRoomKey } });
   }
 
   // 3. Stamp orgId on existing documents
