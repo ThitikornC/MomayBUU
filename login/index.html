@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เข้าสู่ระบบ · Momay</title>
+  <link rel="stylesheet" href="../pages.css">
+</head>
+<body>
+<main class="page narrow">
+  <div class="brand-bar"><img id="orgLogo" src="../icons/icon-192.png" alt=""><span class="name" id="orgName">Momay</span></div>
+
+  <!-- Login / register -->
+  <section class="card" id="panelMain">
+    <div class="tabs" role="tablist">
+      <button type="button" class="active" data-tab="login" role="tab">เข้าสู่ระบบ</button>
+      <button type="button" data-tab="register" role="tab">สมัครสมาชิก</button>
+    </div>
+
+    <form id="loginForm" novalidate>
+      <label for="loginEmail">อีเมล</label>
+      <input type="email" id="loginEmail" autocomplete="username" required>
+      <label for="loginPw">รหัสผ่าน</label>
+      <input type="password" id="loginPw" autocomplete="current-password" required>
+      <label class="check"><input type="checkbox" id="loginRemember"> จดจำฉันไว้</label>
+      <button type="submit" class="full">เข้าสู่ระบบ</button>
+      <div class="msg" id="loginMsg" aria-live="polite"></div>
+      <p class="hint" style="margin-top:8px"><button type="button" class="link" id="forgotLink">ลืมรหัสผ่าน?</button></p>
+    </form>
+
+    <form id="registerForm" class="hidden" novalidate>
+      <label for="regName">ชื่อ</label>
+      <input type="text" id="regName" autocomplete="name" required>
+      <label for="regEmail">อีเมล</label>
+      <input type="email" id="regEmail" autocomplete="email" required>
+      <label for="regPw">รหัสผ่าน</label>
+      <input type="password" id="regPw" autocomplete="new-password" required>
+      <p class="hint" style="margin:6px 0 0">อย่างน้อย 8 ตัว มีตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข</p>
+      <label for="regPw2">ยืนยันรหัสผ่าน</label>
+      <input type="password" id="regPw2" autocomplete="new-password" required>
+      <button type="submit" class="full">สมัครสมาชิก</button>
+      <div class="msg" id="registerMsg" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <!-- Email verification code -->
+  <section class="card hidden" id="panelOtp">
+    <h1>ยืนยันอีเมล</h1>
+    <p class="hint">เราส่งรหัส 6 หลักไปที่ <b id="otpEmail"></b></p>
+    <form id="otpForm" novalidate>
+      <label for="otpCode">รหัสยืนยัน</label>
+      <input type="text" id="otpCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+      <button type="submit" class="full">ยืนยัน</button>
+      <div class="msg" id="otpMsg" aria-live="polite"></div>
+    </form>
+    <div class="row" style="margin-top:8px">
+      <button type="button" class="secondary" id="otpResend">ส่งรหัสใหม่</button>
+      <button type="button" class="secondary" data-back>กลับ</button>
+    </div>
+  </section>
+
+  <!-- Forgot password -->
+  <section class="card hidden" id="panelForgot">
+    <h1>ลืมรหัสผ่าน</h1>
+    <p class="hint">กรอกอีเมลที่สมัครไว้ เราจะส่งรหัสสำหรับตั้งรหัสผ่านใหม่</p>
+    <form id="forgotForm" novalidate>
+      <label for="forgotEmail">อีเมล</label>
+      <input type="email" id="forgotEmail" autocomplete="email" required>
+      <button type="submit" class="full">ส่งรหัส</button>
+      <div class="msg" id="forgotMsg" aria-live="polite"></div>
+    </form>
+    <button type="button" class="secondary full" data-back>กลับ</button>
+  </section>
+
+  <!-- Reset password -->
+  <section class="card hidden" id="panelReset">
+    <h1>ตั้งรหัสผ่านใหม่</h1>
+    <p class="hint">กรอกรหัสที่ส่งไปที่ <b id="resetEmail"></b></p>
+    <form id="resetForm" novalidate>
+      <label for="resetCode">รหัส 6 หลัก</label>
+      <input type="text" id="resetCode" inputmode="numeric" maxlength="6" required>
+      <label for="resetPw">รหัสผ่านใหม่</label>
+      <input type="password" id="resetPw" autocomplete="new-password" required>
+      <button type="submit" class="full">ตั้งรหัสผ่านใหม่</button>
+      <div class="msg" id="resetMsg" aria-live="polite"></div>
+    </form>
+    <button type="button" class="secondary full" data-back>กลับ</button>
+  </section>
+
+  <p class="hint" style="text-align:center"><a id="backToApp" href="../">กลับไปหน้าแอป</a></p>
+</main>
+<script src="/auth-client.js"></script>
+<script src="/org-client.js"></script>
+<script src="login.js"></script>
+</body>
+</html>

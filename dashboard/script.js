@@ -122,7 +122,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function fetchJSON(url) {
-    const res = await fetch(url);
+    // send the login token to this server only, never to the external energy services
+    const sameOrigin = url.startsWith(API_BASE + '/') && window.MomayAuth;
+    const res = sameOrigin ? await window.MomayAuth.authFetch(url) : await fetch(url);
     return res.json();
   }
 

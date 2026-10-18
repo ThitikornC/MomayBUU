@@ -8,6 +8,10 @@
 //   mongodump --uri "$MONGODB_URI" --db momay_buu      # back up first
 //   MONGODB_URI=... node scripts/migrate-multi-org.js           # dry run: prints what would change
 //   MONGODB_URI=... node scripts/migrate-multi-org.js --apply   # writes the changes
+//
+// Owners and admins: --owner you@example.com (repeatable) makes that email an owner of BUU, and
+// every email in ADMIN_EMAILS (the env var the server used before roles existed) becomes an admin.
+// They are linked to the account the first time that person logs in.
 
 const { MongoClient } = require('mongodb');
 const org = require('../org');
@@ -15,6 +19,15 @@ const org = require('../org');
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || 'momay_buu';
 const APPLY = process.argv.includes('--apply');
+const members = require('../members');
+
+function argValues(flag) {
+  const out = [];
+  process.argv.forEach((a, i) => { if (a === flag && process.argv[i + 1]) out.push(process.argv[i + 1].toLowerCase()); });
+  return out;
+}
+const OWNER_EMAILS = argValues('--owner');
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 
 const BUU = {
   slug: org.DEFAULT_ORG_SLUG,
@@ -160,10 +173,30 @@ async function upsert(db, collection, filter, doc) {
     for (const [room, n] of Object.entries(unmatched)) console.log(`    "${room}": ${n}`);
   }
 
-  // 5. Indexes and check
+  // 5. Owners and admins
+  console.log('\n5. Owners and admins');
+  const roles = new Map();
+  ADMIN_EMAILS.forEach(e => roles.set(e, 'admin'));
+  OWNER_EMAILS.forEach(e => roles.set(e, 'owner'));
+  if (!roles.size) console.log('  (none given — pass --owner you@example.com so someone can manage the organization)');
+  for (const [email, role] of roles) {
+    const existing = orgId && await db.collection('memberships').findOne({ orgId, email });
+    if (existing) {
+      console.log(`  = ${email} is already ${existing.role}`);
+      continue;
+    }
+    console.log(`  + ${email} → ${role}`);
+    if (APPLY && orgId) {
+      await db.collection('memberships').insertOne({
+        orgId, userId: members.pendingUserId(email), email, name: '', role, joinedAt: null
+      });
+    }
+  }
+
+  // 6. Indexes and check
   if (APPLY) {
     await org.ensureOrgIndexes(db);
-    console.log('\n5. Check');
+    console.log('\n6. Check');
     for (const name of ['bookings', 'access_logs']) {
       const total = await db.collection(name).countDocuments();
       const missing = await db.collection(name).countDocuments({ orgId: { $exists: false } });

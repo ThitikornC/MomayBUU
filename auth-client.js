@@ -28,6 +28,16 @@
     });
   }
 
+  // Base path of this organization's pages: "/o/<slug>/" or "/"
+  function orgBase() {
+    const m = /^\/o\/[a-z0-9-]+\//.exec(location.pathname);
+    return m ? m[0] : '/';
+  }
+
+  function pageUrl(page) {
+    return orgBase() + page;
+  }
+
   // ==================== Login modal ====================
   let modalPromise = null;
 
@@ -80,9 +90,11 @@
             <button type="button" class="momay-auth-cancel">ยกเลิก</button>
             <button type="submit" class="momay-auth-submit">เข้าสู่ระบบ</button>
           </div>
-          <div class="momay-auth-links">ยังไม่มีบัญชี? <a href="/dashboard/" target="_blank" rel="noopener">สมัครสมาชิก</a></div>
+          <div class="momay-auth-links">ยังไม่มีบัญชี? <a class="momay-auth-register">สมัครสมาชิก</a></div>
         </form>`;
       backdrop.querySelector('p').textContent = message || 'กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ';
+      backdrop.querySelector('.momay-auth-register').href = pageUrl('login/') + '?mode=register&next=' +
+        encodeURIComponent(location.pathname + location.search);
       document.body.appendChild(backdrop);
 
       const form     = backdrop.querySelector('form');
@@ -156,5 +168,13 @@
     return loggedIn ? send() : res;
   }
 
-  window.MomayAuth = { getToken, authFetch, login: showLoginModal, logout: clearSession };
+  function getUser() {
+    try { return JSON.parse(sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY) || 'null'); }
+    catch (e) { return null; }
+  }
+
+  window.MomayAuth = {
+    AUTH_BASE, getToken, getUser, setSession, authFetch, orgBase, pageUrl,
+    login: showLoginModal, logout: clearSession
+  };
 })();

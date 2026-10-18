@@ -22,7 +22,9 @@ async function ensureOrgIndexes(db) {
   await db.collection('rooms').createIndex({ orgId: 1, key: 1 }, { unique: true });
   await db.collection('meters').createIndex({ orgId: 1, key: 1 }, { unique: true });
 
+  // userId is "email:<address>" for a membership waiting to be claimed by email (see members.js)
   await db.collection('memberships').createIndex({ orgId: 1, userId: 1 }, { unique: true });
+  await db.collection('memberships').createIndex({ orgId: 1, email: 1 });
   await db.collection('memberships').createIndex({ userId: 1 });
   await db.collection('invites').createIndex({ tokenHash: 1 }, { unique: true });
 }

@@ -1,0 +1,60 @@
+/* Shared look for the login, account and join pages */
+:root {
+  --brand: #8B4513;
+  --accent: #FBBF32;
+  --bg: #f6f1ea;
+  --card: #ffffff;
+  --text: #222222;
+  --muted: #666666;
+  --line: #e3dbd0;
+  --danger: #c62828;
+  --ok: #2e7d32;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+  font-family: "Kanit", "Sarabun", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 15px;
+}
+a { color: var(--brand); }
+.page { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+.page.narrow { max-width: 400px; }
+.brand-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.brand-bar img { width: 40px; height: 40px; object-fit: contain; }
+.brand-bar .name { font-size: 18px; font-weight: 600; color: var(--brand); }
+.brand-bar .spacer { flex: 1; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+.card h1, .card h2 { margin: 0 0 6px; font-size: 20px; }
+.card h2 { font-size: 17px; }
+.card p.hint { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+label { display: block; font-size: 13px; margin: 12px 0 4px; }
+input[type=text], input[type=email], input[type=password], input[type=url], select {
+  width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; font-family: inherit; background: #fff;
+}
+.row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 120px; }
+.row > .shrink { flex: 0 0 auto; min-width: 0; }
+button, .btn {
+  display: inline-block; padding: 10px 16px; border-radius: 8px; border: 0; font-size: 15px; font-family: inherit;
+  cursor: pointer; background: var(--accent); color: #222; font-weight: 600; text-decoration: none; text-align: center;
+}
+button.secondary, .btn.secondary { background: #eee; color: #333; font-weight: 500; }
+button.danger { background: #fdecea; color: var(--danger); font-weight: 500; }
+button.link { background: none; padding: 0; color: var(--brand); font-weight: 500; text-decoration: underline; }
+button:disabled { opacity: .6; cursor: default; }
+.full { width: 100%; margin-top: 16px; }
+.msg { min-height: 20px; margin-top: 10px; font-size: 14px; color: var(--danger); }
+.msg.ok { color: var(--ok); }
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.tabs button { flex: 1; background: #eee; color: #333; font-weight: 500; }
+.tabs button.active { background: var(--accent); color: #222; font-weight: 600; }
+.check { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-top: 12px; }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.list li:first-child { border-top: 0; }
+.list .grow { flex: 1; min-width: 160px; }
+.list .sub { color: var(--muted); font-size: 13px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #f3e6d6; color: var(--brand); font-size: 12px; }
+.copy-box { display: flex; gap: 8px; margin-top: 10px; }
+.copy-box input { flex: 1; font-size: 13px; }
+.hidden { display: none !important; }
+@media (max-width: 480px) { .card { padding: 16px; } }

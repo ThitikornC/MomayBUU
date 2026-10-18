@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>บัญชีและองค์กร · Momay</title>
+  <link rel="stylesheet" href="../pages.css">
+</head>
+<body>
+<main class="page">
+  <div class="brand-bar">
+    <img id="orgLogo" src="../icons/icon-192.png" alt="">
+    <span class="name" id="orgName">Momay</span>
+    <span class="spacer"></span>
+    <span class="sub" id="userEmail"></span>
+    <button type="button" class="secondary shrink" id="logoutBtn">ออกจากระบบ</button>
+  </div>
+
+  <section class="card">
+    <h2>องค์กรของฉัน</h2>
+    <ul class="list" id="myOrgs"></ul>
+    <p class="hint hidden" id="noOrgs">คุณยังไม่ได้อยู่ในองค์กรใด สร้างองค์กรใหม่ด้านล่าง หรือเปิดลิงก์คำเชิญที่ได้รับ</p>
+    <p class="hint hidden" id="joinHint">
+      <span id="joinText"></span>
+      <button type="button" class="shrink" id="joinBtn">เข้าร่วม</button>
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>สร้างองค์กรใหม่</h2>
+    <p class="hint">คุณจะเป็นเจ้าขององค์กร แล้วเพิ่มห้อง มิเตอร์ และเชิญสมาชิกได้</p>
+    <form id="createOrgForm" novalidate>
+      <div class="row">
+        <div><label for="newOrgName">ชื่อองค์กร</label><input type="text" id="newOrgName" required maxlength="100"></div>
+        <div><label for="newOrgSlug">ชื่อในลิงก์ (ไม่บังคับ)</label><input type="text" id="newOrgSlug" placeholder="เช่น my-office" maxlength="40"></div>
+        <button type="submit" class="shrink">สร้าง</button>
+      </div>
+      <div class="msg" id="createOrgMsg" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <!-- Management for the organization this page is opened under (admin/owner) -->
+  <div id="manage" class="hidden">
+    <section class="card">
+      <h2>สมาชิกของ <span data-org-name></span></h2>
+      <ul class="list" id="memberList"></ul>
+      <div class="msg" id="memberMsg" aria-live="polite"></div>
+    </section>
+
+    <section class="card">
+      <h2>เชิญสมาชิก</h2>
+      <p class="hint">สร้างลิงก์คำเชิญสำหรับอีเมลหนึ่ง ลิงก์ใช้ได้ครั้งเดียวภายใน 7 วัน ส่งลิงก์ให้ผู้รับเอง</p>
+      <form id="inviteForm" novalidate>
+        <div class="row">
+          <div><label for="inviteEmail">อีเมล</label><input type="email" id="inviteEmail" required></div>
+          <div class="shrink"><label for="inviteRole">บทบาท</label>
+            <select id="inviteRole"><option value="user">ผู้ใช้</option><option value="admin" data-owner-only>ผู้ดูแล</option></select>
+          </div>
+          <button type="submit" class="shrink">สร้างลิงก์</button>
+        </div>
+        <div class="copy-box hidden" id="inviteLinkBox">
+          <input type="text" id="inviteLink" readonly>
+          <button type="button" class="secondary shrink" id="copyInvite">คัดลอก</button>
+        </div>
+        <div class="msg" id="inviteMsg" aria-live="polite"></div>
+      </form>
+      <ul class="list" id="inviteList" style="margin-top:10px"></ul>
+    </section>
+
+    <section class="card">
+      <h2>ห้องและมิเตอร์</h2>
+      <p class="hint">ห้องที่แสดงในแอปและแดชบอร์ด รหัสห้องใช้กับการจองและระบบควบคุมอุปกรณ์ จึงแก้ไม่ได้หลังสร้าง</p>
+      <ul class="list" id="roomList"></ul>
+      <form id="roomForm" novalidate>
+        <div class="row">
+          <div><label for="roomKey">รหัสห้อง</label><input type="text" id="roomKey" required maxlength="60"></div>
+          <div><label for="roomName">ชื่อที่แสดง</label><input type="text" id="roomName" maxlength="100"></div>
+          <div class="shrink"><label for="roomFloor">ชั้น</label><input type="text" id="roomFloor" maxlength="20" style="width:70px"></div>
+          <div><label for="roomMeter">มิเตอร์</label><select id="roomMeter"></select></div>
+          <button type="submit" class="shrink">เพิ่มห้อง</button>
+        </div>
+        <div class="msg" id="roomMsg" aria-live="polite"></div>
+      </form>
+
+      <h2 style="margin-top:18px">มิเตอร์</h2>
+      <ul class="list" id="meterList"></ul>
+      <form id="meterForm" novalidate>
+        <div class="row">
+          <div><label for="meterKey">รหัสมิเตอร์</label><input type="text" id="meterKey" required maxlength="60"></div>
+          <div><label for="meterName">ชื่อ</label><input type="text" id="meterName" maxlength="100"></div>
+          <div><label for="meterDevice">Device ID</label><input type="text" id="meterDevice" required placeholder="เช่น pm_sand"></div>
+        </div>
+        <div class="row">
+          <div><label for="meterUrl">URL บริการข้อมูลพลังงาน</label><input type="url" id="meterUrl" required placeholder="https://..."></div>
+          <button type="submit" class="shrink">เพิ่มมิเตอร์</button>
+        </div>
+        <div class="msg" id="meterMsg" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section class="card hidden" id="settingsCard">
+      <h2>ตั้งค่าองค์กร</h2>
+      <form id="settingsForm" novalidate>
+        <label for="setName">ชื่อองค์กร</label>
+        <input type="text" id="setName" maxlength="100">
+        <label for="setJoin">ใครเข้าร่วมได้</label>
+        <select id="setJoin">
+          <option value="invite">เฉพาะคนที่ได้รับคำเชิญ</option>
+          <option value="domain">อีเมลในโดเมนที่กำหนด</option>
+          <option value="open">ทุกคนที่เข้าสู่ระบบ</option>
+        </select>
+        <label for="setDomains">โดเมนอีเมลที่เข้าร่วมได้ (คั่นด้วยจุลภาค)</label>
+        <input type="text" id="setDomains" placeholder="เช่น buu.ac.th">
+        <label for="setEnergy">URL บริการข้อมูลพลังงานหลัก</label>
+        <input type="url" id="setEnergy" placeholder="https://...">
+        <label for="setControl">URL ระบบควบคุมอุปกรณ์</label>
+        <input type="url" id="setControl" placeholder="https://...">
+        <button type="submit" class="full">บันทึก</button>
+        <div class="msg" id="settingsMsg" aria-live="polite"></div>
+      </form>
+    </section>
+  </div>
+</main>
+<script src="/auth-client.js"></script>
+<script src="/org-client.js"></script>
+<script src="account.js"></script>
+</body>
+</html>
