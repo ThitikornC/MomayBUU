@@ -78,55 +78,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (e) { console.warn('applyScalingForExactScreen error', e); }
   })();
 
-  // ================= PIN / Access Gate =================
-  // Simple PIN overlay to gate access. PIN is '1608'.
-  try {
-    const pinOverlay = document.getElementById('pinOverlay');
-    const pinInput = document.getElementById('pinInput');
-    const pinSubmit = document.getElementById('pinSubmit');
-    const pinError = document.getElementById('pinError');
-    const PIN_CODE = '1608';
-
-    function hidePinOverlay() {
-      if (!pinOverlay) return;
-      pinOverlay.setAttribute('aria-hidden', 'true');
-      try { sessionStorage.setItem('momay_unlocked', '1'); } catch (e) {}
-    }
-
-    function showPinOverlay() {
-      if (!pinOverlay) return;
-      pinOverlay.setAttribute('aria-hidden', 'false');
-      if (pinInput) pinInput.focus();
-    }
-
-    // If already unlocked in this session, keep hidden
-    try {
-      if (sessionStorage.getItem('momay_unlocked') === '1') {
-        if (pinOverlay) pinOverlay.setAttribute('aria-hidden', 'true');
-      } else {
-        showPinOverlay();
-      }
-    } catch (e) {
-      // ignore storage errors and show overlay
-      showPinOverlay();
-    }
-
-    if (pinSubmit) pinSubmit.addEventListener('click', () => {
-      const v = pinInput ? (pinInput.value || '') : '';
-      if (v === PIN_CODE) {
-        hidePinOverlay();
-      } else {
-        if (pinError) pinError.style.display = 'block';
-        if (pinInput) pinInput.value = '';
-        if (pinInput) pinInput.focus();
-      }
-    });
-
-    if (pinInput) pinInput.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') { pinSubmit && pinSubmit.click(); }
-    });
-  } catch (e) { /* non-fatal */ }
-
   // ================= Constants =================
   const V = 400;
   const root3 = Math.sqrt(3);
@@ -441,7 +392,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
       } else {
         // Bulb ใช้ Sonoff MQTT เหมือนเดิม
-        const res = await fetch('/api/toggle-device', {
+        const res = await window.MomayAuth.authFetch('/api/toggle-device', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room: roomName, action: newAction })
@@ -2098,7 +2049,7 @@ initializeChart();
       
       try {
         // Send booking to API
-        const response = await fetch('/api/bookings', {
+        const response = await window.MomayAuth.authFetch('/api/bookings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
