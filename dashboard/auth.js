@@ -107,6 +107,22 @@ function showDashboard(user) {
   if (widget) widget.style.display = 'flex';
 }
 
+// The dashboard is for this organization's admins and owners only
+async function enterDashboard(user) {
+  let role = null;
+  try {
+    const res = await fetch('/api/org/me', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    const json = await res.json();
+    role = json && json.success ? json.data.role : null;
+  } catch { /* server down: treated as no access */ }
+  if (role === 'admin' || role === 'owner') {
+    showDashboard(user);
+    return;
+  }
+  showAuth();
+  setBanner('loginBanner', 'บัญชีนี้ไม่มีสิทธิ์เข้าแดชบอร์ดขององค์กรนี้ ติดต่อผู้ดูแลองค์กร หรือไปที่หน้าบัญชี /account/');
+}
+
 function showAuth() {
   const overlay = document.getElementById('authOverlay');
   const page    = document.querySelector('.dash-page');
@@ -251,7 +267,7 @@ function setupLogin() {
         failedAttempts = 0;
         setToken(data.token, remember);
         setUser(data.user);
-        showDashboard(data.user);
+        enterDashboard(data.user);
       } else if (data.requiresVerification) {
         failedAttempts = 0;
         pendingRemember = remember;
@@ -316,7 +332,7 @@ function setupRegister() {
       } else if (data.token && data.user) {
         setToken(data.token, false);
         setUser(data.user);
-        showDashboard(data.user);
+        enterDashboard(data.user);
       } else {
         setBanner('registerBanner', data.message || 'ไม่สามารถสมัครสมาชิกได้');
       }
@@ -347,7 +363,7 @@ function setupVerify() {
       if (data.token && data.user) {
         setToken(data.token, pendingRemember);
         setUser(data.user);
-        showDashboard(data.user);
+        enterDashboard(data.user);
       } else {
         setBanner('otpBanner', data.message || 'รหัสยืนยันไม่ถูกต้อง');
       }
@@ -520,7 +536,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (token && !isTokenExpired(token)) {
     try {
       const data = await apiVerify(token);
-      if (data && data.user) { showDashboard(data.user); return; }
+      if (data && data.user) { await enterDashboard(data.user); return; }
     } catch { /* token invalid or server down */ }
   }
   clearAuth();

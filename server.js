@@ -6,6 +6,8 @@ const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
 const { WebSocketServer, WebSocket } = require('ws');
 const org = require('./org');
+const members = require('./members');
+const orgRoutes = require('./org-routes');
 
 const port = process.env.PORT || 8000;
 const root = path.resolve(__dirname);
@@ -26,9 +28,6 @@ const AUTH_URL = process.env.AUTH_URL || 'https://aut-production.up.railway.app'
 // Optional: if the auth backend's HS256 secret is shared here, tokens are verified locally
 // instead of calling AUTH_URL/api/auth/me
 const JWT_SECRET = process.env.JWT_SECRET || '';
-// Comma-separated emails allowed to delete any booking (others can delete only their own)
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 
 // CORS: comma-separated origins allowed to call the API cross-origin.
 // Same-origin requests (the app and /dashboard served by this server) don't need to be listed.
@@ -218,8 +217,25 @@ async function requireAuth(req, res) {
   }
 }
 
-function isAdmin(user) {
-  return !!user.email && ADMIN_EMAILS.includes(user.email);
+// Minutes since midnight in Bangkok (UTC+7), and today's date there (YYYY-MM-DD)
+function bangkokClock() {
+  const bangkokNow = new Date(Date.now() + (7 * 60 * 60 * 1000));
+  return {
+    today: bangkokNow.toISOString().split('T')[0],
+    minutes: bangkokNow.getUTCHours() * 60 + bangkokNow.getUTCMinutes()
+  };
+}
+
+// The user's booking for this room that is running now (15 min early allowance), or null
+async function activeBookingOf(currentOrg, roomKey, user) {
+  const { today, minutes } = bangkokClock();
+  const bookings = await db.collection(COLLECTION_NAME)
+    .find(org.orgFilter(currentOrg, { date: today, room: roomKey, ownerId: user.id })).toArray();
+  return bookings.find(b => {
+    const [sh, sm] = b.startTime.split(':').map(Number);
+    const [eh, em] = b.endTime.split(':').map(Number);
+    return minutes >= sh * 60 + sm - 15 && minutes <= eh * 60 + em;
+  }) || null;
 }
 
 function setCorsHeaders(req, res) {
@@ -230,6 +246,13 @@ function setCorsHeaders(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   }
   res.setHeader('Vary', 'Origin');
+}
+
+function sendRouteError(res, error) {
+  const badJson = error instanceof SyntaxError;
+  res.statusCode = badJson ? 400 : 500;
+  res.end(JSON.stringify({ success: false, error: badJson ? 'Invalid JSON' : error.message }));
+  return true;
 }
 
 // API Routes
@@ -248,6 +271,14 @@ async function handleAPI(req, res) {
   }
 
   // Every API call is for one organization (see org.js for how it is chosen)
+  const ctx = { db, requireAuth, parseBody };
+  try {
+    // Account-level routes (my organizations, create organization, invites by token)
+    if (await orgRoutes.handleAccountAPI(req, res, url, method, ctx)) return true;
+  } catch (error) {
+    return sendRouteError(res, error);
+  }
+
   let currentOrg;
   try {
     currentOrg = await org.resolveOrg(db, req, res);
@@ -257,6 +288,13 @@ async function handleAPI(req, res) {
     return true;
   }
   if (!currentOrg) return true;
+
+  try {
+    // Members, invites, roles and room setup for this organization
+    if (await orgRoutes.handleOrgAPI(req, res, url, method, ctx, currentOrg)) return true;
+  } catch (error) {
+    return sendRouteError(res, error);
+  }
   
   // GET /api/org/config - The organization's rooms, meters and public settings
   // (replaces the room lists and service URLs that were hardcoded in script.js / dashboard/script.js)
@@ -295,8 +333,9 @@ async function handleAPI(req, res) {
   
   // POST /api/bookings - Create new booking
   if (url === '/api/bookings' && method === 'POST') {
-    const user = await requireAuth(req, res);
-    if (!user) return true;
+    const auth = await orgRoutes.requireRole(req, res, ctx, currentOrg, 'user');
+    if (!auth) return true;
+    const user = auth.user;
     try {
       const body = await parseBody(req);
       const { room, date, startTime, endTime, bookerName, purpose } = body;
@@ -444,8 +483,8 @@ async function handleAPI(req, res) {
   
   // POST /api/toggle-device — proxy to Control server to toggle Sonoff
   if (url === '/api/toggle-device' && method === 'POST') {
-    const user = await requireAuth(req, res);
-    if (!user) return true;
+    const auth = await orgRoutes.requireRole(req, res, ctx, currentOrg, 'user');
+    if (!auth) return true;
     try {
       const body = await parseBody(req);
       const { room, action } = body;
@@ -458,6 +497,12 @@ async function handleAPI(req, res) {
       if (!roomDoc) {
         res.statusCode = 400;
         res.end(JSON.stringify({ success: false, error: 'ไม่พบห้องนี้ในองค์กร' }));
+        return true;
+      }
+      // admins control any room any time; users only during their own booking
+      if (!members.hasRole(auth.membership, 'admin') && !await activeBookingOf(currentOrg, room, auth.user)) {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ success: false, error: 'เปิดปิดอุปกรณ์ได้เฉพาะช่วงเวลาที่คุณจองห้องนี้' }));
         return true;
       }
 
@@ -640,6 +685,8 @@ async function handleAPI(req, res) {
 
   // GET /api/logs - Access logs
   if (url.startsWith('/api/logs') && method === 'GET') {
+    const auth = await orgRoutes.requireRole(req, res, ctx, currentOrg, 'admin');
+    if (!auth) return true;
     try {
       const urlParams = new URL(req.url, `http://localhost:${port}`);
       const date = urlParams.searchParams.get('date');
@@ -673,6 +720,7 @@ async function handleAPI(req, res) {
   if (url.startsWith('/api/bookings/') && method === 'DELETE') {
     const user = await requireAuth(req, res);
     if (!user) return true;
+    const membership = await members.findMembership(db, currentOrg, user);
     try {
       const id = url.split('/').pop();
       if (!ObjectId.isValid(id)) {
@@ -690,7 +738,7 @@ async function handleAPI(req, res) {
 
       // Owner or admin only (bookings made before auth have no owner → admin only)
       const isOwner = !!booking.ownerId && booking.ownerId === user.id;
-      if (!isOwner && !isAdmin(user)) {
+      if (!isOwner && !members.hasRole(membership, 'admin')) {
         res.statusCode = 403;
         res.end(JSON.stringify({ success: false, error: 'ไม่มีสิทธิ์ลบการจองนี้' }));
         return true;
@@ -707,7 +755,9 @@ async function handleAPI(req, res) {
     return true;
   }
   
-  return false;
+  res.statusCode = 404;
+  res.end(JSON.stringify({ success: false, error: 'Not found' }));
+  return true;
 }
 
 const server = http.createServer(async (req, res) => {

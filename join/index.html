@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รับคำเชิญ · Momay</title>
+  <link rel="stylesheet" href="../pages.css">
+</head>
+<body>
+<main class="page narrow">
+  <div class="brand-bar"><img id="orgLogo" src="../icons/icon-192.png" alt=""><span class="name">Momay</span></div>
+  <section class="card">
+    <h1 id="title">กำลังโหลดคำเชิญ…</h1>
+    <p class="hint" id="detail"></p>
+    <button type="button" class="full hidden" id="acceptBtn">เข้าร่วมองค์กร</button>
+    <a class="btn secondary full hidden" id="loginBtn">เข้าสู่ระบบหรือสมัครสมาชิกก่อน</a>
+    <div class="msg" id="msg" aria-live="polite"></div>
+  </section>
+</main>
+<script src="/auth-client.js"></script>
+<script>
+(function () {
+  'use strict';
+  const Auth = window.MomayAuth;
+  const token = new URLSearchParams(location.search).get('token') || '';
+  const $ = id => document.getElementById(id);
+  const ROLE_NAMES = { user: 'ผู้ใช้', admin: 'ผู้ดูแล', owner: 'เจ้าของ' };
+
+  async function load() {
+    const res = await fetch('/api/invites/' + encodeURIComponent(token));
+    const json = await res.json().catch(() => ({}));
+    if (!json.success) {
+      $('title').textContent = 'ไม่พบคำเชิญนี้';
+      $('detail').textContent = 'ลิงก์อาจไม่ครบ กรุณาขอลิงก์ใหม่จากผู้ดูแลองค์กร';
+      return;
+    }
+    const inv = json.data;
+    const orgName = inv.org ? inv.org.name : 'องค์กร';
+    if (inv.org && inv.org.logoUrl) $('orgLogo').src = inv.org.logoUrl;
+    $('title').textContent = 'คำเชิญเข้าร่วม ' + orgName;
+    if (inv.state === 'accepted') { $('detail').textContent = 'คำเชิญนี้ถูกใช้ไปแล้ว'; return; }
+    if (inv.state === 'expired') { $('detail').textContent = 'คำเชิญนี้หมดอายุแล้ว กรุณาขอลิงก์ใหม่จากผู้ดูแลองค์กร'; return; }
+    $('detail').textContent = `สำหรับ ${inv.email} ในบทบาท${ROLE_NAMES[inv.role] || inv.role}`;
+
+    const user = Auth.getToken() ? Auth.getUser() : null;
+    if (!user) {
+      $('loginBtn').href = '/login/?next=' + encodeURIComponent(location.pathname + location.search);
+      $('loginBtn').classList.remove('hidden');
+      return;
+    }
+    if (user.email && user.email.toLowerCase() !== inv.email) {
+      $('msg').textContent = `ตอนนี้คุณเข้าสู่ระบบเป็น ${user.email} คำเชิญนี้ต้องใช้บัญชี ${inv.email}`;
+      $('loginBtn').textContent = 'เข้าสู่ระบบด้วยบัญชีอื่น';
+      $('loginBtn').href = '/login/?next=' + encodeURIComponent(location.pathname + location.search);
+      $('loginBtn').addEventListener('click', () => Auth.logout());
+      $('loginBtn').classList.remove('hidden');
+      return;
+    }
+    $('acceptBtn').classList.remove('hidden');
+  }
+
+  $('acceptBtn').addEventListener('click', async () => {
+    $('acceptBtn').disabled = true;
+    const res = await Auth.authFetch('/api/invites/' + encodeURIComponent(token) + '/accept', { method: 'POST' });
+    const json = await res.json().catch(() => ({}));
+    if (json.success) {
+      location.href = '/o/' + json.data.slug + '/account/';
+      return;
+    }
+    $('msg').textContent = json.error || 'ไม่สามารถรับคำเชิญได้';
+    $('acceptBtn').disabled = false;
+  });
+
+  load().catch(() => { $('title').textContent = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'; });
+})();
+</script>
+</body>
+</html>
