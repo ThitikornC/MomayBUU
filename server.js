@@ -8,12 +8,19 @@ const port = process.env.PORT || 8000;
 const root = path.resolve(__dirname);
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://nippit62:ohm0966477158@testing.hgxbz.mongodb.net/?retryWrites=true&w=majority';
+// ต้องตั้งค่า MONGODB_URI เป็น environment variable (ดู .env.example)
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI is not set. Set it as an environment variable (see .env.example).');
+  process.exit(1);
+}
 const DB_NAME = 'momay_buu';
 const COLLECTION_NAME = 'bookings';
 
 // CCTV WebSocket Relay
-const RELAY_KEY = process.env.RELAY_KEY || 'changeme';
+// ถ้าไม่ได้ตั้ง RELAY_KEY จะปฏิเสธการเชื่อมต่อจาก relay ทั้งหมด
+const RELAY_KEY = process.env.RELAY_KEY;
+if (!RELAY_KEY) console.warn('⚠️ RELAY_KEY is not set — CCTV relay connections will be rejected.');
 
 // Control server URL (for Sonoff toggle proxy)
 const CONTROL_URL = process.env.CONTROL_URL || 'https://controlbuu-production.up.railway.app';
@@ -567,7 +574,7 @@ server.on('upgrade', (req, socket, head) => {
 
   if (url.pathname === '/ws/relay') {
     const key = url.searchParams.get('key');
-    if (key !== RELAY_KEY) {
+    if (!RELAY_KEY || key !== RELAY_KEY) {
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       console.log('[CCTV] Relay rejected — bad key');
