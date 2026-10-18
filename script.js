@@ -100,13 +100,62 @@ document.addEventListener('DOMContentLoaded', async function() {
     weather: 300000 // 5 นาที
   };
 
+  // ================= Organization config =================
+  // Rooms, meter and energy service come from /api/org/config (org-client.js);
+  // the BUU values below are only used if the config can't be loaded.
+  const orgConfig = window.MomayOrg ? await window.MomayOrg.load() : null;
+
   // API base URL (declare early so functions can use it immediately)
-  const API_BASE = 'https://momaysandbn-production.up.railway.app';
+  const API_BASE = (orgConfig && orgConfig.services.energyApiUrl) || 'https://momaysandbn-production.up.railway.app';
+  // Energy meter device shown in the main app
+  const PRIMARY_METER = (orgConfig && orgConfig.primaryMeter && orgConfig.primaryMeter.deviceId) || 'pm_sand';
 
   // ================= Room Management =================
-  // Only ห้อง 101 has real data; others are empty placeholders
-  const PRIMARY_ROOM = 'ห้อง 101';
+  const ROOM_LIST = orgConfig && orgConfig.rooms.length
+    ? orgConfig.rooms.map(r => r.key)
+    : ['ห้อง 101', 'ห้อง200', 'ห้อง300'];
+  // Only the primary room has real data; others are empty placeholders
+  const PRIMARY_ROOM = (orgConfig && orgConfig.primaryRoomKey) || ROOM_LIST[0];
   let currentRoom = PRIMARY_ROOM;
+
+  // Draw the room dropdown and dots for this organization's rooms
+  (function renderRoomSelector() {
+    if (!orgConfig || !orgConfig.rooms.length) return;
+    const displayName = key => (window.MomayOrg.roomByKey(key) || {}).displayName || key;
+
+    const dropdown = document.getElementById('roomDropdown');
+    if (dropdown) {
+      dropdown.innerHTML = '';
+      ROOM_LIST.forEach(key => {
+        const opt = document.createElement('div');
+        opt.className = 'room-option' + (key === PRIMARY_ROOM ? ' selected' : '');
+        opt.dataset.room = key;
+        opt.textContent = displayName(key);
+        dropdown.appendChild(opt);
+      });
+    }
+
+    const label = document.getElementById('Total_Bar_Label');
+    if (label && label.firstChild && label.firstChild.nodeType === Node.TEXT_NODE) {
+      label.firstChild.textContent = PRIMARY_ROOM + ' ';
+    }
+
+    const dots = document.querySelector('.room-dots');
+    if (dots) {
+      dots.innerHTML = '';
+      ROOM_LIST.forEach(key => {
+        const dot = document.createElement('span');
+        dot.className = 'dot' + (key === PRIMARY_ROOM ? ' active' : '');
+        dot.dataset.room = key;
+        dots.appendChild(dot);
+      });
+    }
+
+    ['roomBookingTitle', 'scheduleRoomName'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = (id === 'roomBookingTitle' ? 'จองห้อง: ' : '') + PRIMARY_ROOM;
+    });
+  })();
 
   function isRoomWithData(roomName) {
     return roomName === PRIMARY_ROOM;
@@ -842,7 +891,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       cache._powerFetching = true;
 
       // Fetch latest in background (stale-while-revalidate)
-      fetch(`${API_BASE}/daily-energy/pm_sand?date=` + localDate)
+      fetch(`${API_BASE}/daily-energy/${PRIMARY_METER}?date=` + localDate)
         .then(res => res.json())
         .then(json => {
           const data = json.data || [];
@@ -1057,7 +1106,7 @@ async function fetchDailyData(date){
             let combined = [];
             for (const dstr of fetchDates) {
               try {
-                const r = await fetch(`${API_BASE}/daily-energy/pm_sand?date=${dstr}`);
+                const r = await fetch(`${API_BASE}/daily-energy/${PRIMARY_METER}?date=${dstr}`);
                 const j = await r.json();
                 combined = combined.concat(j.data ?? []);
               } catch(e) { /* ignore per-day failure */ }
@@ -1088,7 +1137,7 @@ async function fetchDailyData(date){
     let combined = [];
     for (const dstr of fetchDates) {
       try {
-        const res = await fetch(`${API_BASE}/daily-energy/pm_sand?date=${dstr}`);
+        const res = await fetch(`${API_BASE}/daily-energy/${PRIMARY_METER}?date=${dstr}`);
         const json = await res.json();
         combined = combined.concat(json.data ?? []);
       } catch (e) {
@@ -2965,7 +3014,7 @@ if ('Notification' in window && Notification.permission === 'default') {
     if (!res.ok) throw new Error("Network response was not ok");
     const json = await res.json();
 
-    const energyRes = await fetch(`${API_BASE}/daily-energy/pm_sand?date=${apiDate}`);
+    const energyRes = await fetch(`${API_BASE}/daily-energy/${PRIMARY_METER}?date=${apiDate}`);
     const energyJson = await energyRes.json();
     const energyData = energyJson.data || [];
 
@@ -3431,7 +3480,7 @@ if ('Notification' in window && Notification.permission === 'default') {
   (function setupRoomSwipe() {
     const track = document.querySelector('.page-track');
     if (!track) return;
-    const roomList = ['ห้อง 101', 'ห้อง200', 'ห้อง300'];
+    const roomList = ROOM_LIST;
     let startX = 0;
     let dragging = false;
     const threshold = 80;

@@ -70,8 +70,10 @@ async function findOrgBySlug(db, slug) {
   const cached = orgCache.get(slug);
   if (cached && cached.expires > Date.now()) return cached.org;
   const org = await db.collection('organizations').findOne({ slug, deletedAt: { $exists: false } });
-  if (orgCache.size > 500) orgCache.clear();
-  orgCache.set(slug, { org, expires: Date.now() + ORG_CACHE_MS });
+  if (org) {  // misses aren't cached so a new organization works right away
+    if (orgCache.size > 500) orgCache.clear();
+    orgCache.set(slug, { org, expires: Date.now() + ORG_CACHE_MS });
+  }
   return org;
 }
 
@@ -104,6 +106,55 @@ function matchOrgPath(pathname) {
   return { slug: m[1], rest: m[2] || '/' };
 }
 
+// The device control server for this organization; BUU falls back to the CONTROL_URL env var
+function controlUrlFor(currentOrg, fallback) {
+  return (currentOrg.services && currentOrg.services.controlUrl) || fallback;
+}
+
+function publicMeter(m) {
+  return m ? { id: String(m._id), key: m.key, name: m.name, deviceId: m.deviceId, energyApiUrl: m.energyApiUrl, type: m.type } : null;
+}
+
+// What the browser needs to draw the app for one organization. Server-only settings
+// (controlUrl, keys) are left out.
+async function buildOrgConfig(db, currentOrg) {
+  const [buildings, rooms, meters] = await Promise.all([
+    db.collection('buildings').find(orgFilter(currentOrg)).sort({ order: 1 }).toArray(),
+    db.collection('rooms').find(orgFilter(currentOrg)).sort({ order: 1 }).toArray(),
+    db.collection('meters').find(orgFilter(currentOrg)).toArray()
+  ]);
+  const meterById = new Map(meters.map(m => [String(m._id), m]));
+  const primaryMeter = meterById.get(String(currentOrg.primaryMeterId)) || meters[0] || null;
+  const services = currentOrg.services || {};
+  const settings = currentOrg.settings || {};
+
+  return {
+    org: {
+      slug: currentOrg.slug,
+      name: currentOrg.name,
+      branding: currentOrg.branding || {},
+      timezone: settings.timezone || 'Asia/Bangkok',
+      bookingEarlyMinutes: settings.bookingEarlyMinutes != null ? settings.bookingEarlyMinutes : 15
+    },
+    services: {
+      energyApiUrl: services.energyApiUrl || (primaryMeter && primaryMeter.energyApiUrl) || null,
+      notifyUrl: services.notifyUrl || null
+    },
+    primaryMeter: publicMeter(primaryMeter),
+    primaryRoomKey: currentOrg.primaryRoomKey || (rooms[0] && rooms[0].key) || null,
+    buildings: buildings.map(b => ({ id: String(b._id), key: b.key, name: b.name, floors: b.floors || [] })),
+    rooms: rooms.map(r => ({
+      id: String(r._id),
+      key: r.key,
+      displayName: r.displayName || r.key,
+      buildingId: r.buildingId ? String(r.buildingId) : null,
+      floor: r.floor || null,
+      bookable: r.bookable !== false,
+      meter: publicMeter(meterById.get(String(r.meterId)))
+    }))
+  };
+}
+
 function orgCookieHeader(slug) {
   return `${ORG_COOKIE}=${encodeURIComponent(slug)}; Path=/; SameSite=Lax; Max-Age=31536000`;
 }
@@ -120,5 +171,7 @@ module.exports = {
   resolveOrg,
   orgFilter,
   matchOrgPath,
-  orgCookieHeader
+  orgCookieHeader,
+  controlUrlFor,
+  buildOrgConfig
 };
