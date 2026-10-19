@@ -1,5 +1,9 @@
 const { MongoClient } = require('mongodb');
-const MONGODB_URI = 'mongodb+srv://nippit62:ohm0966477158@testing.hgxbz.mongodb.net/?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('MONGODB_URI is not set. Run: MONGODB_URI="..." node fix_room_names.js');
+  process.exit(1);
+}
 
 (async () => {
   const client = new MongoClient(MONGODB_URI);

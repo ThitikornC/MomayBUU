@@ -23,7 +23,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-RELAY_KEY = os.getenv("RELAY_KEY", "changeme")
+# ถ้าไม่ได้ตั้ง RELAY_KEY จะปฏิเสธการเชื่อมต่อจาก relay ทั้งหมด
+RELAY_KEY = os.getenv("RELAY_KEY")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("cctv-server")
@@ -50,7 +51,7 @@ async def relay_endpoint(websocket: WebSocket, key: str = Query("")):
     global relay_ws, latest_frame
 
     # Authenticate
-    if key != RELAY_KEY:
+    if not RELAY_KEY or key != RELAY_KEY:
         await websocket.close(code=1008, reason="Unauthorized")
         logger.warning("Relay rejected — bad key")
         return

@@ -27,13 +27,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ─── Config ───
-RTSP_URL     = os.getenv("RTSP_URL", "rtsp://admin:Ice08881t0287@192.168.1.72:554/cam/realmonitor?channel=1&subtype=1")
+RTSP_URL     = os.getenv("RTSP_URL")
 SERVER_URL   = os.getenv("SERVER_URL", "ws://localhost:8000/ws/relay")
-RELAY_KEY    = os.getenv("RELAY_KEY", "changeme")
+RELAY_KEY    = os.getenv("RELAY_KEY")
 FRAME_WIDTH  = int(os.getenv("FRAME_WIDTH", "640"))
 FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT", "480"))
 TARGET_FPS   = int(os.getenv("FPS", "25"))
 JPEG_QUALITY = int(os.getenv("JPEG_QUALITY", "40"))  # lower = faster + less bandwidth
+
+if not RTSP_URL or not RELAY_KEY:
+    raise SystemExit("RTSP_URL and RELAY_KEY must be set (see .env.example)")
 
 RECONNECT_DELAY = 3  # seconds
 
