@@ -11,6 +11,7 @@ Endpoints:
   GET  /health        → Health check
 """
 
+import hmac
 import os
 import asyncio
 import logging
@@ -50,8 +51,9 @@ async def health():
 async def relay_endpoint(websocket: WebSocket, key: str = Query("")):
     global relay_ws, latest_frame
 
-    # Authenticate
-    if not RELAY_KEY or key != RELAY_KEY:
+    # Authenticate (X-Relay-Key header; ?key= still works for older relays)
+    key = websocket.headers.get("x-relay-key") or key
+    if not RELAY_KEY or not hmac.compare_digest(key, RELAY_KEY):
         await websocket.close(code=1008, reason="Unauthorized")
         logger.warning("Relay rejected — bad key")
         return

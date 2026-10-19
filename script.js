@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const roomName = currentRoom;
       if (!roomName) return;
       
-      const response = await fetch(`/api/active-booking?room=${encodeURIComponent(roomName)}`);
+      const response = await window.MomayAuth.authFetch(`/api/active-booking?room=${encodeURIComponent(roomName)}`);
       const result = await response.json();
       
       if (result.success && result.hasActiveBooking && result.isCheckedIn) {
@@ -1903,7 +1903,8 @@ initializeChart();
       if (date) params.append('date', date);
       if (room) params.append('room', room);
       
-      const response = await fetch(`/api/bookings?${params.toString()}`);
+      // with the login token, members see names and owners get their own booking codes
+      const response = await window.MomayAuth.authFetch(`/api/bookings?${params.toString()}`);
       const result = await response.json();
       
       if (result.success) {
@@ -2155,11 +2156,11 @@ initializeChart();
         
           // Set booking info
           if (qrInfo) {
-            qrInfo.innerHTML = `<strong>ห้อง:</strong> ${roomName}<br>
-              <strong>วันที่:</strong> ${bookingDate}<br>
-              <strong>เวลา:</strong> ${startTime} - ${endTime}<br>
-              <strong>ผู้จอง:</strong> ${bookerName}<br>
-              <strong>รหัสการจอง:</strong> ${booking.bookingId}`;
+            qrInfo.innerHTML = `<strong>ห้อง:</strong> ${escapeHtml(roomName)}<br>
+              <strong>วันที่:</strong> ${escapeHtml(bookingDate)}<br>
+              <strong>เวลา:</strong> ${escapeHtml(startTime)} - ${escapeHtml(endTime)}<br>
+              <strong>ผู้จอง:</strong> ${escapeHtml(bookerName)}<br>
+              <strong>รหัสการจอง:</strong> ${escapeHtml(booking.bookingId)}`;
           }
         
           // Generate QR Code using qrcodejs library
@@ -2603,6 +2604,11 @@ document.addEventListener('click', (e) => {
 // แสดง notifications ใน popup
 // แทนที่ส่วน renderNotifications() ใน frontend script
 
+// Notification text comes from the organization's notification service: never insert it as HTML
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function renderNotifications() {
   if (!notificationItems) return;
 
@@ -2668,7 +2674,7 @@ function renderNotifications() {
     if (parsed.energy_kwh !== undefined || parsed.electricity_bill !== undefined) {
       const e = parsed.energy_kwh ? Number(parsed.energy_kwh).toFixed(2) : '0.00';
       const bill = parsed.electricity_bill ? Number(parsed.electricity_bill).toFixed(2) : '0.00';
-      const date = parsed.date || '-';
+      const date = escapeHtml(parsed.date || '-');
       return `
         <div style="margin-top:8px;">
           <div style="font-size:12px; color:#666; margin-bottom:6px;">Yesterday (${date})</div>
@@ -2703,11 +2709,11 @@ function renderNotifications() {
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <div style="flex:1">
-          <div style="font-family: 'Georgia', serif; font-weight:700; color:#5a2b00; font-size:16px; margin-bottom:6px;">${n.title || '(No title)'}</div>
+          <div style="font-family: 'Georgia', serif; font-weight:700; color:#5a2b00; font-size:16px; margin-bottom:6px;">${escapeHtml(n.title || '(No title)')}</div>
         </div>
         ${n.read ? '' : '<span style="width:10px;height:10px;background:#667eea;border-radius:50%;display:inline-block;margin-top:4px;" title="Unread"></span>'}
       </div>
-      <div style="font-size:12px; color:#8a7f77; margin-top:2px;">${n.subtitle || ''}</div>
+      <div style="font-size:12px; color:#8a7f77; margin-top:2px;">${escapeHtml(n.subtitle || '')}</div>
       ${buildDetails(n)}
       <div style="margin-top:10px; text-align:right;">
         <small style="color:#999; font-size:11px;">${ts}</small>

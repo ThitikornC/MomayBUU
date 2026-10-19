@@ -46,7 +46,8 @@ function parseCookies(req) {
   const out = {};
   (req.headers.cookie || '').split(';').forEach(part => {
     const i = part.indexOf('=');
-    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    if (i <= 0) return;
+    try { out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim()); } catch (e) { /* bad cookie */ }
   });
   return out;
 }
@@ -170,7 +171,7 @@ function buildManifest(currentOrg, base) {
     description: 'Solar & energy dashboard',
     start_url: base + '?source=pwa',
     scope: base,
-    display: 'fullscreen',
+    display: 'standalone',
     orientation: 'portrait',
     background_color: color,
     theme_color: color,
@@ -185,8 +186,8 @@ function hashSecret(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
 }
 
-function orgCookieHeader(slug) {
-  return `${ORG_COOKIE}=${encodeURIComponent(slug)}; Path=/; SameSite=Lax; Max-Age=31536000`;
+function orgCookieHeader(slug, secure) {
+  return `${ORG_COOKIE}=${encodeURIComponent(slug)}; Path=/; SameSite=Lax; Max-Age=31536000${secure ? '; Secure' : ''}`;
 }
 
 module.exports = {

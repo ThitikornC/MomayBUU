@@ -27,6 +27,7 @@ const crypto = require('crypto');
 const { Binary } = require('mongodb');
 const org = require('./org');
 const members = require('./members');
+const security = require('./security');
 
 const LOGO_MAX_BYTES = 500 * 1024;
 // SVG is left out on purpose: it can carry scripts and is served from this origin
@@ -44,15 +45,6 @@ function fail(res, status, error) {
 
 function str(v, max = 200) {
   return typeof v === 'string' ? v.trim().slice(0, max) : '';
-}
-
-function isHttpUrl(v) {
-  try {
-    const u = new URL(v);
-    return u.protocol === 'https:' || u.protocol === 'http:';
-  } catch (e) {
-    return false;
-  }
 }
 
 function publicOrg(o, membership) {
@@ -85,6 +77,8 @@ function isHexColor(v) {
 }
 
 function appBase(req) {
+  // PUBLIC_URL (e.g. https://momaybuu-production.up.railway.app) avoids trusting the Host header
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
   const proto = (req.headers['x-forwarded-proto'] || '').split(',')[0] || (req.socket.encrypted ? 'https' : 'http');
   return `${proto}://${req.headers.host}`;
 }
@@ -199,7 +193,7 @@ const SETUP = {
       if (body.deviceId !== undefined) out.deviceId = str(body.deviceId, 100);
       if (body.type !== undefined) out.type = ['grid', 'solar'].includes(body.type) ? body.type : 'grid';
       if (body.energyApiUrl !== undefined) {
-        if (!isHttpUrl(body.energyApiUrl)) throw new Error('energyApiUrl ต้องเป็นลิงก์ http(s)');
+        if (!security.isAllowedServiceUrl(body.energyApiUrl)) throw new Error('energyApiUrl ต้องเป็นลิงก์ https สาธารณะ');
         out.energyApiUrl = body.energyApiUrl.trim().replace(/\/+$/, '');
       }
       return out;
@@ -373,7 +367,8 @@ async function handleOrgAPI(req, res, url, method, ctx, currentOrg) {
       for (const k of ['energyApiUrl', 'controlUrl', 'notifyUrl']) {
         if (body.services[k] === undefined) continue;
         if (body.services[k] === null || body.services[k] === '') { set['services.' + k] = null; continue; }
-        if (!isHttpUrl(body.services[k])) return fail(res, 400, `${k} ต้องเป็นลิงก์ http(s)`);
+        // the server calls controlUrl itself, so internal addresses are refused (SSRF)
+        if (!security.isAllowedServiceUrl(body.services[k])) return fail(res, 400, `${k} ต้องเป็นลิงก์ https สาธารณะ`);
         set['services.' + k] = body.services[k].trim().replace(/\/+$/, '');
       }
     }

@@ -1,9 +1,10 @@
 {
-  "name": "my-railway-site",
+  "name": "momay-buu",
   "version": "1.0.0",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "mongodb": "^7.1.0",
@@ -11,5 +12,8 @@
   },
   "devDependencies": {
     "mkcert": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

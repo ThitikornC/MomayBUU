@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#8B4513">
   <title>Momay</title>
@@ -16,7 +16,7 @@
   <!-- iOS Safari full screen fix -->
   <meta name="apple-mobile-web-app-title" content="Momay">
   <!-- ใส่ CSS versioned แทนตัวเดิม -->
-  <link rel="stylesheet" href="style.css?v=2.19">
+  <link rel="stylesheet" href="style.css?v=2.22">
 </head>
 
 <body>
@@ -1169,8 +1169,12 @@ if ('serviceWorker' in navigator) {
   var wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   // the server checks the viewer's login and organization (cookie set with this page)
   function cctvUrl() {
+    return wsProto + '//' + location.host + '/ws/stream';
+  }
+  // the login token goes in the WebSocket subprotocol, not the URL (URLs end up in logs)
+  function cctvProtocols() {
     var token = window.MomayAuth ? window.MomayAuth.getToken() : '';
-    return wsProto + '//' + location.host + '/ws/stream' + (token ? '?token=' + encodeURIComponent(token) : '');
+    return token ? ['bearer', token] : [];
   }
 
   var ws = null;
@@ -1226,7 +1230,7 @@ if ('serviceWorker' in navigator) {
     }
     setStatus('connecting', 'กำลังเชื่อมต่อ...');
 
-    ws = new WebSocket(cctvUrl());
+    ws = new WebSocket(cctvUrl(), cctvProtocols());
     ws.binaryType = 'arraybuffer';
 
     ws.onopen = function() {
@@ -1314,8 +1318,8 @@ if ('serviceWorker' in navigator) {
 
 
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <!-- AC Control Panel Popup (body level to avoid transform issues) -->
 <div id="acPanelOverlay" class="ac-panel-overlay" style="display:none;" onclick="window._closeAcPanel()"></div>
 <div id="acPanel" class="ac-panel" style="display:none;">
@@ -1358,12 +1362,13 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-<script src="auth-client.js?v=2.21" defer></script>
-<script src="org-client.js?v=2.21" defer></script>
-<script src="pageview.js?v=2.21" defer></script>
-<script src="script.js?v=2.21" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" integrity="sha384-cVMg8E3QFwTvGCDuK+ET4PD341jF3W8nO1auiXfuZNQkzbUUiBGLsIQUE+b1mxws" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js" integrity="sha384-WfE/vOHqht3KDj6FvpwQUf3UxEPUHoGJ3w1yZ8rhpLWnVigt8HjXL2zXqtcfS7mf" crossorigin="anonymous"></script>
+<script src="auth-client.js?v=2.22" defer></script>
+<script src="org-client.js?v=2.22" defer></script>
+<script src="pageview.js?v=2.22" defer></script>
+<script src="script.js?v=2.22" defer></script>
+<script src="a11y.js?v=2.22" defer></script>
 </body>
 </html>

@@ -129,7 +129,8 @@ async def relay_stream():
     """Main loop: grab latest frame → encode → send."""
     global should_run
 
-    ws_url = f"{SERVER_URL}?key={RELAY_KEY}"
+    # the key goes in a header, not the URL (URLs end up in proxy logs)
+    ws_url = SERVER_URL
     encode_params = [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY]
     frame_interval = 1.0 / TARGET_FPS
 
@@ -155,6 +156,7 @@ async def relay_stream():
             logger.info(f"Connecting to: {SERVER_URL}")
             ws = await websockets.connect(
                 ws_url,
+                extra_headers={"X-Relay-Key": RELAY_KEY},
                 ping_interval=10,
                 ping_timeout=5,
                 max_size=2**20,
