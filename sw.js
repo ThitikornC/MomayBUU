@@ -1,10 +1,15 @@
 // ================= Cache / Offline =================
-const CACHE_NAME = 'momay-cache-v2.17.0';
+// Keep in step with the ?v= used by index.html, or the offline copy won't match the page
+const CACHE_NAME = 'momay-cache-v2.22.0';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/style.css?v=2.17.0',
-  '/script.js?v=2.17.0',
+  '/style.css?v=2.22',
+  '/script.js?v=2.22',
+  '/auth-client.js?v=2.22',
+  '/org-client.js?v=2.22',
+  '/pageview.js?v=2.22',
+  '/a11y.js?v=2.22',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'

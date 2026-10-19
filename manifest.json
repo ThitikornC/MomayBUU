@@ -3,7 +3,7 @@
   "short_name": "Momay",
   "description": "Solar & energy dashboard",
   "start_url": "/?source=pwa",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait",
   "background_color": "#8B4513",
   "theme_color": "#8B4513",

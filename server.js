@@ -8,17 +8,26 @@ const { WebSocketServer, WebSocket } = require('ws');
 const org = require('./org');
 const members = require('./members');
 const orgRoutes = require('./org-routes');
+const security = require('./security');
+const zlib = require('zlib');
 
 const port = process.env.PORT || 8000;
 const root = path.resolve(__dirname);
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://nippit62:ohm0966477158@testing.hgxbz.mongodb.net/?retryWrites=true&w=majority';
+// ต้องตั้งค่า MONGODB_URI เป็น environment variable (ดู .env.example)
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI is not set. Set it as an environment variable (see .env.example).');
+  process.exit(1);
+}
 const DB_NAME = process.env.DB_NAME || 'momay_buu';
 const COLLECTION_NAME = 'bookings';
 
 // CCTV WebSocket Relay
-const RELAY_KEY = process.env.RELAY_KEY || 'changeme';
+// ถ้าไม่ได้ตั้ง RELAY_KEY จะปฏิเสธการเชื่อมต่อจาก relay ทั้งหมด
+const RELAY_KEY = process.env.RELAY_KEY;
+if (!RELAY_KEY) console.warn('⚠️ RELAY_KEY is not set — CCTV relay connections will be rejected.');
 
 // Control server URL (for Sonoff toggle proxy)
 const CONTROL_URL = process.env.CONTROL_URL || 'https://controlbuu-production.up.railway.app';
@@ -28,6 +37,13 @@ const AUTH_URL = process.env.AUTH_URL || 'https://aut-production.up.railway.app'
 // Optional: if the auth backend's HS256 secret is shared here, tokens are verified locally
 // instead of calling AUTH_URL/api/auth/me
 const JWT_SECRET = process.env.JWT_SECRET || '';
+
+// Optional: when set, POST /api/verify (the door QR scanner) must send this key
+// in the X-Scanner-Key header
+const SCANNER_KEY = process.env.SCANNER_KEY || '';
+
+// Largest JSON body the API accepts
+const MAX_JSON_BYTES = 100 * 1024;
 
 // CORS: comma-separated origins allowed to call the API cross-origin.
 // Same-origin requests (the app and /dashboard served by this server) don't need to be listed.
@@ -45,21 +61,29 @@ function cctvStream(orgId) {
 
 let db = null;
 
+// Connects to MongoDB, retrying with backoff. The server already listens meanwhile:
+// /healthz answers 503 and the API answers "database not ready" until this succeeds.
 async function connectDB() {
-  try {
-    const client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    db = client.db(DB_NAME);
-    
-    // Create indexes for faster queries
-    await db.collection(COLLECTION_NAME).createIndex({ date: 1, room: 1 });
-    await db.collection(COLLECTION_NAME).createIndex({ bookingId: 1 }, { unique: true });
-    await org.ensureOrgIndexes(db);
-    await org.warnUnmigrated(db);
-    
-    console.log('Connected to MongoDB with indexes');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const client = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
+      await client.connect();
+      const database = client.db(DB_NAME);
+
+      // Create indexes for faster queries
+      await database.collection(COLLECTION_NAME).createIndex({ date: 1, room: 1 });
+      await database.collection(COLLECTION_NAME).createIndex({ bookingId: 1 }, { unique: true });
+      await org.ensureOrgIndexes(database);
+      await org.warnUnmigrated(database);
+
+      db = database;
+      console.log('Connected to MongoDB with indexes');
+      return;
+    } catch (error) {
+      const delay = Math.min(30000, 1000 * 2 ** Math.min(attempt, 5));
+      console.error(`MongoDB connection error (attempt ${attempt}), retrying in ${delay / 1000}s:`, error.message);
+      await new Promise(r => setTimeout(r, delay));
+    }
   }
 }
 
@@ -75,23 +99,46 @@ function getContentType(filePath) {
     case '.jpeg': return 'image/jpeg';
     case '.svg': return 'image/svg+xml';
     case '.ico': return 'image/x-icon';
+    case '.webp': return 'image/webp';
+    case '.gif': return 'image/gif';
+    case '.woff': return 'font/woff';
+    case '.woff2': return 'font/woff2';
     default: return 'application/octet-stream';
   }
 }
 
-// Parse JSON body
+class BodyTooLargeError extends Error {}
+
+// Parse JSON body (at most MAX_JSON_BYTES). Always resolves to a plain object.
 function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => body += chunk);
+    const chunks = [];
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size <= MAX_JSON_BYTES) chunks.push(chunk);
+    });
     req.on('end', () => {
+      if (size > MAX_JSON_BYTES) return reject(new BodyTooLargeError('Body too large'));
       try {
-        resolve(body ? JSON.parse(body) : {});
+        const body = Buffer.concat(chunks).toString('utf8');
+        const parsed = body ? JSON.parse(body) : {};
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new SyntaxError('Expected a JSON object');
+        resolve(parsed);
       } catch (e) {
         reject(e);
       }
     });
+    req.on('error', reject);
   });
+}
+
+// Logs an unexpected error and answers with a generic message (details stay in the server log)
+function sendServerError(res, error, status = 500) {
+  console.error('[api]', error);
+  if (res.headersSent) return res.end();
+  res.statusCode = status;
+  res.end(JSON.stringify({ success: false, error: 'เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง' }));
 }
 
 // Check for overlapping bookings
@@ -222,25 +269,116 @@ async function requireAuth(req, res) {
   }
 }
 
-// Minutes since midnight in Bangkok (UTC+7), and today's date there (YYYY-MM-DD)
-function bangkokClock() {
-  const bangkokNow = new Date(Date.now() + (7 * 60 * 60 * 1000));
-  return {
-    today: bangkokNow.toISOString().split('T')[0],
-    minutes: bangkokNow.getUTCHours() * 60 + bangkokNow.getUTCMinutes()
-  };
-}
-
-// The user's booking for this room that is running now (15 min early allowance), or null
+// The user's booking for this room that is running now (with the organization's early
+// allowance), or null
 async function activeBookingOf(currentOrg, roomKey, user) {
-  const { today, minutes } = bangkokClock();
+  const { today, minutes } = security.orgClock(currentOrg);
+  const early = security.earlyMinutes(currentOrg);
   const bookings = await db.collection(COLLECTION_NAME)
     .find(org.orgFilter(currentOrg, { date: today, room: roomKey, ownerId: user.id })).toArray();
-  return bookings.find(b => {
-    const [sh, sm] = b.startTime.split(':').map(Number);
-    const [eh, em] = b.endTime.split(':').map(Number);
-    return minutes >= sh * 60 + sm - 15 && minutes <= eh * 60 + em;
-  }) || null;
+  return bookings.find(b =>
+    minutes >= security.toMinutes(b.startTime) - early && minutes <= security.toMinutes(b.endTime)) || null;
+}
+
+// The logged-in user if the request carries a valid token, else null (never answers 401)
+async function optionalUser(req) {
+  const header = req.headers['authorization'] || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token) return null;
+  try { return await getUserFromToken(token); } catch (e) { return null; }
+}
+
+// What a viewer may see of a booking. The bookingId is the QR code that opens the room,
+// so only the booking's owner and admins get it; names are for members only.
+function bookingView(b, viewer) {
+  const mine = !!(viewer.user && b.ownerId && b.ownerId === viewer.user.id);
+  const out = {
+    _id: b._id,
+    room: b.room,
+    date: b.date,
+    startTime: b.startTime,
+    endTime: b.endTime,
+    color: b.color,
+    firstCheckIn: b.firstCheckIn || null,
+    createdAt: b.createdAt,
+    mine
+  };
+  if (viewer.isMember) {
+    out.bookerName = b.bookerName;
+    out.purpose = b.purpose;
+  } else {
+    out.bookerName = 'จองแล้ว';
+  }
+  if (mine || viewer.isAdmin) out.bookingId = b.bookingId;
+  return out;
+}
+
+async function bookingViewer(req, currentOrg) {
+  const user = await optionalUser(req);
+  const membership = user ? await members.findMembership(db, currentOrg, user) : null;
+  return { user, isMember: !!membership, isAdmin: members.hasRole(membership, 'admin') };
+}
+
+// Runs fn() for one room/date at a time, so two requests can't both pass the overlap
+// check and book the same slot (this server runs as one process)
+const roomLocks = new Map();
+function withRoomLock(key, fn) {
+  const prev = roomLocks.get(key) || Promise.resolve();
+  const run = prev.then(fn, fn);
+  const tail = run.catch(() => {});
+  roomLocks.set(key, tail);
+  tail.then(() => { if (roomLocks.get(key) === tail) roomLocks.delete(key); });
+  return run;
+}
+
+// Random, unguessable booking id (it is the QR code content)
+function newBookingId() {
+  return 'BK' + crypto.randomBytes(12).toString('base64url');
+}
+
+// Calls the organization's device control server. URLs set by an organization owner
+// may not point at internal addresses; the CONTROL_URL fallback is trusted.
+function callControlServer(currentOrg, pathname, method, payload) {
+  const own = currentOrg.services && currentOrg.services.controlUrl;
+  const controlUrl = new URL(pathname, own || CONTROL_URL);
+  const proto = controlUrl.protocol === 'https:' ? https : http;
+  const headers = {};
+  if (payload) {
+    headers['Content-Type'] = 'application/json';
+    headers['Content-Length'] = Buffer.byteLength(payload);
+  }
+  return new Promise((resolve, reject) => {
+    const proxyReq = proto.request(controlUrl, {
+      method, headers, timeout: 5000,
+      lookup: own ? security.publicOnlyLookup : undefined
+    }, (pRes) => {
+      let data = '';
+      let size = 0;
+      pRes.on('data', c => {
+        size += c.length;
+        if (size > MAX_JSON_BYTES) { proxyReq.destroy(new Error('Control server reply too large')); return; }
+        data += c;
+      });
+      pRes.on('end', () => resolve({ status: pRes.statusCode, body: data }));
+    });
+    proxyReq.on('error', reject);
+    proxyReq.on('timeout', () => { proxyReq.destroy(); reject(new Error('Timeout')); });
+    if (payload) proxyReq.write(payload);
+    proxyReq.end();
+  });
+}
+
+// Passes the control server's answer on, but only as JSON
+function relayControlReply(res, proxyRes) {
+  let body;
+  try { body = JSON.stringify(JSON.parse(proxyRes.body)); }
+  catch (e) { body = JSON.stringify({ success: false, error: 'Control server sent an invalid reply' }); }
+  res.statusCode = proxyRes.status >= 200 && proxyRes.status < 600 ? proxyRes.status : 502;
+  res.end(body);
+}
+
+function cleanRoomName(room) {
+  return room.replace(/\s*▼\s*/, '').trim();  // strip UI dropdown symbol
 }
 
 function setCorsHeaders(req, res) {
@@ -254,9 +392,15 @@ function setCorsHeaders(req, res) {
 }
 
 function sendRouteError(res, error) {
-  const badJson = error instanceof SyntaxError;
-  res.statusCode = badJson ? 400 : 500;
-  res.end(JSON.stringify({ success: false, error: badJson ? 'Invalid JSON' : error.message }));
+  if (error instanceof BodyTooLargeError) {
+    res.statusCode = 413;
+    res.end(JSON.stringify({ success: false, error: 'ข้อมูลที่ส่งมีขนาดใหญ่เกินไป' }));
+  } else if (error instanceof SyntaxError) {
+    res.statusCode = 400;
+    res.end(JSON.stringify({ success: false, error: 'Invalid JSON' }));
+  } else {
+    sendServerError(res, error);
+  }
   return true;
 }
 
@@ -272,6 +416,23 @@ async function handleAPI(req, res) {
   if (method === 'OPTIONS') {
     res.statusCode = 204;
     res.end();
+    return true;
+  }
+
+  // Per-IP request limits (stricter for QR checks, sign-ups of organizations and writes)
+  const ip = security.clientIp(req);
+  const rule = security.rateRuleFor(url, method);
+  const wait = security.rateLimited('api', ip) || (rule && security.rateLimited(rule, ip));
+  if (wait) {
+    res.statusCode = 429;
+    res.setHeader('Retry-After', String(wait));
+    res.end(JSON.stringify({ success: false, error: 'มีการเรียกใช้งานถี่เกินไป กรุณารอสักครู่แล้วลองใหม่' }));
+    return true;
+  }
+
+  if (!db) {
+    res.statusCode = 503;
+    res.end(JSON.stringify({ success: false, error: 'ฐานข้อมูลไม่พร้อมใช้งาน' }));
     return true;
   }
 
@@ -309,8 +470,7 @@ async function handleAPI(req, res) {
       res.statusCode = 200;
       res.end(JSON.stringify({ success: true, data: config }));
     } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: error.message }));
+      sendRouteError(res, error);
     }
     return true;
   }
@@ -326,12 +486,15 @@ async function handleAPI(req, res) {
       if (date) query.date = date;
       if (room) query.room = room;
       
-      const bookings = await db.collection(COLLECTION_NAME).find(query).toArray();
+      const [bookings, viewer] = await Promise.all([
+        // without a date filter, return the most recent bookings only
+        db.collection(COLLECTION_NAME).find(query).sort({ date: -1, startTime: 1 }).limit(date ? 0 : 5000).toArray(),
+        bookingViewer(req, currentOrg)
+      ]);
       res.statusCode = 200;
-      res.end(JSON.stringify({ success: true, data: bookings }));
+      res.end(JSON.stringify({ success: true, data: bookings.map(b => bookingView(b, viewer)) }));
     } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: error.message }));
+      sendRouteError(res, error);
     }
     return true;
   }
@@ -343,14 +506,16 @@ async function handleAPI(req, res) {
     const user = auth.user;
     try {
       const body = await parseBody(req);
-      const { room, date, startTime, endTime, bookerName, purpose } = body;
-      
-      if (!room || !date || !startTime || !endTime || !bookerName) {
+      const problem = security.bookingProblem(body);
+      if (problem) {
         res.statusCode = 400;
-        res.end(JSON.stringify({ success: false, error: 'Missing required fields' }));
+        res.end(JSON.stringify({ success: false, error: problem }));
         return true;
       }
-      const newRoom = room.replace(/\s*▼\s*/, '').trim();  // strip UI dropdown symbol
+      const { date, startTime, endTime } = body;
+      const bookerName = body.bookerName.trim();
+      const purpose = (body.purpose || '').trim();
+      const newRoom = cleanRoomName(body.room);
       const roomDoc = await db.collection('rooms').findOne(org.orgFilter(currentOrg, { key: newRoom }));
       if (!roomDoc || roomDoc.bookable === false) {
         res.statusCode = 400;
@@ -358,54 +523,53 @@ async function handleAPI(req, res) {
         return true;
       }
       
-      // Check for overlapping bookings
-      const overlapCheck = await checkOverlap(currentOrg, newRoom, date, startTime, endTime);
-      if (overlapCheck.overlap) {
-        res.statusCode = 409;
-        res.end(JSON.stringify({ 
-          success: false, 
-          error: `เวลา ${overlapCheck.conflictWith.startTime} - ${overlapCheck.conflictWith.endTime} มีผู้จองแล้ว (${overlapCheck.conflictWith.bookerName})`,
-          conflictWith: overlapCheck.conflictWith
-        }));
-        return true;
-      }
-      
-      // Generate booking ID
-      const bookingId = `BK${Date.now().toString(36).toUpperCase()}`;
-      
-      // Random color for display
-      const colors = ["#4dd0e1", "#81c784", "#ffb74d", "#ba68c8", "#64b5f6"];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      
-      const newBooking = {
-        orgId: currentOrg._id,
-        bookingId,
-        room: newRoom,
-        roomId: roomDoc._id,
-        date,
-        startTime,
-        endTime,
-        bookerName,
-        purpose: purpose || '',
-        color,
-        ownerId: user.id,  // auth user id, used to allow the owner to delete
-        createdAt: new Date().toISOString()
-      };
-      
-      const result = await db.collection(COLLECTION_NAME).insertOne(newBooking);
-      newBooking._id = result.insertedId;
-      
-      res.statusCode = 201;
-      res.end(JSON.stringify({ success: true, data: newBooking }));
+      await withRoomLock(`${currentOrg._id}|${newRoom}|${date}`, async () => {
+        // Check for overlapping bookings
+        const overlapCheck = await checkOverlap(currentOrg, newRoom, date, startTime, endTime);
+        if (overlapCheck.overlap) {
+          const c = overlapCheck.conflictWith;
+          res.statusCode = 409;
+          res.end(JSON.stringify({
+            success: false,
+            error: `เวลา ${c.startTime} - ${c.endTime} มีผู้จองแล้ว`,
+            conflictWith: { startTime: c.startTime, endTime: c.endTime }
+          }));
+          return;
+        }
+
+        // Random color for display
+        const colors = ["#4dd0e1", "#81c784", "#ffb74d", "#ba68c8", "#64b5f6"];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        const newBooking = {
+          orgId: currentOrg._id,
+          bookingId: newBookingId(),
+          room: newRoom,
+          roomId: roomDoc._id,
+          date,
+          startTime,
+          endTime,
+          bookerName,
+          purpose,
+          color,
+          ownerId: user.id,  // auth user id, used to allow the owner to delete
+          createdAt: new Date().toISOString()
+        };
+
+        const result = await db.collection(COLLECTION_NAME).insertOne(newBooking);
+        newBooking._id = result.insertedId;
+
+        res.statusCode = 201;
+        res.end(JSON.stringify({ success: true, data: bookingView(newBooking, { user, isMember: true, isAdmin: false }) }));
+      });
     } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: error.message }));
+      sendRouteError(res, error);
     }
     return true;
   }
   
   // GET /api/active-booking - Get current active booking for a room
-  if (url.startsWith('/api/active-booking') && method === 'GET') {
+  if (url === '/api/active-booking' && method === 'GET') {
     try {
       const urlParams = new URL(req.url, `http://localhost:${port}`);
       const room = urlParams.searchParams.get('room');
@@ -416,43 +580,26 @@ async function handleAPI(req, res) {
         return true;
       }
       
-      const now = new Date();
-      // ใช้ Bangkok timezone (UTC+7)
-      const bangkokNow = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-      const today = bangkokNow.toISOString().split('T')[0];
-      const bangkokHours = bangkokNow.getUTCHours();
-      const bangkokMinutes = bangkokNow.getUTCMinutes();
-      const bangkokSeconds = bangkokNow.getUTCSeconds();
-      const currentMinutes = bangkokHours * 60 + bangkokMinutes;
+      const { today, minutes: currentMinutes, seconds: currentSecs } = security.orgClock(currentOrg);
+      const early = security.earlyMinutes(currentOrg);
       
       // Find bookings for today and this room (strip ▼ for matching)
-      const cleanRoom = (room || '').replace(/\s*▼\s*/, '').trim();
+      const cleanRoom = cleanRoomName(room);
       const bookings = await db.collection(COLLECTION_NAME).find(org.orgFilter(currentOrg, {
         date: today
       })).toArray();
       // Filter by room name (handle ▼ suffix in stored data)
-      const roomBookings = bookings.filter(b => (b.room || '').replace(/\s*▼\s*/, '').trim() === cleanRoom);
+      const roomBookings = bookings.filter(b => cleanRoomName(b.room || '') === cleanRoom);
       
-      // Find the active booking (current time is within booking window, with 15 min early allowance)
-      let activeBooking = null;
-      for (const booking of roomBookings) {
-        const [startH, startM] = booking.startTime.split(':').map(Number);
-        const [endH, endM] = booking.endTime.split(':').map(Number);
-        const startMinutes = startH * 60 + startM;
-        const endMinutes = endH * 60 + endM;
-        
-        if (currentMinutes >= startMinutes - 15 && currentMinutes <= endMinutes) {
-          activeBooking = booking;
-          break;
-        }
-      }
+      // Find the active booking (current time is within booking window, with the early allowance)
+      const activeBooking = roomBookings.find(b =>
+        currentMinutes >= security.toMinutes(b.startTime) - early && currentMinutes <= security.toMinutes(b.endTime));
       
       if (activeBooking) {
-        // Calculate remaining seconds (Bangkok timezone)
-        const [endH, endM] = activeBooking.endTime.split(':').map(Number);
-        const currentSecs = bangkokHours * 3600 + bangkokMinutes * 60 + bangkokSeconds;
-        const endSecs = endH * 3600 + endM * 60;
+        // Calculate remaining seconds (organization's timezone)
+        const endSecs = security.toMinutes(activeBooking.endTime) * 60;
         const remainingSeconds = Math.max(0, endSecs - currentSecs);
+        const view = bookingView(activeBooking, await bookingViewer(req, currentOrg));
         
         res.statusCode = 200;
         res.end(JSON.stringify({
@@ -462,13 +609,14 @@ async function handleAPI(req, res) {
           firstCheckIn: activeBooking.firstCheckIn || null,
           remainingSeconds: remainingSeconds,
           booking: {
-            bookingId: activeBooking.bookingId,
-            room: activeBooking.room,
-            date: activeBooking.date,
-            startTime: activeBooking.startTime,
-            endTime: activeBooking.endTime,
-            bookerName: activeBooking.bookerName,
-            purpose: activeBooking.purpose
+            bookingId: view.bookingId,
+            room: view.room,
+            date: view.date,
+            startTime: view.startTime,
+            endTime: view.endTime,
+            bookerName: view.bookerName,
+            purpose: view.purpose,
+            mine: view.mine
           }
         }));
       } else {
@@ -480,8 +628,7 @@ async function handleAPI(req, res) {
         }));
       }
     } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: error.message }));
+      sendRouteError(res, error);
     }
     return true;
   }
@@ -493,7 +640,7 @@ async function handleAPI(req, res) {
     try {
       const body = await parseBody(req);
       const { room, action } = body;
-      if (!room || !action) {
+      if (!security.isStr(room, 100) || !room || !security.isStr(action, 40) || !action) {
         res.statusCode = 400;
         res.end(JSON.stringify({ success: false, error: 'Missing room or action' }));
         return true;
@@ -512,32 +659,13 @@ async function handleAPI(req, res) {
       }
 
       // Forward to Control server
-      const payload = JSON.stringify({ room, action });
-      const controlUrl = new URL('/toggle', org.controlUrlFor(currentOrg, CONTROL_URL));
-
-      const proxyRes = await new Promise((resolve, reject) => {
-        const proto = controlUrl.protocol === 'https:' ? https : http;
-        const proxyReq = proto.request(controlUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
-          timeout: 5000
-        }, (pRes) => {
-          let data = '';
-          pRes.on('data', c => data += c);
-          pRes.on('end', () => resolve({ status: pRes.statusCode, body: data }));
-        });
-        proxyReq.on('error', reject);
-        proxyReq.on('timeout', () => { proxyReq.destroy(); reject(new Error('Timeout')); });
-        proxyReq.write(payload);
-        proxyReq.end();
-      });
-
-      res.statusCode = proxyRes.status;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(proxyRes.body);
+      const proxyRes = await callControlServer(currentOrg, '/toggle', 'POST', JSON.stringify({ room, action }));
+      relayControlReply(res, proxyRes);
     } catch (error) {
+      if (error instanceof SyntaxError || error instanceof BodyTooLargeError) return sendRouteError(res, error);
+      console.error('[control] toggle failed:', error.message);
       res.statusCode = 502;
-      res.end(JSON.stringify({ success: false, error: 'Control server unreachable: ' + error.message }));
+      res.end(JSON.stringify({ success: false, error: 'Control server unreachable' }));
     }
     return true;
   }
@@ -545,22 +673,9 @@ async function handleAPI(req, res) {
   // GET /api/room-state — proxy to Control server for device state
   if (url === '/api/room-state' && method === 'GET') {
     try {
-      const controlUrl = new URL('/room-state', org.controlUrlFor(currentOrg, CONTROL_URL));
-      const proto = controlUrl.protocol === 'https:' ? require('https') : require('http');
-      const proxyRes = await new Promise((resolve, reject) => {
-        const proxyReq = proto.request(controlUrl, { method: 'GET', timeout: 5000 }, (pRes) => {
-          let data = '';
-          pRes.on('data', c => data += c);
-          pRes.on('end', () => resolve({ status: pRes.statusCode, body: data }));
-        });
-        proxyReq.on('error', reject);
-        proxyReq.on('timeout', () => { proxyReq.destroy(); reject(new Error('Timeout')); });
-        proxyReq.end();
-      });
-      res.statusCode = proxyRes.status;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(proxyRes.body);
+      relayControlReply(res, await callControlServer(currentOrg, '/room-state', 'GET'));
     } catch (error) {
+      console.error('[control] room-state failed:', error.message);
       res.statusCode = 502;
       res.end(JSON.stringify({ success: false, error: 'Control server unreachable' }));
     }
@@ -569,20 +684,26 @@ async function handleAPI(req, res) {
 
   // POST /api/verify - Verify QR code for room access
   if (url === '/api/verify' && method === 'POST') {
+    if (SCANNER_KEY) {
+      const sent = Buffer.from(String(req.headers['x-scanner-key'] || ''));
+      const want = Buffer.from(SCANNER_KEY);
+      if (sent.length !== want.length || !crypto.timingSafeEqual(sent, want)) {
+        res.statusCode = 401;
+        res.end(JSON.stringify({ success: false, access: false, error: 'เครื่องสแกนไม่ได้รับอนุญาต' }));
+        return true;
+      }
+    }
     try {
       const body = await parseBody(req);
-      let { qrData } = body;
+      const { qrData } = body;
 
-      if (!qrData) {
+      if (!security.isStr(qrData, 200) || !qrData) {
         res.statusCode = 400;
         res.end(JSON.stringify({ success: false, error: 'ไม่พบข้อมูล QR Code' }));
         return true;
       }
 
-      let bookingId = qrData;
-      if (qrData.startsWith('BK:')) {
-        bookingId = qrData.substring(3);
-      }
+      const bookingId = qrData.startsWith('BK:') ? qrData.substring(3) : qrData;
 
       const booking = await db.collection(COLLECTION_NAME).findOne(org.orgFilter(currentOrg, { bookingId }));
 
@@ -591,36 +712,26 @@ async function handleAPI(req, res) {
         res.end(JSON.stringify({
           success: false,
           access: false,
-          error: 'ไม่พบข้อมูลการจอง',
-          bookingId
+          error: 'ไม่พบข้อมูลการจอง'
         }));
         return true;
       }
 
-      // Check if within booking time (use Bangkok timezone UTC+7)
+      // Check if within booking time (organization's timezone)
       const now = new Date();
-      const bangkokNow = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-      const today = bangkokNow.toISOString().split('T')[0];
-      const bangkokHours = bangkokNow.getUTCHours();
-      const bangkokMinutes = bangkokNow.getUTCMinutes();
-      const bangkokSeconds = bangkokNow.getUTCSeconds();
+      const { today, minutes: currentMinutes, seconds: currentSecs } = security.orgClock(currentOrg, now);
+      const earlyAllowance = security.earlyMinutes(currentOrg);
       let timeCheck = { valid: false, reason: 'unknown', message: '' };
 
       if (booking.date !== today) {
-        const bookingDate = new Date(booking.date);
-        const todayDate = new Date(today);
-        if (bookingDate < todayDate) {
+        if (booking.date < today) {
           timeCheck = { valid: false, reason: 'expired', message: 'การจองนี้หมดอายุแล้ว' };
         } else {
           timeCheck = { valid: false, reason: 'not_today', message: `การจองนี้สำหรับวันที่ ${booking.date}` };
         }
       } else {
-        const [startHour, startMin] = booking.startTime.split(':').map(Number);
-        const [endHour, endMin] = booking.endTime.split(':').map(Number);
-        const currentMinutes = bangkokHours * 60 + bangkokMinutes;
-        const startMinutes = startHour * 60 + startMin;
-        const endMinutes = endHour * 60 + endMin;
-        const earlyAllowance = 15;
+        const startMinutes = security.toMinutes(booking.startTime);
+        const endMinutes = security.toMinutes(booking.endTime);
 
         if (currentMinutes < startMinutes - earlyAllowance) {
           const waitMinutes = startMinutes - earlyAllowance - currentMinutes;
@@ -644,11 +755,8 @@ async function handleAPI(req, res) {
         );
       }
 
-      // Calculate remaining seconds (Bangkok time)
-      const [endH, endM] = booking.endTime.split(':').map(Number);
-      const currentSecs = bangkokHours * 3600 + bangkokMinutes * 60 + bangkokSeconds;
-      const endSecs = endH * 3600 + endM * 60;
-      const remainingSeconds = Math.max(0, endSecs - currentSecs);
+      // Calculate remaining seconds
+      const remainingSeconds = Math.max(0, security.toMinutes(booking.endTime) * 60 - currentSecs);
 
       // Log access
       await db.collection('access_logs').insertOne({
@@ -682,8 +790,7 @@ async function handleAPI(req, res) {
         }
       }));
     } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: error.message }));
+      sendRouteError(res, error);
     }
     return true;
   }
@@ -715,8 +822,7 @@ async function handleAPI(req, res) {
       res.statusCode = 200;
       res.end(JSON.stringify({ success: true, data: logs }));
     } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: error.message }));
+      sendRouteError(res, error);
     }
     return true;
   }
@@ -754,8 +860,7 @@ async function handleAPI(req, res) {
       res.statusCode = 200;
       res.end(JSON.stringify({ success: true, message: 'Booking deleted' }));
     } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: error.message }));
+      sendRouteError(res, error);
     }
     return true;
   }
@@ -765,15 +870,79 @@ async function handleAPI(req, res) {
   return true;
 }
 
-const server = http.createServer(async (req, res) => {
+// Text files are compressed when the browser accepts gzip
+const COMPRESSIBLE = /^(text\/|application\/(javascript|json|manifest\+json)|image\/svg)/;
+
+function sendFile(req, res, filePath, stats, pageOrgSlug) {
+  const ct = getContentType(filePath);
+  res.setHeader('Content-Type', ct + (/^(text\/|application\/(javascript|json))/.test(ct) ? '; charset=utf-8' : ''));
+  if (ct.includes('html')) {
+    res.setHeader('Set-Cookie', org.orgCookieHeader(pageOrgSlug, security.isHttps(req)));
+  }
+  // Files loaded with ?v=<version> never change under that URL; everything else
+  // (HTML, sw.js, unversioned assets) is revalidated with Last-Modified on each load
+  const versioned = /[?&]v=/.test(req.url);
+  if (versioned && !ct.includes('html')) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  } else {
+    res.setHeader('Cache-Control', 'no-cache');
+    const lastModified = stats.mtime.toUTCString();
+    res.setHeader('Last-Modified', lastModified);
+    const since = req.headers['if-modified-since'];
+    if (since && !ct.includes('html') && new Date(since).getTime() >= Math.floor(stats.mtimeMs / 1000) * 1000) {
+      res.statusCode = 304;
+      res.end();
+      return;
+    }
+  }
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.statusCode = 500;
+      res.end('Server error');
+      return;
+    }
+    if (COMPRESSIBLE.test(ct) && data.length > 1024 && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+      res.setHeader('Vary', 'Accept-Encoding');
+      res.setHeader('Content-Encoding', 'gzip');
+      zlib.gzip(data, (zerr, gz) => res.end(zerr ? data : gz));
+      return;
+    }
+    res.end(data);
+  });
+}
+
+async function handleRequest(req, res) {
+  security.setSecurityHeaders(req, res);
+
+  // Health check for the hosting platform
+  if (req.url === '/healthz') {
+    res.statusCode = db ? 200 : 503;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok: !!db }));
+    return;
+  }
+
   // Handle API routes first
   if (req.url.startsWith('/api/')) {
     await handleAPI(req, res);
     return;
   }
+
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.statusCode = 405;
+    res.end('Method not allowed');
+    return;
+  }
   
   // Static file serving
-  let decoded = decodeURIComponent(req.url.split('?')[0]);
+  let decoded;
+  try {
+    decoded = decodeURIComponent(req.url.split('?')[0]);
+  } catch (e) {
+    res.statusCode = 400;
+    res.end('Bad request');
+    return;
+  }
 
   // /o/<slug>/... serves the same app for one organization; the cookie tells the API which one
   let pageOrgSlug = org.DEFAULT_ORG_SLUG;
@@ -803,49 +972,62 @@ const server = http.createServer(async (req, res) => {
     } catch (e) { /* fall back to the static manifest.json */ }
   }
 
-  let filePath = path.join(root, decoded);
-  if (filePath.endsWith(path.sep)) filePath = path.join(filePath, 'index.html');
-  if (!filePath.startsWith(root)) {
-    res.statusCode = 403;
-    res.end('Forbidden');
+  // Only the app's own pages and assets are public (see security.js), never server code or secrets
+  let filePath = security.resolvePublicPath(root, decoded);
+  if (!filePath) {
+    res.statusCode = 404;
+    res.end('Not found');
     return;
   }
+  if (filePath.endsWith(path.sep)) filePath = path.join(filePath, 'index.html');
   fs.stat(filePath, (err, stats) => {
-    if (err) {
+    if (!err && stats.isDirectory()) {
+      if (!decoded.endsWith('/')) {
+        // /dashboard → /dashboard/ so the page's relative URLs resolve
+        res.statusCode = 301;
+        res.setHeader('Location', req.url.split('?')[0] + '/');
+        res.end();
+        return;
+      }
+      filePath = path.join(filePath, 'index.html');
+      return fs.stat(filePath, (err2, stats2) => {
+        if (err2 || !stats2.isFile()) { res.statusCode = 404; res.end('Not found'); return; }
+        sendFile(req, res, filePath, stats2, pageOrgSlug);
+      });
+    }
+    if (err || !stats.isFile() || !security.isServableFile(filePath)) {
       res.statusCode = 404;
       res.end('Not found');
       return;
     }
-    if (stats.isDirectory()) {
-      filePath = path.join(filePath, 'index.html');
+    sendFile(req, res, filePath, stats, pageOrgSlug);
+  });
+}
+
+const server = http.createServer((req, res) => {
+  // An unexpected error answers this one request with 500; it never stops the server
+  handleRequest(req, res).catch(error => {
+    console.error('[server] request failed:', req.method, req.url, error);
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json');
     }
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        res.statusCode = 500;
-        res.end('Server error');
-        return;
-      }
-      const ct = getContentType(filePath);
-      res.setHeader('Content-Type', ct);
-      // ไม่ให้ browser cache HTML/JS/CSS เพื่อให้ได้ไฟล์ใหม่ทุกครั้ง
-      if (ct.includes('html')) {
-        res.setHeader('Set-Cookie', org.orgCookieHeader(pageOrgSlug));
-      }
-      if (ct.includes('html') || ct.includes('javascript') || ct.includes('css')) {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-      }
-      res.end(data);
-    });
+    if (!res.writableEnded) res.end(JSON.stringify({ success: false, error: 'เกิดข้อผิดพลาดในระบบ' }));
   });
 });
 
 // ─── CCTV WebSocket Relay ───
 // Each organization has its own relay (relay.py next to its cameras) and its own viewers.
 // A relay authenticates with its organization's key (set on the account page; RELAY_KEY
-// still works for the default organization). Viewers send their login token as ?token=.
+// still works for the default organization) in the X-Relay-Key header (?key= still works for
+// older relays). Viewers send their login token as the WebSocket subprotocol
+// ("bearer", <token>) so it doesn't end up in URLs and proxy logs; ?token= still works.
 const wssRelay  = new WebSocketServer({ noServer: true });
-const wssViewer = new WebSocketServer({ noServer: true });
+// Answer the "bearer" subprotocol (never echo the token back)
+const wssViewer = new WebSocketServer({
+  noServer: true,
+  handleProtocols: protocols => (protocols.has('bearer') ? 'bearer' : false)
+});
 
 function rejectUpgrade(socket, status, reason) {
   socket.write(`HTTP/1.1 ${status} ${reason}\r\n\r\n`);
@@ -854,14 +1036,23 @@ function rejectUpgrade(socket, status, reason) {
 
 async function relayOrg(key) {
   if (!key) return null;
-  if (key === RELAY_KEY && RELAY_KEY !== 'changeme') return org.findOrgBySlug(db, org.DEFAULT_ORG_SLUG);
+  if (RELAY_KEY && key === RELAY_KEY) return org.findOrgBySlug(db, org.DEFAULT_ORG_SLUG);
   return db.collection('organizations').findOne({ 'cctv.relayKeyHash': org.hashSecret(key) });
 }
 
+// The viewer's token from Sec-WebSocket-Protocol: "bearer, <token>"
+function viewerToken(req, url) {
+  const protocols = (req.headers['sec-websocket-protocol'] || '').split(',').map(s => s.trim());
+  const i = protocols.indexOf('bearer');
+  if (i >= 0 && protocols[i + 1]) return protocols[i + 1];
+  return url.searchParams.get('token') || '';
+}
+
 async function viewerOrg(req, url) {
+  if (!db) return { status: 503 };
   const currentOrg = await org.findOrgBySlug(db, org.requestedOrgSlug(req));
   if (!currentOrg) return { status: 404 };
-  const token = url.searchParams.get('token') || '';
+  const token = viewerToken(req, url);
   const user = token ? await getUserFromToken(token).catch(() => null) : null;
   if (!user) return { status: 401 };
   const minRole = (currentOrg.settings && currentOrg.settings.cctvViewRole) || 'admin';
@@ -874,7 +1065,7 @@ server.on('upgrade', async (req, socket, head) => {
   const url = new URL(req.url, `http://localhost:${port}`);
   try {
     if (url.pathname === '/ws/relay') {
-      const relayFor = await relayOrg(url.searchParams.get('key'));
+      const relayFor = db && await relayOrg(String(req.headers['x-relay-key'] || url.searchParams.get('key') || ''));
       if (!relayFor) {
         console.log('[CCTV] Relay rejected — bad key');
         return rejectUpgrade(socket, 401, 'Unauthorized');
@@ -882,7 +1073,10 @@ server.on('upgrade', async (req, socket, head) => {
       wssRelay.handleUpgrade(req, socket, head, ws => wssRelay.emit('connection', ws, relayFor));
     } else if (url.pathname === '/ws/stream') {
       const result = await viewerOrg(req, url);
-      if (!result.org) return rejectUpgrade(socket, result.status, result.status === 401 ? 'Unauthorized' : 'Forbidden');
+      if (!result.org) {
+        const reasons = { 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found', 503: 'Service Unavailable' };
+        return rejectUpgrade(socket, result.status, reasons[result.status] || 'Forbidden');
+      }
       wssViewer.handleUpgrade(req, socket, head, ws => wssViewer.emit('connection', ws, result.org));
     } else {
       socket.destroy();
@@ -954,10 +1148,14 @@ wssViewer.on('connection', (ws, viewerFor) => {
 });
 
 // Connect to DB then start server
-connectDB().then(() => {
-  server.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}/`);
-    console.log(`[CCTV] Relay: ws://localhost:${port}/ws/relay?key=***`);
-    console.log(`[CCTV] Stream: ws://localhost:${port}/ws/stream`);
-  });
+server.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}/`);
+  console.log(`[CCTV] Relay: ws://localhost:${port}/ws/relay (X-Relay-Key header)`);
+  console.log(`[CCTV] Stream: ws://localhost:${port}/ws/stream`);
+});
+connectDB();
+
+// Log instead of crashing on a stray rejected promise (e.g. a socket error after a reply)
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] unhandled rejection:', reason);
 });

@@ -1718,7 +1718,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       : (isLocalHost ? 'wss://momaybuu-production.up.railway.app/ws/stream' : (wsProto + '//' + location.host + '/ws/stream'));
     // the server checks the viewer's login and organization
     const token = window.MomayAuth ? window.MomayAuth.getToken() : '';
-    cctvWs = new WebSocket(CCTV_WS_URL + (token && !cctvWsOverride ? (CCTV_WS_URL.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token) : ''));
+    // the token goes in the WebSocket subprotocol, not the URL (URLs end up in logs)
+    cctvWs = new WebSocket(CCTV_WS_URL, token && !cctvWsOverride ? ['bearer', token] : []);
     cctvWs.binaryType = 'arraybuffer';
 
     cctvWs.onopen = function() {

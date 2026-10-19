@@ -11,6 +11,7 @@ Endpoints:
   GET  /health        → Health check
 """
 
+import hmac
 import os
 import asyncio
 import logging
@@ -23,7 +24,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-RELAY_KEY = os.getenv("RELAY_KEY", "changeme")
+# ถ้าไม่ได้ตั้ง RELAY_KEY จะปฏิเสธการเชื่อมต่อจาก relay ทั้งหมด
+RELAY_KEY = os.getenv("RELAY_KEY")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("cctv-server")
@@ -49,8 +51,9 @@ async def health():
 async def relay_endpoint(websocket: WebSocket, key: str = Query("")):
     global relay_ws, latest_frame
 
-    # Authenticate
-    if key != RELAY_KEY:
+    # Authenticate (X-Relay-Key header; ?key= still works for older relays)
+    key = websocket.headers.get("x-relay-key") or key
+    if not RELAY_KEY or not hmac.compare_digest(key, RELAY_KEY):
         await websocket.close(code=1008, reason="Unauthorized")
         logger.warning("Relay rejected — bad key")
         return
